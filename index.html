@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>水電工程打卡系統 - LIFF測試</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 25px;
+      background: #f5f5f5;
+    }
+
+    .box {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+    }
+
+    #status {
+      font-size: 18px;
+      line-height: 2;
+      white-space: pre-line;
+    }
+
+    .success {
+      color: green;
+    }
+
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="box">
+
+    <h1>LIFF 測試</h1>
+
+    <div id="status">
+      ① 網頁已啟動
+    </div>
+
+  </div>
+
+
+  <!-- LINE 官方 LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+
+  <script>
+
+    const status =
+      document.getElementById("status");
+
+
+    function addMessage(message) {
+
+      status.innerText +=
+        "\n" + message;
+
+    }
+
+
+    // ==========================================
+    // 第一步：檢查 LIFF SDK
+    // ==========================================
+
+    if (typeof liff === "undefined") {
+
+      addMessage(
+        "❌ LIFF SDK 載入失敗"
+      );
+
+      status.className = "error";
+
+    } else {
+
+      addMessage(
+        "② LIFF SDK 已載入"
+      );
+
+
+      // ========================================
+      // 第二步：開始 LIFF 初始化
+      // ========================================
+
+      addMessage(
+        "③ 正在執行 liff.init()"
+      );
+
+
+      let finished = false;
+
+
+      liff.init({
+
+        liffId: "2011467618-lNiVqxsV"
+
+      })
+
+      .then(function () {
+
+        finished = true;
+
+
+        addMessage(
+          "④ ✅ liff.init 成功！"
+        );
+
+
+        addMessage(
+          "⑤ 是否在 LINE App：" +
+          liff.isInClient()
+        );
+
+
+        addMessage(
+          "⑥ 是否已登入：" +
+          liff.isLoggedIn()
+        );
+
+
+        status.className =
+          "success";
+
+
+        // ======================================
+        // 如果是在 LINE App
+        // 就測試取得個人資料
+        // ======================================
+
+        if (liff.isInClient()) {
+
+          addMessage(
+            "⑦ 正在取得 LINE 個人資料..."
+          );
+
+
+          return liff.getProfile();
+
+        }
+
+      })
+
+      .then(function (profile) {
+
+        if (!profile) {
+
+          return;
+
+        }
+
+
+        addMessage(
+          "⑧ ✅ LINE 個人資料取得成功"
+        );
+
+
+        addMessage(
+          "姓名：" +
+          profile.displayName
+        );
+
+
+        addMessage(
+          "LINE UID：" +
+          profile.userId
+        );
+
+      })
+
+      .catch(function (error) {
+
+        finished = true;
+
+
+        addMessage(
+          "❌ 發生錯誤"
+        );
+
+
+        addMessage(
+          "錯誤內容：" +
+          (error.message || error)
+        );
+
+
+        status.className =
+          "error";
+
+
+        console.error(error);
+
+      });
+
+
+      // ========================================
+      // 10 秒診斷
+      // ========================================
+
+      setTimeout(function () {
+
+        if (!finished) {
+
+          addMessage(
+            "⚠️ liff.init 已超過 10 秒沒有完成"
+          );
+
+          status.className =
+            "error";
+
+        }
+
+      }, 10000);
+
+    }
+
+  </script>
+
+</body>
+
+</html>
