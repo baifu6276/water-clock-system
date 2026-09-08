@@ -525,6 +525,95 @@
       }
     }
 
+
+    .daily-settlement-section {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 2px solid #e5e7eb;
+    }
+
+    .daily-settlement-card {
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .daily-settlement-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .daily-settlement-meta {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #4b5563;
+    }
+
+    .daily-settlement-highlight {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #f8fafc;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .daily-settlement-form {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed #d1d5db;
+    }
+
+    .daily-settlement-form label {
+      display: block;
+      margin: 10px 0 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .daily-settlement-form textarea {
+      width: 100%;
+      min-height: 72px;
+      resize: vertical;
+      padding: 12px;
+      font-size: 15px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: white;
+      font-family: inherit;
+    }
+
+    .btn-daily-settlement {
+      width: 100%;
+      margin-top: 12px;
+      border: none;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-daily-settlement:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    #dailySettlementStatusMsg {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+      white-space: pre-line;
+    }
+
   </style>
 
 </head>
@@ -672,7 +761,7 @@
     </div>
 
     <div class="small">
-      水電工程管理系統 V2.3
+      水電工程管理系統 V2.4
     </div>
 
   </div>
@@ -853,6 +942,70 @@
       >
         <div class="admin-empty">
           請先選日期，再按「重新彙總」
+        </div>
+      </div>
+
+    </div>
+
+
+    <div
+      id="dailySettlementSection"
+      class="daily-settlement-section"
+      style="display:none;"
+    >
+
+      <div class="open-segment-title">
+        💰 出勤日結
+      </div>
+
+      <div class="open-segment-info">
+        公司級最終出勤日結。一位員工同一天不論跑幾個工地，都只會形成一筆日結。
+      </div>
+
+      <div class="review-filter">
+
+        <div>
+          <label for="dailySettlementDate">
+            日結日期
+          </label>
+
+          <input
+            id="dailySettlementDate"
+            type="date"
+          >
+        </div>
+
+      </div>
+
+      <div class="review-action-row">
+
+        <button
+          id="dailySettlementRefreshButton"
+          class="btn-review-refresh"
+          onclick="refreshDailySettlement()"
+        >
+          重新彙總日結
+        </button>
+
+        <button
+          id="dailySettlementListButton"
+          class="btn-review-list"
+          onclick="loadDailySettlements()"
+        >
+          讀取日結
+        </button>
+
+      </div>
+
+      <div
+        id="dailySettlementStatusMsg"
+      ></div>
+
+      <div
+        id="dailySettlementList"
+      >
+        <div class="admin-empty">
+          請先選日期，再按「重新彙總日結」
         </div>
       </div>
 
@@ -2051,6 +2204,10 @@
 
       setDefaultReviewDate();
 
+      updateDailySettlementAccess();
+
+      setDefaultDailySettlementDate();
+
       loadOpenSegments();
 
     }
@@ -2076,6 +2233,924 @@
     }
 
 
+
+
+
+    // ==========================================
+    // 出勤日結 V1
+    // ==========================================
+
+    function updateDailySettlementAccess() {
+
+      const permission =
+        String(
+          employee?.permission || ""
+        )
+        .trim()
+        .toUpperCase();
+
+
+      const allowed =
+        [
+          "OWNER",
+          "ADMIN"
+        ]
+        .includes(
+          permission
+        );
+
+
+      const section =
+        document.getElementById(
+          "dailySettlementSection"
+        );
+
+
+      if (section) {
+
+        section.style.display =
+          allowed
+            ? "block"
+            : "none";
+
+      }
+
+    }
+
+
+    function setDefaultDailySettlementDate() {
+
+      const input =
+        document.getElementById(
+          "dailySettlementDate"
+        );
+
+
+      if (
+        !input ||
+        input.value
+      ) {
+
+        return;
+
+      }
+
+
+      const reviewDate =
+        document.getElementById(
+          "reviewDate"
+        );
+
+
+      if (
+        reviewDate &&
+        reviewDate.value
+      ) {
+
+        input.value =
+          reviewDate.value;
+
+        return;
+
+      }
+
+
+      const now =
+        new Date();
+
+
+      const pad =
+        function(value) {
+
+          return String(
+            value
+          )
+          .padStart(
+            2,
+            "0"
+          );
+
+        };
+
+
+      input.value =
+        now.getFullYear() +
+        "-" +
+        pad(
+          now.getMonth() + 1
+        ) +
+        "-" +
+        pad(
+          now.getDate()
+        );
+
+    }
+
+
+    async function refreshDailySettlement() {
+
+      const date =
+        document
+          .getElementById(
+            "dailySettlementDate"
+          )
+          .value;
+
+
+      if (!date) {
+
+        showDailySettlementStatus(
+          "❌ 請先選擇日結日期",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      setDailySettlementButtons(
+        false
+      );
+
+
+      showDailySettlementStatus(
+        "⏳ 正在重新彙總出勤日結...",
+        "normal"
+      );
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "adminDailySettlementRefresh",
+
+            userId:
+              userId,
+
+            date:
+              date
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "出勤日結彙總失敗"
+          );
+
+        }
+
+
+        showDailySettlementStatus(
+          "✅ 日結彙總完成\n新增：" +
+          Number(
+            result.created || 0
+          ) +
+          " 筆\n更新：" +
+          Number(
+            result.updated || 0
+          ) +
+          " 筆\n未變更：" +
+          Number(
+            result.unchanged || 0
+          ) +
+          " 筆",
+          "success"
+        );
+
+
+        await loadDailySettlements(
+          false
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        showDailySettlementStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+
+      } finally {
+
+        setDailySettlementButtons(
+          true
+        );
+
+      }
+
+    }
+
+
+    async function loadDailySettlements(
+      showLoading = true
+    ) {
+
+      const date =
+        document
+          .getElementById(
+            "dailySettlementDate"
+          )
+          .value;
+
+
+      const list =
+        document.getElementById(
+          "dailySettlementList"
+        );
+
+
+      if (!date) {
+
+        showDailySettlementStatus(
+          "❌ 請先選擇日結日期",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      if (showLoading) {
+
+        showDailySettlementStatus(
+          "⏳ 正在讀取出勤日結...",
+          "normal"
+        );
+
+      }
+
+
+      list.innerHTML =
+        `
+          <div class="admin-empty">
+            正在讀取...
+          </div>
+        `;
+
+
+      setDailySettlementButtons(
+        false
+      );
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "adminDailySettlementList",
+
+            userId:
+              userId,
+
+            date:
+              date
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "讀取出勤日結失敗"
+          );
+
+        }
+
+
+        renderDailySettlements(
+          result.settlements || []
+        );
+
+
+        if (showLoading) {
+
+          showDailySettlementStatus(
+            "✅ 已讀取 " +
+            (
+              result.settlements || []
+            ).length +
+            " 筆日結資料",
+            "success"
+          );
+
+        }
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        list.innerHTML =
+          `
+            <div class="admin-empty">
+              讀取失敗
+            </div>
+          `;
+
+
+        showDailySettlementStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+
+      } finally {
+
+        setDailySettlementButtons(
+          true
+        );
+
+      }
+
+    }
+
+
+    function renderDailySettlements(
+      settlements
+    ) {
+
+      const list =
+        document.getElementById(
+          "dailySettlementList"
+        );
+
+
+      if (
+        !settlements ||
+        settlements.length === 0
+      ) {
+
+        list.innerHTML =
+          `
+            <div class="admin-empty">
+              這個日期目前沒有出勤日結資料
+            </div>
+          `;
+
+        return;
+
+      }
+
+
+      list.innerHTML =
+        "";
+
+
+      settlements.forEach(
+        function(item, index) {
+
+          const card =
+            document.createElement(
+              "div"
+            );
+
+
+          card.className =
+            "daily-settlement-card";
+
+
+          const workdayId =
+            "dailyWorkday_" +
+            index;
+
+
+          const overtimeId =
+            "dailyOvertime_" +
+            index;
+
+
+          const noteId =
+            "dailyNote_" +
+            index;
+
+
+          const buttonId =
+            "dailyFinalize_" +
+            index;
+
+
+          const reviewReady =
+            item.siteReviewStatus ===
+            "全部已確認";
+
+
+          const statusClass =
+            item.settlementStatus ===
+            "已日結"
+              ? "success"
+              : "warn";
+
+
+          card.innerHTML =
+            `
+              <div class="daily-settlement-title">
+                ${escapeHtml(
+                  item.employeeName ||
+                  item.employeeId
+                )}
+              </div>
+
+              <div class="daily-settlement-meta">
+
+                <div>
+                  日期：
+                  <b>
+                    ${escapeHtml(
+                      item.date
+                    )}
+                  </b>
+                </div>
+
+                <div>
+                  員工ID：
+                  ${escapeHtml(
+                    item.employeeId
+                  )}
+                </div>
+
+                <div>
+                  薪資制：
+                  ${escapeHtml(
+                    item.salaryType ||
+                    "未設定"
+                  )}
+                </div>
+
+              </div>
+
+              <div class="daily-settlement-highlight">
+
+                <div>
+                  當日工地數：
+                  <b>
+                    ${Number(
+                      item.siteCount || 0
+                    )}
+                  </b>
+                </div>
+
+                <div>
+                  工作區段數：
+                  <b>
+                    ${Number(
+                      item.segmentCount || 0
+                    )}
+                  </b>
+                </div>
+
+                <div>
+                  當日總工時：
+                  <b>
+                    ${Number(
+                      item.totalHours || 0
+                    )}
+                    小時
+                  </b>
+                </div>
+
+              </div>
+
+              <div class="review-tags">
+
+                <span class="review-tag ${
+                  reviewReady
+                    ? "success"
+                    : "warn"
+                }">
+                  ${escapeHtml(
+                    item.siteReviewStatus ||
+                    "尚有待審核"
+                  )}
+                </span>
+
+                <span class="review-tag ${
+                  item.makeupStatus ===
+                  "有補卡"
+                    ? "warn"
+                    : ""
+                }">
+                  ${escapeHtml(
+                    item.makeupStatus ||
+                    "無補卡"
+                  )}
+                </span>
+
+                <span class="review-tag ${
+                  item.abnormalStatus ===
+                  "有異常"
+                    ? "error"
+                    : "success"
+                }">
+                  ${escapeHtml(
+                    item.abnormalStatus ||
+                    "正常"
+                  )}
+                </span>
+
+                <span class="review-tag ${statusClass}">
+                  ${escapeHtml(
+                    item.settlementStatus ||
+                    "待日結"
+                  )}
+                </span>
+
+              </div>
+
+              <div class="daily-settlement-form">
+
+                <label for="${workdayId}">
+                  最終出工日數
+                </label>
+
+                <select id="${workdayId}">
+                  <option value="1">
+                    1 日
+                  </option>
+                  <option value="0.5">
+                    0.5 日
+                  </option>
+                  <option value="0">
+                    0 日
+                  </option>
+                </select>
+
+                <label for="${overtimeId}">
+                  最終加班日數
+                </label>
+
+                <select id="${overtimeId}">
+                  <option value="0">
+                    0
+                  </option>
+                  <option value="0.5">
+                    0.5 日
+                  </option>
+                </select>
+
+                <label for="${noteId}">
+                  日結備註
+                </label>
+
+                <textarea
+                  id="${noteId}"
+                  placeholder="例如：跨 SITE001、SITE002，合併認定 1 日"
+                >${escapeHtml(
+                  item.note || ""
+                )}</textarea>
+
+                <button
+                  id="${buttonId}"
+                  class="btn-daily-settlement"
+                  ${reviewReady ? "" : "disabled"}
+                  onclick="finalizeDailySettlement(
+                    '${escapeJsString(
+                      item.settlementId
+                    )}',
+                    '${workdayId}',
+                    '${overtimeId}',
+                    '${noteId}',
+                    '${buttonId}'
+                  )"
+                >
+                  ${
+                    reviewReady
+                      ? "確認日結"
+                      : "工地尚未全部確認"
+                  }
+                </button>
+
+              </div>
+            `;
+
+
+          list.appendChild(
+            card
+          );
+
+
+          const workdaySelect =
+            document.getElementById(
+              workdayId
+            );
+
+
+          if (
+            item.workdayCount === 0 ||
+            item.workdayCount === 0.5 ||
+            item.workdayCount === 1
+          ) {
+
+            workdaySelect.value =
+              String(
+                item.workdayCount
+              );
+
+          } else {
+
+            workdaySelect.value =
+              "1";
+
+          }
+
+
+          const overtimeSelect =
+            document.getElementById(
+              overtimeId
+            );
+
+
+          if (
+            item.overtimeCount === 0 ||
+            item.overtimeCount === 0.5
+          ) {
+
+            overtimeSelect.value =
+              String(
+                item.overtimeCount
+              );
+
+          } else {
+
+            overtimeSelect.value =
+              "0";
+
+          }
+
+        }
+      );
+
+    }
+
+
+    async function finalizeDailySettlement(
+      settlementId,
+      workdayId,
+      overtimeId,
+      noteId,
+      buttonId
+    ) {
+
+      const workdayCount =
+        Number(
+          document
+            .getElementById(
+              workdayId
+            )
+            .value
+        );
+
+
+      const overtimeCount =
+        Number(
+          document
+            .getElementById(
+              overtimeId
+            )
+            .value
+        );
+
+
+      const note =
+        document
+          .getElementById(
+            noteId
+          )
+          .value
+          .trim();
+
+
+      const ok =
+        window.confirm(
+          "確定要完成這筆出勤日結嗎？\n\n" +
+          "出工日數：" +
+          workdayCount +
+          "\n" +
+          "加班日數：" +
+          overtimeCount
+        );
+
+
+      if (!ok) {
+
+        return;
+
+      }
+
+
+      const button =
+        document.getElementById(
+          buttonId
+        );
+
+
+      button.disabled =
+        true;
+
+
+      showDailySettlementStatus(
+        "⏳ 正在完成出勤日結...",
+        "normal"
+      );
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "adminDailySettlementFinalize",
+
+            userId:
+              userId,
+
+            settlementId:
+              settlementId,
+
+            workdayCount:
+              workdayCount,
+
+            overtimeCount:
+              overtimeCount,
+
+            note:
+              note
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "出勤日結失敗"
+          );
+
+        }
+
+
+        showDailySettlementStatus(
+          "✅ " +
+          (
+            result.message ||
+            "出勤日結已完成"
+          ),
+          "success"
+        );
+
+
+        await loadDailySettlements(
+          false
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        showDailySettlementStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+
+        button.disabled =
+          false;
+
+      }
+
+    }
+
+
+    function setDailySettlementButtons(
+      enabled
+    ) {
+
+      const refreshButton =
+        document.getElementById(
+          "dailySettlementRefreshButton"
+        );
+
+
+      const listButton =
+        document.getElementById(
+          "dailySettlementListButton"
+        );
+
+
+      if (refreshButton) {
+
+        refreshButton.disabled =
+          !enabled;
+
+      }
+
+
+      if (listButton) {
+
+        listButton.disabled =
+          !enabled;
+
+      }
+
+    }
+
+
+    function showDailySettlementStatus(
+      message,
+      type
+    ) {
+
+      const el =
+        document.getElementById(
+          "dailySettlementStatusMsg"
+        );
+
+
+      if (!el) {
+
+        return;
+
+      }
+
+
+      if (!message) {
+
+        el.style.display =
+          "none";
+
+        el.innerText =
+          "";
+
+        return;
+
+      }
+
+
+      el.style.display =
+        "block";
+
+      el.innerText =
+        message;
+
+
+      if (
+        type === "success"
+      ) {
+
+        el.className =
+          "status-success";
+
+      } else if (
+        type === "error"
+      ) {
+
+        el.className =
+          "status-error";
+
+      } else {
+
+        el.className =
+          "status-normal";
+
+      }
+
+    }
 
 
     // ==========================================
