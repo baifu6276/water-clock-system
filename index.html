@@ -708,6 +708,24 @@
       cursor: not-allowed;
     }
 
+    .btn-payroll-return {
+      width: 100%;
+      margin-top: 10px;
+      border: none;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-payroll-return:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
     #payrollStatusMsg {
       margin-top: 12px;
       padding: 12px;
@@ -875,7 +893,7 @@
     </div>
 
     <div class="small">
-      水電工程管理系統 V2.5
+      水電工程管理系統 V2.6
     </div>
 
   </div>
@@ -3038,9 +3056,28 @@
                   ${
                     finalized
                       ? "已完成結算"
-                      : "確認薪資結算"
+                      : item.status === "退回修正"
+                        ? "重新確認薪資結算"
+                        : "確認薪資結算"
                   }
                 </button>
+
+                ${
+                  finalized
+                    ? `
+                      <button
+                        class="btn-payroll-return"
+                        onclick="returnPayrollForCorrection(
+                          '${escapeJsString(
+                            item.settlementId
+                          )}'
+                        )"
+                      >
+                        退回修正
+                      </button>
+                    `
+                    : ""
+                }
 
               </div>
             `;
@@ -3226,6 +3263,145 @@
       }
 
     }
+
+
+    async function returnPayrollForCorrection(
+      settlementId
+    ) {
+
+      const reason =
+        window.prompt(
+          "請輸入退回修正原因：\n\n例如：加項輸入錯誤、扣款需要調整、出勤資料修正"
+        );
+
+
+      if (
+        reason === null
+      ) {
+
+        return;
+
+      }
+
+
+      const cleanReason =
+        String(
+          reason
+        ).trim();
+
+
+      if (
+        cleanReason === ""
+      ) {
+
+        showPayrollStatus(
+          "❌ 退回修正原因必填",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      const ok =
+        window.confirm(
+          "確定要把這筆已結算薪資退回修正嗎？\n\n原因：" +
+          cleanReason +
+          "\n\n系統會保留修正紀錄，不會刪除原資料。"
+        );
+
+
+      if (!ok) {
+
+        return;
+
+      }
+
+
+      setPayrollButtons(
+        false
+      );
+
+
+      showPayrollStatus(
+        "⏳ 正在退回薪資修正...",
+        "normal"
+      );
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "adminPayrollReturnForCorrection",
+
+            userId:
+              userId,
+
+            settlementId:
+              settlementId,
+
+            reason:
+              cleanReason
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "退回修正失敗"
+          );
+
+        }
+
+
+        showPayrollStatus(
+          "✅ " +
+          (
+            result.message ||
+            "薪資已退回修正"
+          ),
+          "success"
+        );
+
+
+        await loadPayrolls(
+          false
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        showPayrollStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+
+      } finally {
+
+        setPayrollButtons(
+          true
+        );
+
+      }
+
+    }
+
 
 
     function formatMoney(
