@@ -535,6 +535,88 @@
     ></div>
 
     <div
+      class="open-segment"
+      style="margin-bottom:18px;"
+    >
+      <div class="open-segment-title">
+        ＋ 新增完整補卡
+      </div>
+
+      <div class="open-segment-info">
+        適用於：員工整天忘記打上班卡與下班卡。
+      </div>
+
+      <div class="makeup-form">
+
+        <label for="fullEmployeeId">
+          員工ID
+        </label>
+
+        <input
+          id="fullEmployeeId"
+          type="text"
+          placeholder="例如：EMP001"
+        >
+
+        <label for="fullSiteId">
+          工地
+        </label>
+
+        <select id="fullSiteId">
+          <option value="">
+            請選擇工地
+          </option>
+        </select>
+
+        <label for="fullStartTime">
+          補上班時間
+        </label>
+
+        <input
+          id="fullStartTime"
+          type="datetime-local"
+        >
+
+        <label for="fullEndTime">
+          補下班時間
+        </label>
+
+        <input
+          id="fullEndTime"
+          type="datetime-local"
+        >
+
+        <label for="fullWorkContent">
+          工作內容
+        </label>
+
+        <input
+          id="fullWorkContent"
+          type="text"
+          placeholder="例如：3F A戶給水配管"
+        >
+
+        <label for="fullReason">
+          補卡原因（必填）
+        </label>
+
+        <textarea
+          id="fullReason"
+          placeholder="例如：員工整日忘記打卡"
+        ></textarea>
+
+        <button
+          id="fullMakeupButton"
+          class="makeup-submit"
+          onclick="submitFullMakeup()"
+        >
+          建立完整補卡
+        </button>
+
+      </div>
+    </div>
+
+    <div
       id="openSegmentList"
     >
       <div class="admin-empty">
@@ -1720,6 +1802,8 @@
         "block";
 
 
+      renderFullMakeupSites();
+
       loadOpenSegments();
 
     }
@@ -1741,6 +1825,423 @@
         )
         .style.display =
         "block";
+
+    }
+
+
+
+    function renderFullMakeupSites() {
+
+      const select =
+        document.getElementById(
+          "fullSiteId"
+        );
+
+
+      if (!select) {
+
+        return;
+
+      }
+
+
+      const currentValue =
+        select.value;
+
+
+      select.innerHTML =
+        `
+          <option value="">
+            請選擇工地
+          </option>
+        `;
+
+
+      sites.forEach(
+        function (site) {
+
+          const option =
+            document.createElement(
+              "option"
+            );
+
+
+          option.value =
+            site.siteId;
+
+
+          option.innerText =
+            site.name;
+
+
+          select.appendChild(
+            option
+          );
+
+        }
+      );
+
+
+      if (currentValue) {
+
+        select.value =
+          currentValue;
+
+      }
+
+    }
+
+
+    async function submitFullMakeup() {
+
+      const employeeId =
+        document
+          .getElementById(
+            "fullEmployeeId"
+          )
+          .value
+          .trim();
+
+
+      const siteId =
+        document
+          .getElementById(
+            "fullSiteId"
+          )
+          .value;
+
+
+      const startTime =
+        document
+          .getElementById(
+            "fullStartTime"
+          )
+          .value;
+
+
+      const endTime =
+        document
+          .getElementById(
+            "fullEndTime"
+          )
+          .value;
+
+
+      const workContent =
+        document
+          .getElementById(
+            "fullWorkContent"
+          )
+          .value
+          .trim();
+
+
+      const reason =
+        document
+          .getElementById(
+            "fullReason"
+          )
+          .value
+          .trim();
+
+
+      if (!employeeId) {
+
+        showAdminStatus(
+          "❌ 請輸入員工ID",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      if (!siteId) {
+
+        showAdminStatus(
+          "❌ 請選擇工地",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      if (!startTime) {
+
+        showAdminStatus(
+          "❌ 請選擇補上班時間",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      if (!endTime) {
+
+        showAdminStatus(
+          "❌ 請選擇補下班時間",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      if (!reason) {
+
+        showAdminStatus(
+          "❌ 補卡原因必填",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      const startDate =
+        new Date(
+          startTime
+        );
+
+
+      const endDate =
+        new Date(
+          endTime
+        );
+
+
+      if (
+        isNaN(
+          startDate.getTime()
+        ) ||
+        isNaN(
+          endDate.getTime()
+        )
+      ) {
+
+        showAdminStatus(
+          "❌ 日期時間格式錯誤",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      if (
+        endDate.getTime() <=
+        startDate.getTime()
+      ) {
+
+        showAdminStatus(
+          "❌ 下班時間必須晚於上班時間",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      const site =
+        sites.find(
+          function (item) {
+
+            return (
+              String(
+                item.siteId
+              ) ===
+              String(
+                siteId
+              )
+            );
+
+          }
+        );
+
+
+      const ok =
+        window.confirm(
+          "確定建立完整補卡嗎？\n\n" +
+          "員工ID：" +
+          employeeId +
+          "\n" +
+          "工地：" +
+          (
+            site
+              ? site.name
+              : siteId
+          ) +
+          "\n" +
+          "上班：" +
+          formatDisplayDateTime(
+            startTime
+          ) +
+          "\n" +
+          "下班：" +
+          formatDisplayDateTime(
+            endTime
+          ) +
+          "\n\n原因：" +
+          reason
+        );
+
+
+      if (!ok) {
+
+        return;
+
+      }
+
+
+      const button =
+        document.getElementById(
+          "fullMakeupButton"
+        );
+
+
+      button.disabled =
+        true;
+
+
+      showAdminStatus(
+        "⏳ 正在建立完整補卡...",
+        "normal"
+      );
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "adminMakeup",
+
+            userId:
+              userId,
+
+            makeupType:
+              "補完整區段",
+
+            employeeId:
+              employeeId,
+
+            siteId:
+              siteId,
+
+            startTime:
+              startTime,
+
+            endTime:
+              endTime,
+
+            workContent:
+              workContent,
+
+            reason:
+              reason
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "完整補卡失敗"
+          );
+
+        }
+
+
+        showAdminStatus(
+          "✅ " +
+          (
+            result.message ||
+            "完整補卡成功"
+          ) +
+          "\n本段工時：" +
+          result.workHours +
+          " 小時",
+          "success"
+        );
+
+
+        document
+          .getElementById(
+            "fullEmployeeId"
+          )
+          .value =
+          "";
+
+
+        document
+          .getElementById(
+            "fullStartTime"
+          )
+          .value =
+          "";
+
+
+        document
+          .getElementById(
+            "fullEndTime"
+          )
+          .value =
+          "";
+
+
+        document
+          .getElementById(
+            "fullWorkContent"
+          )
+          .value =
+          "";
+
+
+        document
+          .getElementById(
+            "fullReason"
+          )
+          .value =
+          "";
+
+
+        await loadOpenSegments();
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        showAdminStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+
+      } finally {
+
+        button.disabled =
+          false;
+
+      }
 
     }
 
