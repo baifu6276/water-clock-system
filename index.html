@@ -87,7 +87,8 @@
     }
 
     select,
-    input {
+    input,
+    textarea {
       width: 100%;
       padding: 14px;
       font-size: 16px;
@@ -97,7 +98,8 @@
     }
 
     select:focus,
-    input:focus {
+    input:focus,
+    textarea:focus {
       outline: none;
       border-color: #2563eb;
     }
@@ -214,6 +216,142 @@
       color: #999;
       font-size: 12px;
       text-align: center;
+    }
+
+
+    .admin-entry {
+      display: none;
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .admin-btn {
+      width: 100%;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      background: #374151;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .admin-panel {
+      display: none;
+      max-width: 720px;
+      margin: 0 auto;
+      background: white;
+      padding: 24px 18px 28px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+
+    .admin-toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .admin-toolbar button {
+      flex: 1;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-back {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-refresh {
+      background: #2563eb;
+      color: white;
+    }
+
+    .open-segment {
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #f9fafb;
+    }
+
+    .open-segment-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .open-segment-info {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #4b5563;
+    }
+
+    .makeup-form {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed #d1d5db;
+    }
+
+    .makeup-form label {
+      display: block;
+      margin: 12px 0 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .makeup-form textarea {
+      width: 100%;
+      min-height: 82px;
+      resize: vertical;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: white;
+      font-family: inherit;
+    }
+
+    .makeup-submit {
+      width: 100%;
+      margin-top: 14px;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      background: #7c3aed;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .makeup-submit:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    .admin-empty {
+      padding: 20px;
+      text-align: center;
+      border-radius: 12px;
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    #adminStatus {
+      margin: 14px 0;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
     }
 
   </style>
@@ -350,10 +488,59 @@
     </div>
 
 
-    <div class="small">
-      水電工程管理系統 V2
+    <div
+      id="adminEntry"
+      class="admin-entry"
+    >
+      <button
+        class="admin-btn"
+        onclick="openAdminPanel()"
+      >
+        🛠️ 管理員補卡
+      </button>
     </div>
 
+    <div class="small">
+      水電工程管理系統 V2.1
+    </div>
+
+  </div>
+
+  <div
+    id="adminPanel"
+    class="admin-panel"
+  >
+    <h1 class="title">
+      管理員補卡
+    </h1>
+
+    <div class="admin-toolbar">
+      <button
+        class="btn-back"
+        onclick="closeAdminPanel()"
+      >
+        ← 返回打卡
+      </button>
+
+      <button
+        class="btn-refresh"
+        onclick="loadOpenSegments()"
+      >
+        重新整理
+      </button>
+    </div>
+
+    <div
+      id="adminStatus"
+    ></div>
+
+    <div
+      id="openSegmentList"
+    >
+      <div class="admin-empty">
+        正在讀取未完成工作區段...
+      </div>
+    </div>
   </div>
 
 
@@ -568,6 +755,13 @@
 
         settings =
           result.settings || {};
+
+
+        // ======================================
+        // 管理權限入口
+        // ======================================
+
+        updateAdminEntry();
 
 
         // ======================================
@@ -1466,6 +1660,749 @@
         );
 
       }
+
+    }
+
+
+
+    // ==========================================
+    // 管理員補卡 V1
+    // ==========================================
+
+    function updateAdminEntry() {
+
+      const permission =
+        String(
+          employee?.permission || ""
+        )
+        .trim()
+        .toUpperCase();
+
+
+      const allowed =
+        [
+          "OWNER",
+          "ADMIN",
+          "SITE_MANAGER"
+        ]
+        .includes(
+          permission
+        );
+
+
+      document
+        .getElementById(
+          "adminEntry"
+        )
+        .style.display =
+        allowed
+          ? "block"
+          : "none";
+
+    }
+
+
+    function openAdminPanel() {
+
+      document
+        .querySelector(
+          ".card"
+        )
+        .style.display =
+        "none";
+
+
+      document
+        .getElementById(
+          "adminPanel"
+        )
+        .style.display =
+        "block";
+
+
+      loadOpenSegments();
+
+    }
+
+
+    function closeAdminPanel() {
+
+      document
+        .getElementById(
+          "adminPanel"
+        )
+        .style.display =
+        "none";
+
+
+      document
+        .querySelector(
+          ".card"
+        )
+        .style.display =
+        "block";
+
+    }
+
+
+    async function loadOpenSegments() {
+
+      const list =
+        document.getElementById(
+          "openSegmentList"
+        );
+
+
+      list.innerHTML =
+        `
+          <div class="admin-empty">
+            正在讀取未完成工作區段...
+          </div>
+        `;
+
+
+      showAdminStatus(
+        "",
+        "normal"
+      );
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "adminOpenSegments",
+
+            userId:
+              userId
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "無法讀取未完成工作區段"
+          );
+
+        }
+
+
+        renderOpenSegments(
+          result.openSegments || []
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        list.innerHTML =
+          `
+            <div class="admin-empty">
+              讀取失敗
+            </div>
+          `;
+
+
+        showAdminStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+      }
+
+    }
+
+
+    function renderOpenSegments(
+      segments
+    ) {
+
+      const list =
+        document.getElementById(
+          "openSegmentList"
+        );
+
+
+      if (
+        !segments ||
+        segments.length === 0
+      ) {
+
+        list.innerHTML =
+          `
+            <div class="admin-empty">
+              ✅ 目前沒有未完成的工作區段
+            </div>
+          `;
+
+        return;
+
+      }
+
+
+      list.innerHTML =
+        "";
+
+
+      segments.forEach(
+        function (
+          segment,
+          index
+        ) {
+
+          const card =
+            document.createElement(
+              "div"
+            );
+
+
+          card.className =
+            "open-segment";
+
+
+          const inputId =
+            "makeupEndTime_" +
+            index;
+
+
+          const reasonId =
+            "makeupReason_" +
+            index;
+
+
+          const buttonId =
+            "makeupButton_" +
+            index;
+
+
+          card.innerHTML =
+            `
+              <div class="open-segment-title">
+                ${escapeHtml(
+                  segment.employeeName ||
+                  segment.employeeId
+                )}
+              </div>
+
+              <div class="open-segment-info">
+                <div>
+                  工地：
+                  <b>
+                    ${escapeHtml(
+                      segment.siteName
+                    )}
+                  </b>
+                </div>
+
+                <div>
+                  上班時間：
+                  <b>
+                    ${escapeHtml(
+                      formatDisplayDateTime(
+                        segment.startTime
+                      )
+                    )}
+                  </b>
+                </div>
+
+                <div>
+                  工作內容：
+                  ${escapeHtml(
+                    segment.workContent ||
+                    "未填寫"
+                  )}
+                </div>
+
+                <div>
+                  區段ID：
+                  ${escapeHtml(
+                    segment.segmentId
+                  )}
+                </div>
+              </div>
+
+              <div class="makeup-form">
+
+                <label
+                  for="${inputId}"
+                >
+                  補下班時間
+                </label>
+
+                <input
+                  id="${inputId}"
+                  type="datetime-local"
+                  value="${escapeHtml(
+                    suggestEndTime(
+                      segment.startTime
+                    )
+                  )}"
+                >
+
+                <label
+                  for="${reasonId}"
+                >
+                  補卡原因（必填）
+                </label>
+
+                <textarea
+                  id="${reasonId}"
+                  placeholder="例如：員工昨日離場時忘記按下班"
+                ></textarea>
+
+                <button
+                  id="${buttonId}"
+                  class="makeup-submit"
+                  onclick="submitMakeupClockOut(
+                    '${escapeJsString(
+                      segment.segmentId
+                    )}',
+                    '${inputId}',
+                    '${reasonId}',
+                    '${buttonId}'
+                  )"
+                >
+                  確認補下班
+                </button>
+
+              </div>
+            `;
+
+
+          list.appendChild(
+            card
+          );
+
+        }
+      );
+
+    }
+
+
+    async function submitMakeupClockOut(
+      segmentId,
+      inputId,
+      reasonId,
+      buttonId
+    ) {
+
+      const endTime =
+        document
+          .getElementById(
+            inputId
+          )
+          .value;
+
+
+      const reason =
+        document
+          .getElementById(
+            reasonId
+          )
+          .value
+          .trim();
+
+
+      if (!endTime) {
+
+        showAdminStatus(
+          "❌ 請選擇補下班時間",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      if (!reason) {
+
+        showAdminStatus(
+          "❌ 補卡原因必填",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      const ok =
+        window.confirm(
+          "確定要補下班嗎？\n\n" +
+          "補下班時間：" +
+          formatDisplayDateTime(
+            endTime
+          ) +
+          "\n\n" +
+          "補卡原因：" +
+          reason
+        );
+
+
+      if (!ok) {
+
+        return;
+
+      }
+
+
+      const button =
+        document.getElementById(
+          buttonId
+        );
+
+
+      button.disabled =
+        true;
+
+
+      showAdminStatus(
+        "⏳ 正在寫入補卡紀錄...",
+        "normal"
+      );
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "adminMakeup",
+
+            userId:
+              userId,
+
+            makeupType:
+              "補下班",
+
+            segmentId:
+              segmentId,
+
+            endTime:
+              endTime,
+
+            reason:
+              reason
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "補卡失敗"
+          );
+
+        }
+
+
+        showAdminStatus(
+          "✅ " +
+          (
+            result.message ||
+            "補下班成功"
+          ) +
+          "\n本段工時：" +
+          result.workHours +
+          " 小時",
+          "success"
+        );
+
+
+        await loadOpenSegments();
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        showAdminStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+
+        button.disabled =
+          false;
+
+      }
+
+    }
+
+
+    function showAdminStatus(
+      message,
+      type
+    ) {
+
+      const el =
+        document.getElementById(
+          "adminStatus"
+        );
+
+
+      if (!message) {
+
+        el.style.display =
+          "none";
+
+        el.innerText =
+          "";
+
+        return;
+
+      }
+
+
+      el.style.display =
+        "block";
+
+      el.innerText =
+        message;
+
+
+      if (
+        type === "success"
+      ) {
+
+        el.className =
+          "status-success";
+
+      } else if (
+        type === "error"
+      ) {
+
+        el.className =
+          "status-error";
+
+      } else {
+
+        el.className =
+          "status-normal";
+
+      }
+
+    }
+
+
+    function suggestEndTime(
+      startValue
+    ) {
+
+      const start =
+        new Date(
+          startValue
+        );
+
+
+      if (
+        isNaN(
+          start.getTime()
+        )
+      ) {
+
+        return "";
+
+      }
+
+
+      // 預設建議同一天 17:00。
+      // 只是方便輸入，管理者仍需確認實際離場時間。
+      const suggested =
+        new Date(
+          start
+        );
+
+
+      suggested.setHours(
+        17,
+        0,
+        0,
+        0
+      );
+
+
+      if (
+        suggested.getTime() <=
+        start.getTime()
+      ) {
+
+        suggested.setTime(
+          start.getTime() +
+          60 * 60 * 1000
+        );
+
+      }
+
+
+      return toDateTimeLocalValue(
+        suggested
+      );
+
+    }
+
+
+    function toDateTimeLocalValue(
+      date
+    ) {
+
+      const pad =
+        function (
+          value
+        ) {
+
+          return String(
+            value
+          )
+          .padStart(
+            2,
+            "0"
+          );
+
+        };
+
+
+      return (
+        date.getFullYear() +
+        "-" +
+        pad(
+          date.getMonth() + 1
+        ) +
+        "-" +
+        pad(
+          date.getDate()
+        ) +
+        "T" +
+        pad(
+          date.getHours()
+        ) +
+        ":" +
+        pad(
+          date.getMinutes()
+        )
+      );
+
+    }
+
+
+    function formatDisplayDateTime(
+      value
+    ) {
+
+      if (!value) {
+
+        return "";
+
+      }
+
+
+      const date =
+        new Date(
+          value
+        );
+
+
+      if (
+        isNaN(
+          date.getTime()
+        )
+      ) {
+
+        return String(
+          value
+        )
+        .replace(
+          "T",
+          " "
+        );
+
+      }
+
+
+      const pad =
+        function (
+          number
+        ) {
+
+          return String(
+            number
+          )
+          .padStart(
+            2,
+            "0"
+          );
+
+        };
+
+
+      return (
+        date.getFullYear() +
+        "/" +
+        pad(
+          date.getMonth() + 1
+        ) +
+        "/" +
+        pad(
+          date.getDate()
+        ) +
+        " " +
+        pad(
+          date.getHours()
+        ) +
+        ":" +
+        pad(
+          date.getMinutes()
+        )
+      );
+
+    }
+
+
+    function escapeJsString(
+      text
+    ) {
+
+      return String(
+        text ?? ""
+      )
+      .replace(
+        /\\/g,
+        "\\\\"
+      )
+      .replace(
+        /'/g,
+        "\\'"
+      )
+      .replace(
+        /\r/g,
+        ""
+      )
+      .replace(
+        /\n/g,
+        "\\n"
+      );
 
     }
 
