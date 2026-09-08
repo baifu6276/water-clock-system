@@ -834,6 +834,58 @@
       margin-bottom: 6px;
     }
 
+    .daily-report-item-editor {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      background: #f8fbff;
+    }
+
+    .daily-report-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .daily-report-item-title {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .btn-report-remove {
+      border: none;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .btn-report-add {
+      width: 100%;
+      margin-top: 12px;
+      border: 1px dashed #2563eb;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .daily-report-shared-title {
+      margin-top: 14px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #374151;
+    }
+
     @media (max-width: 640px) {
       .daily-report-grid {
         grid-template-columns: 1fr;
@@ -994,7 +1046,11 @@
       </div>
 
       <div class="open-segment-info">
-        同一天可以送出多筆，也可以跨不同工地。V1 送出後狀態為「已提交」。
+        日期、工地、工作區域、樓層、戶別只需填一次；下面可以新增多個工作項目，一次提交。
+      </div>
+
+      <div class="daily-report-shared-title">
+        共用資料
       </div>
 
       <div class="daily-report-grid">
@@ -1052,109 +1108,6 @@
           >
         </div>
 
-        <div class="daily-report-field">
-          <label for="dailyReportCategory">
-            工程類別 *
-          </label>
-          <select
-            id="dailyReportCategory"
-          >
-            <option value="">請選擇</option>
-            <option value="給水">給水</option>
-            <option value="排水">排水</option>
-            <option value="消防">消防</option>
-            <option value="電氣">電氣</option>
-            <option value="弱電">弱電</option>
-            <option value="其他">其他</option>
-          </select>
-        </div>
-
-      </div>
-
-      <div class="daily-report-field">
-        <label for="dailyReportWorkItem">
-          工作項目 *
-        </label>
-        <input
-          id="dailyReportWorkItem"
-          type="text"
-          placeholder="例如：冷熱水配管"
-        >
-      </div>
-
-      <div class="daily-report-field">
-        <label for="dailyReportCompleted">
-          今日完成內容 *
-        </label>
-        <textarea
-          id="dailyReportCompleted"
-          placeholder="例如：完成5F A戶浴室及廚房給水配管"
-        ></textarea>
-      </div>
-
-      <div class="daily-report-grid">
-
-        <div class="daily-report-field">
-          <label for="dailyReportQuantity">
-            今日完成數量
-          </label>
-          <input
-            id="dailyReportQuantity"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="例如：1"
-          >
-        </div>
-
-        <div class="daily-report-field">
-          <label for="dailyReportQuantityUnit">
-            單位
-          </label>
-          <input
-            id="dailyReportQuantityUnit"
-            type="text"
-            placeholder="例如：戶、處、米"
-          >
-        </div>
-
-        <div class="daily-report-field">
-          <label for="dailyReportProgress">
-            進度百分比
-          </label>
-          <input
-            id="dailyReportProgress"
-            type="number"
-            min="0"
-            max="100"
-            step="1"
-            placeholder="0～100"
-          >
-        </div>
-
-        <div class="daily-report-field">
-          <label for="dailyReportNeedHelp">
-            是否需協助
-          </label>
-          <select
-            id="dailyReportNeedHelp"
-            onchange="updateDailyReportHelpField()"
-          >
-            <option value="否">否</option>
-            <option value="是">是</option>
-          </select>
-        </div>
-
-      </div>
-
-      <div class="daily-report-field">
-        <label for="dailyReportIssue">
-          異常／問題
-        </label>
-        <textarea
-          id="dailyReportIssue"
-          placeholder="沒有問題可留白"
-        ></textarea>
       </div>
 
       <div class="daily-report-field">
@@ -1167,26 +1120,28 @@
         ></textarea>
       </div>
 
-      <div
-        id="dailyReportHelpWrap"
-        class="daily-report-field"
-        style="display:none;"
-      >
-        <label for="dailyReportHelpContent">
-          協助內容 *
-        </label>
-        <textarea
-          id="dailyReportHelpContent"
-          placeholder="請說明需要什麼協助"
-        ></textarea>
+      <div class="daily-report-shared-title">
+        今日工作項目
       </div>
+
+      <div
+        id="dailyReportItems"
+      ></div>
+
+      <button
+        id="dailyReportAddItemButton"
+        class="btn-report-add"
+        onclick="addDailyReportItem()"
+      >
+        ＋ 新增工作項目
+      </button>
 
       <button
         id="dailyReportSubmitButton"
         class="btn-report-submit"
-        onclick="submitDailyReport()"
+        onclick="submitDailyReportBatch()"
       >
-        提交每日回報
+        一次提交全部工作項目
       </button>
 
       <button
@@ -1208,7 +1163,6 @@
     </div>
 
 
-
     <div
       id="adminEntry"
       class="admin-entry"
@@ -1222,7 +1176,7 @@
     </div>
 
     <div class="small">
-      水電工程管理系統 V2.7
+      水電工程管理系統 V2.8
     </div>
 
   </div>
@@ -2674,8 +2628,11 @@
 
 
     // ==========================================
-    // 每日回報 V1
+    // 每日回報 V1.1 - 多工作項目
     // ==========================================
+
+    let dailyReportItemCounter = 0;
+
 
     function setDefaultDailyReportDate() {
 
@@ -2729,6 +2686,9 @@
         month +
         "-" +
         day;
+
+
+      ensureDailyReportFirstItem();
 
     }
 
@@ -2793,29 +2753,350 @@
 
       }
 
+
+      ensureDailyReportFirstItem();
+
     }
 
 
-    function updateDailyReportHelpField() {
-
-      const needHelp =
-        document
-          .getElementById(
-            "dailyReportNeedHelp"
-          )
-          .value;
-
+    function ensureDailyReportFirstItem() {
 
       const wrap =
         document.getElementById(
-          "dailyReportHelpWrap"
+          "dailyReportItems"
+        );
+
+
+      if (
+        !wrap ||
+        wrap.children.length > 0
+      ) {
+
+        return;
+
+      }
+
+
+      addDailyReportItem();
+
+    }
+
+
+    function addDailyReportItem(
+      preset = {}
+    ) {
+
+      const wrap =
+        document.getElementById(
+          "dailyReportItems"
+        );
+
+
+      if (!wrap) {
+
+        return;
+
+      }
+
+
+      if (
+        wrap.children.length >= 20
+      ) {
+
+        showDailyReportStatus(
+          "❌ 一次最多新增20個工作項目",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      dailyReportItemCounter++;
+
+
+      const id =
+        dailyReportItemCounter;
+
+
+      const card =
+        document.createElement(
+          "div"
+        );
+
+
+      card.className =
+        "daily-report-item-editor";
+
+
+      card.dataset.itemId =
+        String(
+          id
+        );
+
+
+      card.innerHTML =
+        `
+          <div class="daily-report-item-header">
+            <div class="daily-report-item-title">
+              工作項目 ${wrap.children.length + 1}
+            </div>
+
+            <button
+              type="button"
+              class="btn-report-remove"
+              onclick="removeDailyReportItem(this)"
+            >
+              移除此項
+            </button>
+          </div>
+
+          <div class="daily-report-grid">
+
+            <div class="daily-report-field">
+              <label>
+                工程類別 *
+              </label>
+              <select
+                class="dr-category"
+              >
+                <option value="">請選擇</option>
+                <option value="給水">給水</option>
+                <option value="排水">排水</option>
+                <option value="消防">消防</option>
+                <option value="電氣">電氣</option>
+                <option value="弱電">弱電</option>
+                <option value="其他">其他</option>
+              </select>
+            </div>
+
+            <div class="daily-report-field">
+              <label>
+                工作項目 *
+              </label>
+              <input
+                class="dr-work-item"
+                type="text"
+                placeholder="例如：冷熱水配管"
+              >
+            </div>
+
+          </div>
+
+          <div class="daily-report-field">
+            <label>
+              今日完成內容 *
+            </label>
+            <textarea
+              class="dr-completed"
+              placeholder="例如：完成浴室及廚房給水配管"
+            ></textarea>
+          </div>
+
+          <div class="daily-report-grid">
+
+            <div class="daily-report-field">
+              <label>
+                今日完成數量
+              </label>
+              <input
+                class="dr-quantity"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="例如：1"
+              >
+            </div>
+
+            <div class="daily-report-field">
+              <label>
+                單位
+              </label>
+              <input
+                class="dr-quantity-unit"
+                type="text"
+                placeholder="例如：戶、處、米"
+              >
+            </div>
+
+            <div class="daily-report-field">
+              <label>
+                進度百分比
+              </label>
+              <input
+                class="dr-progress"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                placeholder="0～100"
+              >
+            </div>
+
+            <div class="daily-report-field">
+              <label>
+                是否需協助
+              </label>
+              <select
+                class="dr-need-help"
+                onchange="updateDailyReportItemHelp(this)"
+              >
+                <option value="否">否</option>
+                <option value="是">是</option>
+              </select>
+            </div>
+
+          </div>
+
+          <div class="daily-report-field">
+            <label>
+              異常／問題
+            </label>
+            <textarea
+              class="dr-issue"
+              placeholder="沒有問題可留白"
+            ></textarea>
+          </div>
+
+          <div
+            class="daily-report-field dr-help-wrap"
+            style="display:none;"
+          >
+            <label>
+              協助內容 *
+            </label>
+            <textarea
+              class="dr-help-content"
+              placeholder="請說明需要什麼協助"
+            ></textarea>
+          </div>
+        `;
+
+
+      wrap.appendChild(
+        card
+      );
+
+
+      if (preset.category) {
+        card.querySelector(".dr-category").value = preset.category;
+      }
+
+      if (preset.workItem) {
+        card.querySelector(".dr-work-item").value = preset.workItem;
+      }
+
+      if (preset.completedContent) {
+        card.querySelector(".dr-completed").value = preset.completedContent;
+      }
+
+      refreshDailyReportItemTitles();
+
+    }
+
+
+    function removeDailyReportItem(
+      button
+    ) {
+
+      const wrap =
+        document.getElementById(
+          "dailyReportItems"
+        );
+
+
+      if (
+        !wrap ||
+        wrap.children.length <= 1
+      ) {
+
+        showDailyReportStatus(
+          "❌ 至少要保留一個工作項目",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      const card =
+        button.closest(
+          ".daily-report-item-editor"
+        );
+
+
+      if (card) {
+
+        card.remove();
+
+      }
+
+
+      refreshDailyReportItemTitles();
+
+    }
+
+
+    function refreshDailyReportItemTitles() {
+
+      const cards =
+        document.querySelectorAll(
+          "#dailyReportItems .daily-report-item-editor"
+        );
+
+
+      cards.forEach(
+        function(card, index) {
+
+          const title =
+            card.querySelector(
+              ".daily-report-item-title"
+            );
+
+
+          if (title) {
+
+            title.innerText =
+              "工作項目 " +
+              (index + 1);
+
+          }
+
+        }
+      );
+
+    }
+
+
+    function updateDailyReportItemHelp(
+      select
+    ) {
+
+      const card =
+        select.closest(
+          ".daily-report-item-editor"
+        );
+
+
+      if (!card) {
+
+        return;
+
+      }
+
+
+      const wrap =
+        card.querySelector(
+          ".dr-help-wrap"
         );
 
 
       if (wrap) {
 
         wrap.style.display =
-          needHelp === "是"
+          select.value === "是"
             ? "block"
             : "none";
 
@@ -2824,7 +3105,146 @@
     }
 
 
-    async function submitDailyReport() {
+    function collectDailyReportItems() {
+
+      const cards =
+        Array.from(
+          document.querySelectorAll(
+            "#dailyReportItems .daily-report-item-editor"
+          )
+        );
+
+
+      return cards.map(
+        function(card, index) {
+
+          const category =
+            card.querySelector(
+              ".dr-category"
+            ).value;
+
+
+          const workItem =
+            card.querySelector(
+              ".dr-work-item"
+            ).value.trim();
+
+
+          const completedContent =
+            card.querySelector(
+              ".dr-completed"
+            ).value.trim();
+
+
+          const quantity =
+            card.querySelector(
+              ".dr-quantity"
+            ).value;
+
+
+          const quantityUnit =
+            card.querySelector(
+              ".dr-quantity-unit"
+            ).value.trim();
+
+
+          const progress =
+            card.querySelector(
+              ".dr-progress"
+            ).value;
+
+
+          const issue =
+            card.querySelector(
+              ".dr-issue"
+            ).value.trim();
+
+
+          const needHelp =
+            card.querySelector(
+              ".dr-need-help"
+            ).value;
+
+
+          const helpContent =
+            card.querySelector(
+              ".dr-help-content"
+            ).value.trim();
+
+
+          if (!category) {
+            throw new Error(
+              "工作項目 " +
+              (index + 1) +
+              "：請選擇工程類別"
+            );
+          }
+
+
+          if (!workItem) {
+            throw new Error(
+              "工作項目 " +
+              (index + 1) +
+              "：請填寫工作項目"
+            );
+          }
+
+
+          if (!completedContent) {
+            throw new Error(
+              "工作項目 " +
+              (index + 1) +
+              "：請填寫今日完成內容"
+            );
+          }
+
+
+          if (
+            progress !== "" &&
+            (
+              Number(progress) < 0 ||
+              Number(progress) > 100
+            )
+          ) {
+            throw new Error(
+              "工作項目 " +
+              (index + 1) +
+              "：進度百分比必須介於0～100"
+            );
+          }
+
+
+          if (
+            needHelp === "是" &&
+            !helpContent
+          ) {
+            throw new Error(
+              "工作項目 " +
+              (index + 1) +
+              "：需要協助時請填寫協助內容"
+            );
+          }
+
+
+          return {
+            category,
+            workItem,
+            completedContent,
+            quantity,
+            quantityUnit,
+            progress,
+            issue,
+            needHelp,
+            helpContent
+          };
+
+        }
+      );
+
+    }
+
+
+    async function submitDailyReportBatch() {
 
       const date =
         document
@@ -2840,49 +3260,6 @@
             "dailyReportSite"
           )
           .value;
-
-
-      const category =
-        document
-          .getElementById(
-            "dailyReportCategory"
-          )
-          .value;
-
-
-      const workItem =
-        document
-          .getElementById(
-            "dailyReportWorkItem"
-          )
-          .value
-          .trim();
-
-
-      const completedContent =
-        document
-          .getElementById(
-            "dailyReportCompleted"
-          )
-          .value
-          .trim();
-
-
-      const needHelp =
-        document
-          .getElementById(
-            "dailyReportNeedHelp"
-          )
-          .value;
-
-
-      const helpContent =
-        document
-          .getElementById(
-            "dailyReportHelpContent"
-          )
-          .value
-          .trim();
 
 
       if (!date) {
@@ -2909,34 +3286,22 @@
       }
 
 
-      if (!category) {
+      let items;
+
+
+      try {
+
+        items =
+          collectDailyReportItems();
+
+      } catch (error) {
 
         showDailyReportStatus(
-          "❌ 請選擇工程類別",
-          "error"
-        );
-
-        return;
-
-      }
-
-
-      if (!workItem) {
-
-        showDailyReportStatus(
-          "❌ 工作項目必填",
-          "error"
-        );
-
-        return;
-
-      }
-
-
-      if (!completedContent) {
-
-        showDailyReportStatus(
-          "❌ 今日完成內容必填",
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
           "error"
         );
 
@@ -2946,38 +3311,11 @@
 
 
       if (
-        needHelp === "是" &&
-        !helpContent
+        items.length === 0
       ) {
 
         showDailyReportStatus(
-          "❌ 請填寫需要協助的內容",
-          "error"
-        );
-
-        return;
-
-      }
-
-
-      const progressText =
-        document
-          .getElementById(
-            "dailyReportProgress"
-          )
-          .value;
-
-
-      if (
-        progressText !== "" &&
-        (
-          Number(progressText) < 0 ||
-          Number(progressText) > 100
-        )
-      ) {
-
-        showDailyReportStatus(
-          "❌ 進度百分比必須介於 0～100",
+          "❌ 請至少新增一個工作項目",
           "error"
         );
 
@@ -2997,7 +3335,9 @@
 
 
       showDailyReportStatus(
-        "⏳ 正在提交每日回報...",
+        "⏳ 正在一次提交 " +
+        items.length +
+        " 個工作項目...",
         "normal"
       );
 
@@ -3008,7 +3348,7 @@
           await callApi({
 
             action:
-              "dailyReportCreate",
+              "dailyReportCreateBatch",
 
             userId:
               userId,
@@ -3043,41 +3383,6 @@
                 .value
                 .trim(),
 
-            category:
-              category,
-
-            workItem:
-              workItem,
-
-            completedContent:
-              completedContent,
-
-            quantity:
-              document
-                .getElementById(
-                  "dailyReportQuantity"
-                )
-                .value,
-
-            quantityUnit:
-              document
-                .getElementById(
-                  "dailyReportQuantityUnit"
-                )
-                .value
-                .trim(),
-
-            progress:
-              progressText,
-
-            issue:
-              document
-                .getElementById(
-                  "dailyReportIssue"
-                )
-                .value
-                .trim(),
-
             tomorrowPlan:
               document
                 .getElementById(
@@ -3086,11 +3391,8 @@
                 .value
                 .trim(),
 
-            needHelp:
-              needHelp,
-
-            helpContent:
-              helpContent
+            items:
+              items
 
           });
 
@@ -3115,7 +3417,7 @@
         );
 
 
-        clearDailyReportFormAfterSubmit();
+        resetDailyReportItemsAfterSubmit();
 
 
         await loadOwnDailyReports(
@@ -3460,53 +3762,27 @@
     }
 
 
-    function clearDailyReportFormAfterSubmit() {
+    function resetDailyReportItemsAfterSubmit() {
 
-      [
-        "dailyReportWorkItem",
-        "dailyReportCompleted",
-        "dailyReportQuantity",
-        "dailyReportIssue",
-        "dailyReportTomorrow",
-        "dailyReportHelpContent"
-      ]
-      .forEach(
-        function(id) {
-
-          const el =
-            document.getElementById(
-              id
-            );
+      const wrap =
+        document.getElementById(
+          "dailyReportItems"
+        );
 
 
-          if (el) {
+      if (wrap) {
 
-            el.value =
-              "";
+        wrap.innerHTML =
+          "";
 
-          }
-
-        }
-      );
+      }
 
 
-      document
-        .getElementById(
-          "dailyReportProgress"
-        )
-        .value =
-        "";
+      dailyReportItemCounter =
+        0;
 
 
-      document
-        .getElementById(
-          "dailyReportNeedHelp"
-        )
-        .value =
-        "否";
-
-
-      updateDailyReportHelpField();
+      addDailyReportItem();
 
     }
 
@@ -3571,7 +3847,6 @@
       }
 
     }
-
 
 
     // ==========================================
