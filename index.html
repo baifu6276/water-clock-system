@@ -886,6 +886,78 @@
       color: #374151;
     }
 
+    .daily-report-review-section {
+      margin-top: 22px;
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    .daily-report-review-card {
+      margin-top: 12px;
+      padding: 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      background: #f9fafb;
+      line-height: 1.75;
+      font-size: 14px;
+    }
+
+    .daily-report-review-actions {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-report-confirm,
+    .btn-report-return {
+      width: 100%;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-report-confirm {
+      background: #16a34a;
+      color: white;
+    }
+
+    .btn-report-return {
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-report-confirm:disabled,
+    .btn-report-return:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    .returned-note {
+      margin-top: 8px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #fee2e2;
+      color: #991b1b;
+      font-weight: bold;
+      white-space: pre-line;
+    }
+
+    #dailyReportReviewStatusMsg {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+      white-space: pre-line;
+    }
+
     @media (max-width: 640px) {
       .daily-report-grid {
         grid-template-columns: 1fr;
@@ -1176,7 +1248,7 @@
     </div>
 
     <div class="small">
-      水電工程管理系統 V2.8
+      水電工程管理系統 V2.9
     </div>
 
   </div>
@@ -1357,6 +1429,75 @@
       >
         <div class="admin-empty">
           請先選日期，再按「重新彙總」
+        </div>
+      </div>
+
+    </div>
+
+
+    <div
+      id="dailyReportReviewSection"
+      class="daily-report-review-section"
+    >
+
+      <div class="open-segment-title">
+        📝 每日回報審核
+      </div>
+
+      <div class="open-segment-info">
+        OWNER / ADMIN 可審核全部工地；SITE_MANAGER 只能審核自己負責的工地。退回修正必須填寫原因。
+      </div>
+
+      <div class="review-filter">
+
+        <div>
+          <label for="dailyReportReviewDate">
+            回報日期
+          </label>
+
+          <input
+            id="dailyReportReviewDate"
+            type="date"
+          >
+        </div>
+
+        <div>
+          <label for="dailyReportReviewSite">
+            工地
+          </label>
+
+          <select
+            id="dailyReportReviewSite"
+          >
+            <option value="">
+              全部可管理工地
+            </option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="review-action-row">
+
+        <button
+          id="dailyReportReviewListButton"
+          class="btn-review-list"
+          onclick="loadDailyReportReviews()"
+        >
+          讀取每日回報
+        </button>
+
+      </div>
+
+      <div
+        id="dailyReportReviewStatusMsg"
+      ></div>
+
+      <div
+        id="dailyReportReviewList"
+      >
+        <div class="admin-empty">
+          請先選日期，再按「讀取每日回報」
         </div>
       </div>
 
@@ -3743,6 +3884,33 @@
                 </b>
               </div>
 
+              ${
+                item.status === "退回修正"
+                  ? `
+                    <div class="returned-note">
+                      退回原因：
+                      ${escapeHtml(
+                        item.reviewNote || "未填寫"
+                      )}
+                    </div>
+                  `
+                  : ""
+              }
+
+              ${
+                item.status === "已確認" &&
+                item.reviewerName
+                  ? `
+                    <div>
+                      審核人：
+                      ${escapeHtml(
+                        item.reviewerName
+                      )}
+                    </div>
+                  `
+                  : ""
+              }
+
               <div>
                 回報時間：
                 ${escapeHtml(
@@ -3795,6 +3963,716 @@
       const el =
         document.getElementById(
           "dailyReportStatusMsg"
+        );
+
+
+      if (!el) {
+
+        return;
+
+      }
+
+
+      if (!message) {
+
+        el.style.display =
+          "none";
+
+        el.innerText =
+          "";
+
+        return;
+
+      }
+
+
+      el.style.display =
+        "block";
+
+      el.innerText =
+        message;
+
+
+      if (
+        type === "success"
+      ) {
+
+        el.className =
+          "status-success";
+
+      } else if (
+        type === "error"
+      ) {
+
+        el.className =
+          "status-error";
+
+      } else {
+
+        el.className =
+          "status-normal";
+
+      }
+
+    }
+
+
+    // ==========================================
+    // 每日回報審核 V1
+    // ==========================================
+
+    function setDefaultDailyReportReviewDate() {
+
+      const input =
+        document.getElementById(
+          "dailyReportReviewDate"
+        );
+
+
+      if (
+        !input ||
+        input.value
+      ) {
+
+        return;
+
+      }
+
+
+      const now =
+        new Date();
+
+
+      input.value =
+        now.getFullYear() +
+        "-" +
+        String(
+          now.getMonth() + 1
+        ).padStart(
+          2,
+          "0"
+        ) +
+        "-" +
+        String(
+          now.getDate()
+        ).padStart(
+          2,
+          "0"
+        );
+
+    }
+
+
+    function renderDailyReportReviewSites() {
+
+      const select =
+        document.getElementById(
+          "dailyReportReviewSite"
+        );
+
+
+      if (!select) {
+
+        return;
+
+      }
+
+
+      select.innerHTML =
+        `
+          <option value="">
+            全部可管理工地
+          </option>
+        `;
+
+
+      const permission =
+        String(
+          employee?.permission || ""
+        )
+        .trim()
+        .toUpperCase();
+
+
+      sites.forEach(
+        function(site) {
+
+          if (
+            permission === "SITE_MANAGER" &&
+            String(
+              site.foremanId || ""
+            ).trim() !==
+            String(
+              employee.employeeId || ""
+            ).trim()
+          ) {
+
+            return;
+
+          }
+
+
+          const option =
+            document.createElement(
+              "option"
+            );
+
+
+          option.value =
+            site.siteId;
+
+
+          option.innerText =
+            site.name;
+
+
+          select.appendChild(
+            option
+          );
+
+        }
+      );
+
+    }
+
+
+    async function loadDailyReportReviews(
+      showLoading = true
+    ) {
+
+      const date =
+        document
+          .getElementById(
+            "dailyReportReviewDate"
+          )
+          .value;
+
+
+      const siteId =
+        document
+          .getElementById(
+            "dailyReportReviewSite"
+          )
+          .value;
+
+
+      const list =
+        document.getElementById(
+          "dailyReportReviewList"
+        );
+
+
+      if (!date) {
+
+        showDailyReportReviewStatus(
+          "❌ 請先選擇日期",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      const button =
+        document.getElementById(
+          "dailyReportReviewListButton"
+        );
+
+
+      button.disabled =
+        true;
+
+
+      if (showLoading) {
+
+        showDailyReportReviewStatus(
+          "⏳ 正在讀取每日回報...",
+          "normal"
+        );
+
+      }
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "adminDailyReportReviewList",
+
+            userId:
+              userId,
+
+            date:
+              date,
+
+            siteId:
+              siteId
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "讀取每日回報失敗"
+          );
+
+        }
+
+
+        renderDailyReportReviewList(
+          result.reports || []
+        );
+
+
+        if (showLoading) {
+
+          showDailyReportReviewStatus(
+            "✅ 已讀取 " +
+            (
+              result.reports || []
+            ).length +
+            " 筆每日回報",
+            "success"
+          );
+
+        }
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        list.innerHTML =
+          "";
+
+
+        showDailyReportReviewStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+
+      } finally {
+
+        button.disabled =
+          false;
+
+      }
+
+    }
+
+
+    function renderDailyReportReviewList(
+      reports
+    ) {
+
+      const list =
+        document.getElementById(
+          "dailyReportReviewList"
+        );
+
+
+      if (
+        !reports ||
+        reports.length === 0
+      ) {
+
+        list.innerHTML =
+          `
+            <div class="admin-empty">
+              此日期沒有可管理的每日回報
+            </div>
+          `;
+
+        return;
+
+      }
+
+
+      list.innerHTML =
+        "";
+
+
+      reports.forEach(
+        function(item, index) {
+
+          const card =
+            document.createElement(
+              "div"
+            );
+
+
+          card.className =
+            "daily-report-review-card";
+
+
+          const noteId =
+            "dailyReportReviewNote_" +
+            index;
+
+
+          const actionable =
+            item.status === "已提交";
+
+
+          const locationText =
+            [
+              item.workArea,
+              item.floor,
+              item.unit
+            ]
+            .filter(
+              Boolean
+            )
+            .join(
+              " / "
+            ) ||
+            "未填";
+
+
+          const quantityText =
+            item.quantity === "" ||
+            item.quantity === null ||
+            item.quantity === undefined
+              ? "未填"
+              : (
+                  item.quantity +
+                  (
+                    item.quantityUnit
+                      ? " " +
+                        item.quantityUnit
+                      : ""
+                  )
+                );
+
+
+          const progressText =
+            item.progress === "" ||
+            item.progress === null ||
+            item.progress === undefined
+              ? "未填"
+              : item.progress + "%";
+
+
+          card.innerHTML =
+            `
+              <div class="daily-report-card-title">
+                ${escapeHtml(
+                  item.siteName || ""
+                )}
+                ｜${escapeHtml(
+                  item.employeeName || ""
+                )}
+                ｜${escapeHtml(
+                  item.category || ""
+                )}
+              </div>
+
+              <div>
+                狀態：
+                <b>
+                  ${escapeHtml(
+                    item.status || ""
+                  )}
+                </b>
+              </div>
+
+              <div>
+                工作位置：
+                ${escapeHtml(
+                  locationText
+                )}
+              </div>
+
+              <div>
+                工作項目：
+                ${escapeHtml(
+                  item.workItem || ""
+                )}
+              </div>
+
+              <div>
+                今日完成：
+                ${escapeHtml(
+                  item.completedContent || ""
+                )}
+              </div>
+
+              <div>
+                完成數量：
+                ${escapeHtml(
+                  String(
+                    quantityText
+                  )
+                )}
+              </div>
+
+              <div>
+                進度：
+                ${escapeHtml(
+                  String(
+                    progressText
+                  )
+                )}
+              </div>
+
+              <div>
+                異常／問題：
+                ${escapeHtml(
+                  item.issue || "無"
+                )}
+              </div>
+
+              <div>
+                明日預定：
+                ${escapeHtml(
+                  item.tomorrowPlan || "未填"
+                )}
+              </div>
+
+              <div>
+                是否需協助：
+                ${escapeHtml(
+                  item.needHelp || "否"
+                )}
+              </div>
+
+              ${
+                item.needHelp === "是"
+                  ? `
+                    <div>
+                      協助內容：
+                      ${escapeHtml(
+                        item.helpContent || ""
+                      )}
+                    </div>
+                  `
+                  : ""
+              }
+
+              ${
+                item.reviewNote
+                  ? `
+                    <div>
+                      上次審核備註：
+                      ${escapeHtml(
+                        item.reviewNote
+                      )}
+                    </div>
+                  `
+                  : ""
+              }
+
+              <div class="daily-report-field">
+                <label for="${noteId}">
+                  審核備註
+                </label>
+
+                <textarea
+                  id="${noteId}"
+                  ${actionable ? "" : "disabled"}
+                  placeholder="確認可留白；退回修正必填原因"
+                ></textarea>
+              </div>
+
+              <div class="daily-report-review-actions">
+
+                <button
+                  class="btn-report-confirm"
+                  ${actionable ? "" : "disabled"}
+                  onclick="reviewDailyReport(
+                    '${escapeJsString(
+                      item.reportId
+                    )}',
+                    'CONFIRM',
+                    '${noteId}'
+                  )"
+                >
+                  ${
+                    item.status === "已確認"
+                      ? "已確認"
+                      : "確認回報"
+                  }
+                </button>
+
+                <button
+                  class="btn-report-return"
+                  ${actionable ? "" : "disabled"}
+                  onclick="reviewDailyReport(
+                    '${escapeJsString(
+                      item.reportId
+                    )}',
+                    'RETURN',
+                    '${noteId}'
+                  )"
+                >
+                  ${
+                    item.status === "退回修正"
+                      ? "已退回"
+                      : "退回修正"
+                  }
+                </button>
+
+              </div>
+            `;
+
+
+          list.appendChild(
+            card
+          );
+
+        }
+      );
+
+    }
+
+
+    async function reviewDailyReport(
+      reportId,
+      actionType,
+      noteId
+    ) {
+
+      const note =
+        document
+          .getElementById(
+            noteId
+          )
+          .value
+          .trim();
+
+
+      if (
+        actionType === "RETURN" &&
+        !note
+      ) {
+
+        showDailyReportReviewStatus(
+          "❌ 退回修正時，請先填寫審核備註",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      const actionText =
+        actionType === "CONFIRM"
+          ? "確認這筆每日回報"
+          : "退回這筆每日回報修正";
+
+
+      const ok =
+        window.confirm(
+          "確定要" +
+          actionText +
+          "嗎？"
+        );
+
+
+      if (!ok) {
+
+        return;
+
+      }
+
+
+      showDailyReportReviewStatus(
+        "⏳ 正在處理每日回報...",
+        "normal"
+      );
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "adminDailyReportReviewAction",
+
+            userId:
+              userId,
+
+            reportId:
+              reportId,
+
+            actionType:
+              actionType,
+
+            note:
+              note
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "每日回報審核失敗"
+          );
+
+        }
+
+
+        showDailyReportReviewStatus(
+          "✅ " +
+          (
+            result.message ||
+            "每日回報審核完成"
+          ),
+          "success"
+        );
+
+
+        await loadDailyReportReviews(
+          false
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        showDailyReportReviewStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+      }
+
+    }
+
+
+    function showDailyReportReviewStatus(
+      message,
+      type
+    ) {
+
+      const el =
+        document.getElementById(
+          "dailyReportReviewStatusMsg"
         );
 
 
@@ -3909,6 +4787,10 @@
       renderReviewSites();
 
       setDefaultReviewDate();
+
+      renderDailyReportReviewSites();
+
+      setDefaultDailyReportReviewDate();
 
       updateDailySettlementAccess();
 
