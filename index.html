@@ -736,6 +736,110 @@
       white-space: pre-line;
     }
 
+    .daily-report-section {
+      margin-top: 22px;
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    .daily-report-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .daily-report-field {
+      margin-top: 10px;
+    }
+
+    .daily-report-field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .daily-report-field input,
+    .daily-report-field select,
+    .daily-report-field textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      background: white;
+    }
+
+    .daily-report-field textarea {
+      min-height: 76px;
+      resize: vertical;
+    }
+
+    .btn-report-submit,
+    .btn-report-list {
+      width: 100%;
+      margin-top: 12px;
+      border: none;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-report-submit {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-report-list {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-report-submit:disabled,
+    .btn-report-list:disabled {
+      background: #aaa;
+      color: white;
+      cursor: not-allowed;
+    }
+
+    #dailyReportStatusMsg {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+      white-space: pre-line;
+    }
+
+    .daily-report-card {
+      margin-top: 12px;
+      padding: 14px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #f9fafb;
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .daily-report-card-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 640px) {
+      .daily-report-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .payroll-warning {
       margin-top: 10px;
       padding: 10px;
@@ -881,6 +985,231 @@
 
 
     <div
+      id="dailyReportSection"
+      class="daily-report-section"
+    >
+
+      <div class="section-title">
+        📝 每日回報
+      </div>
+
+      <div class="open-segment-info">
+        同一天可以送出多筆，也可以跨不同工地。V1 送出後狀態為「已提交」。
+      </div>
+
+      <div class="daily-report-grid">
+
+        <div class="daily-report-field">
+          <label for="dailyReportDate">
+            回報日期
+          </label>
+          <input
+            id="dailyReportDate"
+            type="date"
+          >
+        </div>
+
+        <div class="daily-report-field">
+          <label for="dailyReportSite">
+            工地
+          </label>
+          <select
+            id="dailyReportSite"
+          >
+          </select>
+        </div>
+
+        <div class="daily-report-field">
+          <label for="dailyReportArea">
+            工作區域
+          </label>
+          <input
+            id="dailyReportArea"
+            type="text"
+            placeholder="例如：A棟、公共區域"
+          >
+        </div>
+
+        <div class="daily-report-field">
+          <label for="dailyReportFloor">
+            樓層
+          </label>
+          <input
+            id="dailyReportFloor"
+            type="text"
+            placeholder="例如：5F"
+          >
+        </div>
+
+        <div class="daily-report-field">
+          <label for="dailyReportUnit">
+            戶別
+          </label>
+          <input
+            id="dailyReportUnit"
+            type="text"
+            placeholder="例如：A戶"
+          >
+        </div>
+
+        <div class="daily-report-field">
+          <label for="dailyReportCategory">
+            工程類別 *
+          </label>
+          <select
+            id="dailyReportCategory"
+          >
+            <option value="">請選擇</option>
+            <option value="給水">給水</option>
+            <option value="排水">排水</option>
+            <option value="消防">消防</option>
+            <option value="電氣">電氣</option>
+            <option value="弱電">弱電</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="daily-report-field">
+        <label for="dailyReportWorkItem">
+          工作項目 *
+        </label>
+        <input
+          id="dailyReportWorkItem"
+          type="text"
+          placeholder="例如：冷熱水配管"
+        >
+      </div>
+
+      <div class="daily-report-field">
+        <label for="dailyReportCompleted">
+          今日完成內容 *
+        </label>
+        <textarea
+          id="dailyReportCompleted"
+          placeholder="例如：完成5F A戶浴室及廚房給水配管"
+        ></textarea>
+      </div>
+
+      <div class="daily-report-grid">
+
+        <div class="daily-report-field">
+          <label for="dailyReportQuantity">
+            今日完成數量
+          </label>
+          <input
+            id="dailyReportQuantity"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="例如：1"
+          >
+        </div>
+
+        <div class="daily-report-field">
+          <label for="dailyReportQuantityUnit">
+            單位
+          </label>
+          <input
+            id="dailyReportQuantityUnit"
+            type="text"
+            placeholder="例如：戶、處、米"
+          >
+        </div>
+
+        <div class="daily-report-field">
+          <label for="dailyReportProgress">
+            進度百分比
+          </label>
+          <input
+            id="dailyReportProgress"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            placeholder="0～100"
+          >
+        </div>
+
+        <div class="daily-report-field">
+          <label for="dailyReportNeedHelp">
+            是否需協助
+          </label>
+          <select
+            id="dailyReportNeedHelp"
+            onchange="updateDailyReportHelpField()"
+          >
+            <option value="否">否</option>
+            <option value="是">是</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="daily-report-field">
+        <label for="dailyReportIssue">
+          異常／問題
+        </label>
+        <textarea
+          id="dailyReportIssue"
+          placeholder="沒有問題可留白"
+        ></textarea>
+      </div>
+
+      <div class="daily-report-field">
+        <label for="dailyReportTomorrow">
+          明日預定工作
+        </label>
+        <textarea
+          id="dailyReportTomorrow"
+          placeholder="例如：6F A戶給水配管"
+        ></textarea>
+      </div>
+
+      <div
+        id="dailyReportHelpWrap"
+        class="daily-report-field"
+        style="display:none;"
+      >
+        <label for="dailyReportHelpContent">
+          協助內容 *
+        </label>
+        <textarea
+          id="dailyReportHelpContent"
+          placeholder="請說明需要什麼協助"
+        ></textarea>
+      </div>
+
+      <button
+        id="dailyReportSubmitButton"
+        class="btn-report-submit"
+        onclick="submitDailyReport()"
+      >
+        提交每日回報
+      </button>
+
+      <button
+        id="dailyReportListButton"
+        class="btn-report-list"
+        onclick="loadOwnDailyReports()"
+      >
+        查看當日已回報內容
+      </button>
+
+      <div
+        id="dailyReportStatusMsg"
+      ></div>
+
+      <div
+        id="dailyReportList"
+      ></div>
+
+    </div>
+
+
+
+    <div
       id="adminEntry"
       class="admin-entry"
     >
@@ -893,7 +1222,7 @@
     </div>
 
     <div class="small">
-      水電工程管理系統 V2.6
+      水電工程管理系統 V2.7
     </div>
 
   </div>
@@ -1464,6 +1793,10 @@
         // ======================================
 
         renderSites();
+
+        renderDailyReportSites();
+
+        setDefaultDailyReportDate();
 
 
         if (
@@ -2333,6 +2666,907 @@
         throw new Error(
           "伺服器回傳格式錯誤"
         );
+
+      }
+
+    }
+
+
+
+    // ==========================================
+    // 每日回報 V1
+    // ==========================================
+
+    function setDefaultDailyReportDate() {
+
+      const input =
+        document.getElementById(
+          "dailyReportDate"
+        );
+
+
+      if (
+        !input ||
+        input.value
+      ) {
+
+        return;
+
+      }
+
+
+      const now =
+        new Date();
+
+
+      const year =
+        now.getFullYear();
+
+
+      const month =
+        String(
+          now.getMonth() + 1
+        )
+        .padStart(
+          2,
+          "0"
+        );
+
+
+      const day =
+        String(
+          now.getDate()
+        )
+        .padStart(
+          2,
+          "0"
+        );
+
+
+      input.value =
+        year +
+        "-" +
+        month +
+        "-" +
+        day;
+
+    }
+
+
+    function renderDailyReportSites() {
+
+      const select =
+        document.getElementById(
+          "dailyReportSite"
+        );
+
+
+      if (!select) {
+
+        return;
+
+      }
+
+
+      select.innerHTML =
+        "";
+
+
+      sites.forEach(
+        function(site) {
+
+          const option =
+            document.createElement(
+              "option"
+            );
+
+
+          option.value =
+            site.siteId;
+
+
+          option.innerText =
+            site.name;
+
+
+          select.appendChild(
+            option
+          );
+
+        }
+      );
+
+
+      const clockSite =
+        document.getElementById(
+          "siteSelect"
+        );
+
+
+      if (
+        clockSite &&
+        clockSite.value
+      ) {
+
+        select.value =
+          clockSite.value;
+
+      }
+
+    }
+
+
+    function updateDailyReportHelpField() {
+
+      const needHelp =
+        document
+          .getElementById(
+            "dailyReportNeedHelp"
+          )
+          .value;
+
+
+      const wrap =
+        document.getElementById(
+          "dailyReportHelpWrap"
+        );
+
+
+      if (wrap) {
+
+        wrap.style.display =
+          needHelp === "是"
+            ? "block"
+            : "none";
+
+      }
+
+    }
+
+
+    async function submitDailyReport() {
+
+      const date =
+        document
+          .getElementById(
+            "dailyReportDate"
+          )
+          .value;
+
+
+      const siteId =
+        document
+          .getElementById(
+            "dailyReportSite"
+          )
+          .value;
+
+
+      const category =
+        document
+          .getElementById(
+            "dailyReportCategory"
+          )
+          .value;
+
+
+      const workItem =
+        document
+          .getElementById(
+            "dailyReportWorkItem"
+          )
+          .value
+          .trim();
+
+
+      const completedContent =
+        document
+          .getElementById(
+            "dailyReportCompleted"
+          )
+          .value
+          .trim();
+
+
+      const needHelp =
+        document
+          .getElementById(
+            "dailyReportNeedHelp"
+          )
+          .value;
+
+
+      const helpContent =
+        document
+          .getElementById(
+            "dailyReportHelpContent"
+          )
+          .value
+          .trim();
+
+
+      if (!date) {
+
+        showDailyReportStatus(
+          "❌ 請選擇回報日期",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      if (!siteId) {
+
+        showDailyReportStatus(
+          "❌ 請選擇工地",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      if (!category) {
+
+        showDailyReportStatus(
+          "❌ 請選擇工程類別",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      if (!workItem) {
+
+        showDailyReportStatus(
+          "❌ 工作項目必填",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      if (!completedContent) {
+
+        showDailyReportStatus(
+          "❌ 今日完成內容必填",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      if (
+        needHelp === "是" &&
+        !helpContent
+      ) {
+
+        showDailyReportStatus(
+          "❌ 請填寫需要協助的內容",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      const progressText =
+        document
+          .getElementById(
+            "dailyReportProgress"
+          )
+          .value;
+
+
+      if (
+        progressText !== "" &&
+        (
+          Number(progressText) < 0 ||
+          Number(progressText) > 100
+        )
+      ) {
+
+        showDailyReportStatus(
+          "❌ 進度百分比必須介於 0～100",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      const button =
+        document.getElementById(
+          "dailyReportSubmitButton"
+        );
+
+
+      button.disabled =
+        true;
+
+
+      showDailyReportStatus(
+        "⏳ 正在提交每日回報...",
+        "normal"
+      );
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "dailyReportCreate",
+
+            userId:
+              userId,
+
+            date:
+              date,
+
+            siteId:
+              siteId,
+
+            workArea:
+              document
+                .getElementById(
+                  "dailyReportArea"
+                )
+                .value
+                .trim(),
+
+            floor:
+              document
+                .getElementById(
+                  "dailyReportFloor"
+                )
+                .value
+                .trim(),
+
+            unit:
+              document
+                .getElementById(
+                  "dailyReportUnit"
+                )
+                .value
+                .trim(),
+
+            category:
+              category,
+
+            workItem:
+              workItem,
+
+            completedContent:
+              completedContent,
+
+            quantity:
+              document
+                .getElementById(
+                  "dailyReportQuantity"
+                )
+                .value,
+
+            quantityUnit:
+              document
+                .getElementById(
+                  "dailyReportQuantityUnit"
+                )
+                .value
+                .trim(),
+
+            progress:
+              progressText,
+
+            issue:
+              document
+                .getElementById(
+                  "dailyReportIssue"
+                )
+                .value
+                .trim(),
+
+            tomorrowPlan:
+              document
+                .getElementById(
+                  "dailyReportTomorrow"
+                )
+                .value
+                .trim(),
+
+            needHelp:
+              needHelp,
+
+            helpContent:
+              helpContent
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "每日回報提交失敗"
+          );
+
+        }
+
+
+        showDailyReportStatus(
+          "✅ " +
+          (
+            result.message ||
+            "每日回報已提交"
+          ),
+          "success"
+        );
+
+
+        clearDailyReportFormAfterSubmit();
+
+
+        await loadOwnDailyReports(
+          false
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        showDailyReportStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+
+      } finally {
+
+        button.disabled =
+          false;
+
+      }
+
+    }
+
+
+    async function loadOwnDailyReports(
+      showLoading = true
+    ) {
+
+      const date =
+        document
+          .getElementById(
+            "dailyReportDate"
+          )
+          .value;
+
+
+      const list =
+        document.getElementById(
+          "dailyReportList"
+        );
+
+
+      const button =
+        document.getElementById(
+          "dailyReportListButton"
+        );
+
+
+      button.disabled =
+        true;
+
+
+      if (showLoading) {
+
+        showDailyReportStatus(
+          "⏳ 正在讀取當日回報...",
+          "normal"
+        );
+
+      }
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "dailyReportListOwn",
+
+            userId:
+              userId,
+
+            date:
+              date
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "讀取每日回報失敗"
+          );
+
+        }
+
+
+        renderOwnDailyReports(
+          result.reports || []
+        );
+
+
+        if (showLoading) {
+
+          showDailyReportStatus(
+            "✅ 已讀取 " +
+            (
+              result.reports || []
+            ).length +
+            " 筆當日回報",
+            "success"
+          );
+
+        }
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        list.innerHTML =
+          "";
+
+
+        showDailyReportStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+
+      } finally {
+
+        button.disabled =
+          false;
+
+      }
+
+    }
+
+
+    function renderOwnDailyReports(
+      reports
+    ) {
+
+      const list =
+        document.getElementById(
+          "dailyReportList"
+        );
+
+
+      if (
+        !reports ||
+        reports.length === 0
+      ) {
+
+        list.innerHTML =
+          `
+            <div class="admin-empty">
+              當日尚未提交每日回報
+            </div>
+          `;
+
+        return;
+
+      }
+
+
+      list.innerHTML =
+        "";
+
+
+      reports.forEach(
+        function(item) {
+
+          const card =
+            document.createElement(
+              "div"
+            );
+
+
+          card.className =
+            "daily-report-card";
+
+
+          const locationText =
+            [
+              item.workArea,
+              item.floor,
+              item.unit
+            ]
+            .filter(
+              Boolean
+            )
+            .join(
+              " / "
+            ) ||
+            "未填";
+
+
+          const quantityText =
+            item.quantity === "" ||
+            item.quantity === null ||
+            item.quantity === undefined
+              ? "未填"
+              : (
+                  item.quantity +
+                  (
+                    item.quantityUnit
+                      ? " " +
+                        item.quantityUnit
+                      : ""
+                  )
+                );
+
+
+          const progressText =
+            item.progress === "" ||
+            item.progress === null ||
+            item.progress === undefined
+              ? "未填"
+              : item.progress + "%";
+
+
+          card.innerHTML =
+            `
+              <div class="daily-report-card-title">
+                ${escapeHtml(
+                  item.siteName || ""
+                )}
+                ｜${escapeHtml(
+                  item.category || ""
+                )}
+              </div>
+
+              <div>
+                日期：
+                ${escapeHtml(
+                  item.date || ""
+                )}
+              </div>
+
+              <div>
+                工作位置：
+                ${escapeHtml(
+                  locationText
+                )}
+              </div>
+
+              <div>
+                工作項目：
+                ${escapeHtml(
+                  item.workItem || ""
+                )}
+              </div>
+
+              <div>
+                今日完成：
+                ${escapeHtml(
+                  item.completedContent || ""
+                )}
+              </div>
+
+              <div>
+                完成數量：
+                ${escapeHtml(
+                  String(
+                    quantityText
+                  )
+                )}
+              </div>
+
+              <div>
+                進度：
+                ${escapeHtml(
+                  String(
+                    progressText
+                  )
+                )}
+              </div>
+
+              <div>
+                異常／問題：
+                ${escapeHtml(
+                  item.issue || "無"
+                )}
+              </div>
+
+              <div>
+                是否需協助：
+                ${escapeHtml(
+                  item.needHelp || "否"
+                )}
+              </div>
+
+              ${
+                item.needHelp === "是"
+                  ? `
+                    <div>
+                      協助內容：
+                      ${escapeHtml(
+                        item.helpContent || ""
+                      )}
+                    </div>
+                  `
+                  : ""
+              }
+
+              <div>
+                回報狀態：
+                <b>
+                  ${escapeHtml(
+                    item.status || ""
+                  )}
+                </b>
+              </div>
+
+              <div>
+                回報時間：
+                ${escapeHtml(
+                  item.reportedAt || ""
+                )}
+              </div>
+            `;
+
+
+          list.appendChild(
+            card
+          );
+
+        }
+      );
+
+    }
+
+
+    function clearDailyReportFormAfterSubmit() {
+
+      [
+        "dailyReportWorkItem",
+        "dailyReportCompleted",
+        "dailyReportQuantity",
+        "dailyReportIssue",
+        "dailyReportTomorrow",
+        "dailyReportHelpContent"
+      ]
+      .forEach(
+        function(id) {
+
+          const el =
+            document.getElementById(
+              id
+            );
+
+
+          if (el) {
+
+            el.value =
+              "";
+
+          }
+
+        }
+      );
+
+
+      document
+        .getElementById(
+          "dailyReportProgress"
+        )
+        .value =
+        "";
+
+
+      document
+        .getElementById(
+          "dailyReportNeedHelp"
+        )
+        .value =
+        "否";
+
+
+      updateDailyReportHelpField();
+
+    }
+
+
+    function showDailyReportStatus(
+      message,
+      type
+    ) {
+
+      const el =
+        document.getElementById(
+          "dailyReportStatusMsg"
+        );
+
+
+      if (!el) {
+
+        return;
+
+      }
+
+
+      if (!message) {
+
+        el.style.display =
+          "none";
+
+        el.innerText =
+          "";
+
+        return;
+
+      }
+
+
+      el.style.display =
+        "block";
+
+      el.innerText =
+        message;
+
+
+      if (
+        type === "success"
+      ) {
+
+        el.className =
+          "status-success";
+
+      } else if (
+        type === "error"
+      ) {
+
+        el.className =
+          "status-error";
+
+      } else {
+
+        el.className =
+          "status-normal";
 
       }
 
