@@ -354,6 +354,177 @@
       display: none;
     }
 
+
+    .review-section {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 2px solid #e5e7eb;
+    }
+
+    .review-filter {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .review-filter label {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .review-action-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .review-action-row button {
+      flex: 1;
+      border: none;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-review-refresh {
+      background: #0f766e;
+      color: white;
+    }
+
+    .btn-review-list {
+      background: #475569;
+      color: white;
+    }
+
+    .review-card {
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .review-card-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .review-meta {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #4b5563;
+    }
+
+    .review-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .review-tag {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .review-tag.warn {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .review-tag.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .review-tag.success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .review-form {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed #d1d5db;
+    }
+
+    .review-form label {
+      display: block;
+      margin: 10px 0 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .review-form textarea {
+      width: 100%;
+      min-height: 72px;
+      resize: vertical;
+      padding: 12px;
+      font-size: 15px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: white;
+      font-family: inherit;
+    }
+
+    .review-button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .review-button-row button {
+      flex: 1;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      color: white;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-review-approve {
+      background: #16a34a;
+    }
+
+    .btn-review-return {
+      background: #dc2626;
+    }
+
+    .review-button-row button:disabled,
+    .review-action-row button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    #reviewStatusMsg {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+      white-space: pre-line;
+    }
+
+    @media (min-width: 640px) {
+      .review-filter {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
   </style>
 
 </head>
@@ -501,7 +672,7 @@
     </div>
 
     <div class="small">
-      水電工程管理系統 V2.1
+      水電工程管理系統 V2.3
     </div>
 
   </div>
@@ -615,6 +786,78 @@
 
       </div>
     </div>
+
+    <div class="review-section">
+
+      <div class="open-segment-title">
+        📋 出勤審核
+      </div>
+
+      <div class="open-segment-info">
+        依「日期 × 員工 × 工地」彙總工作區段，確認出工日與加班。
+      </div>
+
+      <div class="review-filter">
+
+        <div>
+          <label for="reviewDate">
+            審核日期
+          </label>
+
+          <input
+            id="reviewDate"
+            type="date"
+          >
+        </div>
+
+        <div>
+          <label for="reviewSiteId">
+            工地
+          </label>
+
+          <select id="reviewSiteId">
+            <option value="">
+              全部可管理工地
+            </option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="review-action-row">
+
+        <button
+          id="reviewRefreshButton"
+          class="btn-review-refresh"
+          onclick="refreshAttendanceReview()"
+        >
+          重新彙總
+        </button>
+
+        <button
+          id="reviewListButton"
+          class="btn-review-list"
+          onclick="loadAttendanceReviews()"
+        >
+          讀取審核
+        </button>
+
+      </div>
+
+      <div
+        id="reviewStatusMsg"
+      ></div>
+
+      <div
+        id="attendanceReviewList"
+      >
+        <div class="admin-empty">
+          請先選日期，再按「重新彙總」
+        </div>
+      </div>
+
+    </div>
+
 
     <div
       id="openSegmentList"
@@ -1804,6 +2047,10 @@
 
       renderFullMakeupSites();
 
+      renderReviewSites();
+
+      setDefaultReviewDate();
+
       loadOpenSegments();
 
     }
@@ -1828,6 +2075,1005 @@
 
     }
 
+
+
+
+    // ==========================================
+    // 出勤審核 V1
+    // ==========================================
+
+    function setDefaultReviewDate() {
+
+      const input =
+        document.getElementById(
+          "reviewDate"
+        );
+
+
+      if (
+        !input ||
+        input.value
+      ) {
+
+        return;
+
+      }
+
+
+      const now =
+        new Date();
+
+
+      const pad =
+        function(value) {
+
+          return String(
+            value
+          )
+          .padStart(
+            2,
+            "0"
+          );
+
+        };
+
+
+      input.value =
+        now.getFullYear() +
+        "-" +
+        pad(
+          now.getMonth() + 1
+        ) +
+        "-" +
+        pad(
+          now.getDate()
+        );
+
+    }
+
+
+    function renderReviewSites() {
+
+      const select =
+        document.getElementById(
+          "reviewSiteId"
+        );
+
+
+      if (!select) {
+
+        return;
+
+      }
+
+
+      const currentValue =
+        select.value;
+
+
+      select.innerHTML =
+        `
+          <option value="">
+            全部可管理工地
+          </option>
+        `;
+
+
+      sites.forEach(
+        function(site) {
+
+          const option =
+            document.createElement(
+              "option"
+            );
+
+
+          option.value =
+            site.siteId;
+
+
+          option.innerText =
+            site.name;
+
+
+          select.appendChild(
+            option
+          );
+
+        }
+      );
+
+
+      if (currentValue) {
+
+        select.value =
+          currentValue;
+
+      }
+
+    }
+
+
+    async function refreshAttendanceReview() {
+
+      const date =
+        document
+          .getElementById(
+            "reviewDate"
+          )
+          .value;
+
+
+      const siteId =
+        document
+          .getElementById(
+            "reviewSiteId"
+          )
+          .value;
+
+
+      if (!date) {
+
+        showReviewStatus(
+          "❌ 請先選擇審核日期",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      setReviewButtons(
+        false
+      );
+
+
+      showReviewStatus(
+        "⏳ 正在重新彙總出勤資料...",
+        "normal"
+      );
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "adminAttendanceReviewRefresh",
+
+            userId:
+              userId,
+
+            date:
+              date,
+
+            siteId:
+              siteId
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "出勤彙總失敗"
+          );
+
+        }
+
+
+        showReviewStatus(
+          "✅ 彙總完成\n新增：" +
+          Number(
+            result.created || 0
+          ) +
+          " 筆\n更新：" +
+          Number(
+            result.updated || 0
+          ) +
+          " 筆",
+          "success"
+        );
+
+
+        await loadAttendanceReviews(
+          false
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        showReviewStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+
+      } finally {
+
+        setReviewButtons(
+          true
+        );
+
+      }
+
+    }
+
+
+    async function loadAttendanceReviews(
+      showLoading = true
+    ) {
+
+      const date =
+        document
+          .getElementById(
+            "reviewDate"
+          )
+          .value;
+
+
+      const siteId =
+        document
+          .getElementById(
+            "reviewSiteId"
+          )
+          .value;
+
+
+      const list =
+        document.getElementById(
+          "attendanceReviewList"
+        );
+
+
+      if (!date) {
+
+        showReviewStatus(
+          "❌ 請先選擇審核日期",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      if (showLoading) {
+
+        showReviewStatus(
+          "⏳ 正在讀取出勤審核...",
+          "normal"
+        );
+
+      }
+
+
+      list.innerHTML =
+        `
+          <div class="admin-empty">
+            正在讀取...
+          </div>
+        `;
+
+
+      setReviewButtons(
+        false
+      );
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "adminAttendanceReviewList",
+
+            userId:
+              userId,
+
+            date:
+              date,
+
+            siteId:
+              siteId
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "讀取出勤審核失敗"
+          );
+
+        }
+
+
+        renderAttendanceReviews(
+          result.reviews || []
+        );
+
+
+        if (showLoading) {
+
+          showReviewStatus(
+            "✅ 已讀取 " +
+            (
+              result.reviews || []
+            ).length +
+            " 筆審核資料",
+            "success"
+          );
+
+        }
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        list.innerHTML =
+          `
+            <div class="admin-empty">
+              讀取失敗
+            </div>
+          `;
+
+
+        showReviewStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+
+      } finally {
+
+        setReviewButtons(
+          true
+        );
+
+      }
+
+    }
+
+
+    function renderAttendanceReviews(
+      reviews
+    ) {
+
+      const list =
+        document.getElementById(
+          "attendanceReviewList"
+        );
+
+
+      if (
+        !reviews ||
+        reviews.length === 0
+      ) {
+
+        list.innerHTML =
+          `
+            <div class="admin-empty">
+              這個日期目前沒有可審核的出勤資料
+            </div>
+          `;
+
+        return;
+
+      }
+
+
+      list.innerHTML =
+        "";
+
+
+      reviews.forEach(
+        function(review, index) {
+
+          const card =
+            document.createElement(
+              "div"
+            );
+
+
+          card.className =
+            "review-card";
+
+
+          const workdayId =
+            "reviewWorkday_" +
+            index;
+
+
+          const overtimeId =
+            "reviewOvertime_" +
+            index;
+
+
+          const noteId =
+            "reviewNote_" +
+            index;
+
+
+          const approveId =
+            "reviewApprove_" +
+            index;
+
+
+          const returnId =
+            "reviewReturn_" +
+            index;
+
+
+          const statusClass =
+            review.reviewStatus ===
+            "已確認"
+              ? "success"
+              : (
+                  review.reviewStatus ===
+                  "退回修正"
+                    ? "error"
+                    : "warn"
+                );
+
+
+          card.innerHTML =
+            `
+              <div class="review-card-title">
+                ${escapeHtml(
+                  review.employeeName ||
+                  review.employeeId
+                )}
+              </div>
+
+              <div class="review-meta">
+                <div>
+                  日期：
+                  <b>
+                    ${escapeHtml(
+                      review.date
+                    )}
+                  </b>
+                </div>
+
+                <div>
+                  工地：
+                  <b>
+                    ${escapeHtml(
+                      review.siteName
+                    )}
+                  </b>
+                </div>
+
+                <div>
+                  員工ID：
+                  ${escapeHtml(
+                    review.employeeId
+                  )}
+                </div>
+
+                <div>
+                  工作區段：
+                  ${Number(
+                    review.segmentCount || 0
+                  )}
+                  段
+                </div>
+
+                <div>
+                  工地總工時：
+                  <b>
+                    ${Number(
+                      review.totalHours || 0
+                    )}
+                    小時
+                  </b>
+                </div>
+
+                <div>
+                  負責人：
+                  ${escapeHtml(
+                    review.managerName ||
+                    "尚未指定"
+                  )}
+                </div>
+              </div>
+
+              <div class="review-tags">
+
+                <span class="review-tag ${statusClass}">
+                  ${escapeHtml(
+                    review.reviewStatus ||
+                    "待審核"
+                  )}
+                </span>
+
+                <span class="review-tag ${
+                  review.makeupStatus ===
+                  "有補卡"
+                    ? "warn"
+                    : ""
+                }">
+                  ${escapeHtml(
+                    review.makeupStatus ||
+                    "無補卡"
+                  )}
+                </span>
+
+                <span class="review-tag ${
+                  review.abnormalStatus ===
+                  "有異常"
+                    ? "error"
+                    : "success"
+                }">
+                  ${escapeHtml(
+                    review.abnormalStatus ||
+                    "正常"
+                  )}
+                </span>
+
+              </div>
+
+              <div class="review-form">
+
+                <label for="${workdayId}">
+                  出工認定
+                </label>
+
+                <select id="${workdayId}">
+                  <option value="整日">
+                    整日
+                  </option>
+                  <option value="半日">
+                    半日
+                  </option>
+                  <option value="不計出工">
+                    不計出工
+                  </option>
+                </select>
+
+                <label for="${overtimeId}">
+                  加班認定
+                </label>
+
+                <select id="${overtimeId}">
+                  <option value="無">
+                    無
+                  </option>
+                  <option value="半日">
+                    半日
+                  </option>
+                  <option value="待確認">
+                    待確認
+                  </option>
+                </select>
+
+                <label for="${noteId}">
+                  審核備註
+                </label>
+
+                <textarea
+                  id="${noteId}"
+                  placeholder="例如：已與現場確認；或退回修正原因"
+                >${escapeHtml(
+                  review.note || ""
+                )}</textarea>
+
+                <div class="review-button-row">
+
+                  <button
+                    id="${approveId}"
+                    class="btn-review-approve"
+                    onclick="submitAttendanceReview(
+                      '${escapeJsString(
+                        review.reviewId
+                      )}',
+                      '已確認',
+                      '${workdayId}',
+                      '${overtimeId}',
+                      '${noteId}',
+                      '${approveId}',
+                      '${returnId}'
+                    )"
+                  >
+                    確認出勤
+                  </button>
+
+                  <button
+                    id="${returnId}"
+                    class="btn-review-return"
+                    onclick="submitAttendanceReview(
+                      '${escapeJsString(
+                        review.reviewId
+                      )}',
+                      '退回修正',
+                      '${workdayId}',
+                      '${overtimeId}',
+                      '${noteId}',
+                      '${approveId}',
+                      '${returnId}'
+                    )"
+                  >
+                    退回修正
+                  </button>
+
+                </div>
+
+              </div>
+            `;
+
+
+          list.appendChild(
+            card
+          );
+
+
+          const workdaySelect =
+            document.getElementById(
+              workdayId
+            );
+
+
+          if (
+            [
+              "整日",
+              "半日",
+              "不計出工"
+            ]
+            .includes(
+              review.workdayDecision
+            )
+          ) {
+
+            workdaySelect.value =
+              review.workdayDecision;
+
+          } else {
+
+            workdaySelect.value =
+              "整日";
+
+          }
+
+
+          const overtimeSelect =
+            document.getElementById(
+              overtimeId
+            );
+
+
+          if (
+            [
+              "無",
+              "半日",
+              "待確認"
+            ]
+            .includes(
+              review.overtimeDecision
+            )
+          ) {
+
+            overtimeSelect.value =
+              review.overtimeDecision;
+
+          } else {
+
+            overtimeSelect.value =
+              "無";
+
+          }
+
+        }
+      );
+
+    }
+
+
+    async function submitAttendanceReview(
+      reviewId,
+      reviewStatus,
+      workdayId,
+      overtimeId,
+      noteId,
+      approveId,
+      returnId
+    ) {
+
+      const workdayDecision =
+        document
+          .getElementById(
+            workdayId
+          )
+          .value;
+
+
+      const overtimeDecision =
+        document
+          .getElementById(
+            overtimeId
+          )
+          .value;
+
+
+      const note =
+        document
+          .getElementById(
+            noteId
+          )
+          .value
+          .trim();
+
+
+      if (
+        reviewStatus ===
+        "退回修正" &&
+        !note
+      ) {
+
+        showReviewStatus(
+          "❌ 退回修正時，審核備註必填",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      let confirmText =
+        "";
+
+
+      if (
+        reviewStatus ===
+        "已確認"
+      ) {
+
+        confirmText =
+          "確定要確認這筆出勤嗎？\n\n" +
+          "出工認定：" +
+          workdayDecision +
+          "\n" +
+          "加班認定：" +
+          overtimeDecision;
+
+      } else {
+
+        confirmText =
+          "確定要退回修正嗎？\n\n" +
+          "原因：" +
+          note;
+
+      }
+
+
+      if (
+        !window.confirm(
+          confirmText
+        )
+      ) {
+
+        return;
+
+      }
+
+
+      const approveButton =
+        document.getElementById(
+          approveId
+        );
+
+
+      const returnButton =
+        document.getElementById(
+          returnId
+        );
+
+
+      approveButton.disabled =
+        true;
+
+      returnButton.disabled =
+        true;
+
+
+      showReviewStatus(
+        "⏳ 正在儲存出勤審核...",
+        "normal"
+      );
+
+
+      try {
+
+        const result =
+          await callApi({
+
+            action:
+              "adminAttendanceReviewApprove",
+
+            userId:
+              userId,
+
+            reviewId:
+              reviewId,
+
+            reviewStatus:
+              reviewStatus,
+
+            workdayDecision:
+              workdayDecision,
+
+            overtimeDecision:
+              overtimeDecision,
+
+            note:
+              note
+
+          });
+
+
+        if (!result.success) {
+
+          throw new Error(
+            result.message ||
+            "出勤審核儲存失敗"
+          );
+
+        }
+
+
+        showReviewStatus(
+          "✅ " +
+          (
+            result.message ||
+            "出勤審核已更新"
+          ),
+          "success"
+        );
+
+
+        await loadAttendanceReviews(
+          false
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+
+        showReviewStatus(
+          "❌ " +
+          (
+            error.message ||
+            error
+          ),
+          "error"
+        );
+
+
+        approveButton.disabled =
+          false;
+
+        returnButton.disabled =
+          false;
+
+      }
+
+    }
+
+
+    function setReviewButtons(
+      enabled
+    ) {
+
+      const refreshButton =
+        document.getElementById(
+          "reviewRefreshButton"
+        );
+
+
+      const listButton =
+        document.getElementById(
+          "reviewListButton"
+        );
+
+
+      if (refreshButton) {
+
+        refreshButton.disabled =
+          !enabled;
+
+      }
+
+
+      if (listButton) {
+
+        listButton.disabled =
+          !enabled;
+
+      }
+
+    }
+
+
+    function showReviewStatus(
+      message,
+      type
+    ) {
+
+      const el =
+        document.getElementById(
+          "reviewStatusMsg"
+        );
+
+
+      if (!message) {
+
+        el.style.display =
+          "none";
+
+        el.innerText =
+          "";
+
+        return;
+
+      }
+
+
+      el.style.display =
+        "block";
+
+      el.innerText =
+        message;
+
+
+      if (
+        type === "success"
+      ) {
+
+        el.className =
+          "status-success";
+
+      } else if (
+        type === "error"
+      ) {
+
+        el.className =
+          "status-error";
+
+      } else {
+
+        el.className =
+          "status-normal";
+
+      }
+
+    }
 
 
     function renderFullMakeupSites() {
