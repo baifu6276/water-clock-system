@@ -948,6 +948,45 @@
       white-space: pre-line;
     }
 
+    .btn-report-edit-returned {
+      width: 100%;
+      margin-top: 10px;
+      border: none;
+      padding: 11px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #f59e0b;
+      color: white;
+    }
+
+    .btn-report-cancel-edit {
+      width: 100%;
+      margin-top: 10px;
+      border: 1px solid #d1d5db;
+      padding: 11px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      background: white;
+      color: #374151;
+      display: none;
+    }
+
+    #dailyReportEditingBanner {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #fff7ed;
+      color: #9a3412;
+      font-weight: bold;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
     #dailyReportReviewStatusMsg {
       margin-top: 12px;
       padding: 12px;
@@ -1208,12 +1247,24 @@
         ＋ 新增工作項目
       </button>
 
+      <div
+        id="dailyReportEditingBanner"
+      ></div>
+
       <button
         id="dailyReportSubmitButton"
         class="btn-report-submit"
         onclick="submitDailyReportBatch()"
       >
         一次提交全部工作項目
+      </button>
+
+      <button
+        id="dailyReportCancelEditButton"
+        class="btn-report-cancel-edit"
+        onclick="cancelReturnedDailyReportEdit()"
+      >
+        取消修改
       </button>
 
       <button
@@ -1248,7 +1299,7 @@
     </div>
 
     <div class="small">
-      水電工程管理系統 V2.9
+      水電工程管理系統 V3.0
     </div>
 
   </div>
@@ -2774,6 +2825,10 @@
 
     let dailyReportItemCounter = 0;
 
+    let dailyReportEditingReportId = "";
+
+    let dailyReportEditingOriginal = null;
+
 
     function setDefaultDailyReportDate() {
 
@@ -3475,67 +3530,171 @@
         true;
 
 
+      const isEditingReturned =
+        dailyReportEditingReportId !== "";
+
+
+      if (
+        isEditingReturned &&
+        items.length !== 1
+      ) {
+
+        showDailyReportStatus(
+          "❌ 修改退回回報時只能保留1個工作項目",
+          "error"
+        );
+
+        button.disabled =
+          false;
+
+        return;
+
+      }
+
+
       showDailyReportStatus(
-        "⏳ 正在一次提交 " +
-        items.length +
-        " 個工作項目...",
+        isEditingReturned
+          ? "⏳ 正在重新提交修正後的每日回報..."
+          : (
+              "⏳ 正在一次提交 " +
+              items.length +
+              " 個工作項目..."
+            ),
         "normal"
       );
 
 
       try {
 
+        const payload =
+          isEditingReturned
+            ? {
+
+                action:
+                  "dailyReportUpdateReturned",
+
+                userId:
+                  userId,
+
+                reportId:
+                  dailyReportEditingReportId,
+
+                workArea:
+                  document
+                    .getElementById(
+                      "dailyReportArea"
+                    )
+                    .value
+                    .trim(),
+
+                floor:
+                  document
+                    .getElementById(
+                      "dailyReportFloor"
+                    )
+                    .value
+                    .trim(),
+
+                unit:
+                  document
+                    .getElementById(
+                      "dailyReportUnit"
+                    )
+                    .value
+                    .trim(),
+
+                tomorrowPlan:
+                  document
+                    .getElementById(
+                      "dailyReportTomorrow"
+                    )
+                    .value
+                    .trim(),
+
+                category:
+                  items[0].category,
+
+                workItem:
+                  items[0].workItem,
+
+                completedContent:
+                  items[0].completedContent,
+
+                quantity:
+                  items[0].quantity,
+
+                quantityUnit:
+                  items[0].quantityUnit,
+
+                progress:
+                  items[0].progress,
+
+                issue:
+                  items[0].issue,
+
+                needHelp:
+                  items[0].needHelp,
+
+                helpContent:
+                  items[0].helpContent
+
+              }
+            : {
+
+                action:
+                  "dailyReportCreateBatch",
+
+                userId:
+                  userId,
+
+                date:
+                  date,
+
+                siteId:
+                  siteId,
+
+                workArea:
+                  document
+                    .getElementById(
+                      "dailyReportArea"
+                    )
+                    .value
+                    .trim(),
+
+                floor:
+                  document
+                    .getElementById(
+                      "dailyReportFloor"
+                    )
+                    .value
+                    .trim(),
+
+                unit:
+                  document
+                    .getElementById(
+                      "dailyReportUnit"
+                    )
+                    .value
+                    .trim(),
+
+                tomorrowPlan:
+                  document
+                    .getElementById(
+                      "dailyReportTomorrow"
+                    )
+                    .value
+                    .trim(),
+
+                items:
+                  items
+
+              };
+
+
         const result =
-          await callApi({
-
-            action:
-              "dailyReportCreateBatch",
-
-            userId:
-              userId,
-
-            date:
-              date,
-
-            siteId:
-              siteId,
-
-            workArea:
-              document
-                .getElementById(
-                  "dailyReportArea"
-                )
-                .value
-                .trim(),
-
-            floor:
-              document
-                .getElementById(
-                  "dailyReportFloor"
-                )
-                .value
-                .trim(),
-
-            unit:
-              document
-                .getElementById(
-                  "dailyReportUnit"
-                )
-                .value
-                .trim(),
-
-            tomorrowPlan:
-              document
-                .getElementById(
-                  "dailyReportTomorrow"
-                )
-                .value
-                .trim(),
-
-            items:
-              items
-
-          });
+          await callApi(
+            payload
+          );
 
 
         if (!result.success) {
@@ -3558,7 +3717,17 @@
         );
 
 
-        resetDailyReportItemsAfterSubmit();
+        if (
+          isEditingReturned
+        ) {
+
+          finishReturnedDailyReportEdit();
+
+        } else {
+
+          resetDailyReportItemsAfterSubmit();
+
+        }
 
 
         await loadOwnDailyReports(
@@ -3893,6 +4062,15 @@
                         item.reviewNote || "未填寫"
                       )}
                     </div>
+
+                    <button
+                      class="btn-report-edit-returned"
+                      onclick='startReturnedDailyReportEdit(
+                        ${JSON.stringify(item).replace(/'/g, "&#39;")}
+                      )'
+                    >
+                      修改並重新提交
+                    </button>
                   `
                   : ""
               }
@@ -3926,6 +4104,351 @@
 
         }
       );
+
+    }
+
+
+
+    function startReturnedDailyReportEdit(
+      item
+    ) {
+
+      dailyReportEditingReportId =
+        item.reportId || "";
+
+
+      dailyReportEditingOriginal =
+        item;
+
+
+      const dateInput =
+        document.getElementById(
+          "dailyReportDate"
+        );
+
+
+      const siteSelect =
+        document.getElementById(
+          "dailyReportSite"
+        );
+
+
+      dateInput.value =
+        item.date || "";
+
+
+      siteSelect.value =
+        item.siteId || "";
+
+
+      dateInput.disabled =
+        true;
+
+
+      siteSelect.disabled =
+        true;
+
+
+      document
+        .getElementById(
+          "dailyReportArea"
+        )
+        .value =
+        item.workArea || "";
+
+
+      document
+        .getElementById(
+          "dailyReportFloor"
+        )
+        .value =
+        item.floor || "";
+
+
+      document
+        .getElementById(
+          "dailyReportUnit"
+        )
+        .value =
+        item.unit || "";
+
+
+      document
+        .getElementById(
+          "dailyReportTomorrow"
+        )
+        .value =
+        item.tomorrowPlan || "";
+
+
+      const wrap =
+        document.getElementById(
+          "dailyReportItems"
+        );
+
+
+      wrap.innerHTML =
+        "";
+
+
+      dailyReportItemCounter =
+        0;
+
+
+      addDailyReportItem();
+
+
+      const card =
+        wrap.querySelector(
+          ".daily-report-item-editor"
+        );
+
+
+      card.querySelector(
+        ".dr-category"
+      ).value =
+        item.category || "";
+
+
+      card.querySelector(
+        ".dr-work-item"
+      ).value =
+        item.workItem || "";
+
+
+      card.querySelector(
+        ".dr-completed"
+      ).value =
+        item.completedContent || "";
+
+
+      card.querySelector(
+        ".dr-quantity"
+      ).value =
+        item.quantity === "" ||
+        item.quantity === null ||
+        item.quantity === undefined
+          ? ""
+          : item.quantity;
+
+
+      card.querySelector(
+        ".dr-quantity-unit"
+      ).value =
+        item.quantityUnit || "";
+
+
+      card.querySelector(
+        ".dr-progress"
+      ).value =
+        item.progress === "" ||
+        item.progress === null ||
+        item.progress === undefined
+          ? ""
+          : item.progress;
+
+
+      card.querySelector(
+        ".dr-issue"
+      ).value =
+        item.issue || "";
+
+
+      card.querySelector(
+        ".dr-need-help"
+      ).value =
+        item.needHelp || "否";
+
+
+      card.querySelector(
+        ".dr-help-content"
+      ).value =
+        item.helpContent || "";
+
+
+      updateDailyReportItemHelp(
+        card.querySelector(
+          ".dr-need-help"
+        )
+      );
+
+
+      document
+        .getElementById(
+          "dailyReportAddItemButton"
+        )
+        .style.display =
+        "none";
+
+
+      const submitButton =
+        document.getElementById(
+          "dailyReportSubmitButton"
+        );
+
+
+      submitButton.innerText =
+        "重新提交修正";
+
+
+      document
+        .getElementById(
+          "dailyReportCancelEditButton"
+        )
+        .style.display =
+        "block";
+
+
+      const banner =
+        document.getElementById(
+          "dailyReportEditingBanner"
+        );
+
+
+      banner.style.display =
+        "block";
+
+
+      banner.innerText =
+        "目前正在修改被退回的回報\n退回原因：" +
+        (
+          item.reviewNote ||
+          "未填寫"
+        );
+
+
+      showDailyReportStatus(
+        "✏️ 已載入退回內容，修改完成後按「重新提交修正」",
+        "normal"
+      );
+
+
+      document
+        .getElementById(
+          "dailyReportSection"
+        )
+        .scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+
+    }
+
+
+    function cancelReturnedDailyReportEdit() {
+
+      finishReturnedDailyReportEdit();
+
+
+      showDailyReportStatus(
+        "已取消修改退回回報",
+        "normal"
+      );
+
+    }
+
+
+    function finishReturnedDailyReportEdit() {
+
+      dailyReportEditingReportId =
+        "";
+
+
+      dailyReportEditingOriginal =
+        null;
+
+
+      const dateInput =
+        document.getElementById(
+          "dailyReportDate"
+        );
+
+
+      const siteSelect =
+        document.getElementById(
+          "dailyReportSite"
+        );
+
+
+      dateInput.disabled =
+        false;
+
+
+      siteSelect.disabled =
+        false;
+
+
+      document
+        .getElementById(
+          "dailyReportArea"
+        )
+        .value =
+        "";
+
+
+      document
+        .getElementById(
+          "dailyReportFloor"
+        )
+        .value =
+        "";
+
+
+      document
+        .getElementById(
+          "dailyReportUnit"
+        )
+        .value =
+        "";
+
+
+      document
+        .getElementById(
+          "dailyReportTomorrow"
+        )
+        .value =
+        "";
+
+
+      document
+        .getElementById(
+          "dailyReportAddItemButton"
+        )
+        .style.display =
+        "block";
+
+
+      document
+        .getElementById(
+          "dailyReportSubmitButton"
+        )
+        .innerText =
+        "一次提交全部工作項目";
+
+
+      document
+        .getElementById(
+          "dailyReportCancelEditButton"
+        )
+        .style.display =
+        "none";
+
+
+      const banner =
+        document.getElementById(
+          "dailyReportEditingBanner"
+        );
+
+
+      banner.style.display =
+        "none";
+
+
+      banner.innerText =
+        "";
+
+
+      resetDailyReportItemsAfterSubmit();
 
     }
 
