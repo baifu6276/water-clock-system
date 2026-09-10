@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>工地日報 V1 測試</title>
+  <style>
+    *{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;background:#f5f5f5;color:#222}.wrap{max-width:720px;margin:0 auto;padding:16px}.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.06)}h1{font-size:22px;margin:0 0 8px}.muted{font-size:13px;color:#666;line-height:1.5}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}label{font-size:13px;font-weight:700;display:block;margin-bottom:6px}input,select,textarea,button{width:100%;font-size:16px;border-radius:10px;border:1px solid #ccc;padding:11px}textarea{min-height:80px}button{border:0;font-weight:700;margin-top:10px}.primary{background:#1677ff;color:#fff}.secondary{background:#eee}.confirm{background:#16a34a;color:#fff}.status{margin-top:12px;padding:10px;border-radius:10px;background:#f3f4f6;white-space:pre-wrap}.error{background:#fee2e2;color:#991b1b}.success{background:#dcfce7;color:#166534}.report{border-top:1px solid #eee;margin-top:12px;padding-top:12px;line-height:1.55}.report h2{font-size:18px;margin:0 0 8px}.stats{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0}.block{margin-top:10px;white-space:pre-wrap}.small{font-size:12px;color:#666;margin-top:6px}@media(max-width:520px){.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>🏗️ 工地日報 V1 測試</h1>
+    <div class="muted">此頁只用來測試新功能，不會取代正式首頁。請從 LINE LIFF 開啟。</div>
+    <div id="identity" class="status">正在連接 LINE...</div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div><label>日報日期</label><input id="date" type="date" value="2026-09-08"></div>
+      <div><label>工地</label><select id="site"><option value="SITE001">SITE001｜群邑工地</option><option value="SITE002">SITE002｜群邑工地2</option></select></div>
+    </div>
+    <button class="primary" onclick="refreshReport()">重新彙整工地日報</button>
+    <button class="secondary" onclick="loadReport()">讀取工地日報</button>
+    <div id="status" class="status">等待操作</div>
+    <div id="result"></div>
+  </div>
+</div>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+const LIFF_ID='2011467618-lNiVqxsV';
+const GAS_URL='https://script.google.com/macros/s/AKfycbzrmID3lIBP2bxM_qC4nLiEOBEcROB3sFRH9eZsHt--A6o4VZpvuf63pzW0ku4j-TTd0w/exec';
+let userId='';
+function esc(v){return String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));}
+function show(msg,type=''){const el=document.getElementById('status');el.className='status '+type;el.textContent=msg;}
+async function api(data){const r=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(data),redirect:'follow'});if(!r.ok)throw new Error('伺服器連線失敗');return await r.json();}
+async function init(){try{await liff.init({liffId:LIFF_ID});if(!liff.isLoggedIn()){liff.login();return;}const p=await liff.getProfile();userId=p.userId;document.getElementById('identity').className='status success';document.getElementById('identity').textContent='✅ LINE 身分：'+p.displayName;}catch(e){document.getElementById('identity').className='status error';document.getElementById('identity').textContent='❌ '+(e.message||e);}}
+async function refreshReport(){if(!userId){show('❌ LINE 身分尚未完成','error');return;}show('⏳ 正在彙整...');try{const r=await api({action:'adminSiteDailyReportRefresh',userId,date:document.getElementById('date').value,siteId:document.getElementById('site').value});if(!r.success)throw new Error(r.message||'彙整失敗');show('✅ '+(r.message||('已彙整 '+(r.updatedCount||0)+' 份日報')),'success');await loadReport(false);}catch(e){show('❌ '+(e.message||e),'error');}}
+async function loadReport(showLoading=true){if(!userId){show('❌ LINE 身分尚未完成','error');return;}if(showLoading)show('⏳ 正在讀取...');try{const r=await api({action:'adminSiteDailyReportList',userId,date:document.getElementById('date').value,siteId:document.getElementById('site').value});if(!r.success)throw new Error(r.message||'讀取失敗');render(r.reports||[]);if(showLoading)show('✅ 已讀取 '+(r.reports||[]).length+' 份工地日報','success');}catch(e){show('❌ '+(e.message||e),'error');document.getElementById('result').innerHTML='';}}
+function render(list){const box=document.getElementById('result');if(!list.length){box.innerHTML='<div class="report">此日期沒有工地日報</div>';return;}box.innerHTML=list.map((x,i)=>`<div class="report"><h2>${esc(x.siteName)}｜${esc(x.date)}</h2><div class="stats"><span>出工 <b>${esc(x.workerCount)}</b> 人</span><span>回報 <b>${esc(x.reporterCount)}</b> 人</span><span>項目 <b>${esc(x.itemCount)}</b> 筆</span></div><div><b>主要負責人：</b>${esc(x.managerName||'未設定')}</div><div><b>狀態：</b>${esc(x.status)}</div><div class="block"><b>今日施工摘要</b><br>${esc(x.workSummary||'無')}</div><div class="block"><b>異常／問題摘要</b><br>${esc(x.issueSummary||'無')}</div><div class="block"><b>需協助事項</b><br>${esc(x.helpSummary||'無')}</div><div class="block"><b>明日預定工作</b><br>${esc(x.tomorrowPlan||'未填')}</div>${x.status==='待確認'?`<label style="margin-top:12px">確認備註</label><textarea id="note${i}" placeholder="測試可填：工地日報測試確認"></textarea><button class="confirm" onclick="finalize('${esc(x.dailyReportId)}','note${i}')">確認工地日報</button>`:''}${x.confirmedByName?`<div class="small">確認人：${esc(x.confirmedByName)} ${esc(x.confirmedAt||'')}</div>`:''}</div>`).join('');}
+async function finalize(id,noteId){if(!confirm('確定確認這份工地日報？確認後會鎖定。'))return;show('⏳ 正在確認...');try{const r=await api({action:'adminSiteDailyReportFinalize',userId,dailyReportId:id,note:document.getElementById(noteId)?.value.trim()||''});if(!r.success)throw new Error(r.message||'確認失敗');show('✅ 工地日報已確認','success');await loadReport(false);}catch(e){show('❌ '+(e.message||e),'error');}}
+init();
+</script>
+</body>
+</html>
