@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>工程進度 V1 測試</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:#222;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:780px;margin:auto;padding:14px}.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.06)}h1{font-size:22px;margin:0 0 8px}h2{font-size:18px;margin:0 0 10px}.muted,.small{color:#666;font-size:13px;line-height:1.5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:block;font-size:13px;font-weight:700;margin:7px 0 5px}input,select,textarea,button{width:100%;padding:11px;border:1px solid #ccc;border-radius:10px;font-size:16px}textarea{min-height:68px}button{border:0;font-weight:700;margin-top:10px;cursor:pointer}.primary{background:#1677ff;color:#fff}.green{background:#16a34a;color:#fff}.secondary{background:#eceff3}.status{margin-top:10px;padding:10px;border-radius:10px;background:#f1f3f5;white-space:pre-wrap}.success{background:#dcfce7;color:#166534}.error{background:#fee2e2;color:#991b1b}.record{border-top:1px solid #eee;margin-top:12px;padding-top:12px;line-height:1.55}.pill{display:inline-block;background:#eef2ff;border-radius:999px;padding:3px 8px;font-size:12px;margin-right:5px}.bar{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin:7px 0}.bar>i{display:block;height:100%;background:#1677ff}.hidden{display:none}@media(max-width:560px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="card"><h1>📊 工程進度 V1 測試</h1><div class="muted">獨立測試頁，不會取代正式首頁。請從 LINE LIFF 開啟。</div><div id="identity" class="status">正在連接 LINE...</div></div>
+
+<div id="masterCard" class="card hidden">
+<h2>① 建立工程位置</h2><div class="grid">
+<div><label>工地</label><select id="locSite"></select></div><div><label>棟別／區域</label><input id="zone" value="A棟"></div>
+<div><label>樓層</label><input id="floor" value="3樓"></div><div><label>戶別</label><input id="unit" value="1戶"></div>
+</div><button class="primary" onclick="saveLocation()">建立工程位置</button>
+<div id="locStatus" class="status">等待操作</div>
+</div>
+
+<div id="itemCard" class="card hidden">
+<h2>② 建立工程項目</h2><div class="grid">
+<div><label>工程類別</label><input id="category" value="給水"></div><div><label>工作項目</label><input id="workItem" value="冷熱水配管"></div>
+<div><label>單位</label><input id="itemUnit" value="戶"></div><div><label>預設權重</label><input id="weight" type="number" value="1" min="0.01" step="0.01"></div>
+</div><button class="primary" onclick="saveItem()">建立工程項目</button><div id="itemStatus" class="status">等待操作</div>
+</div>
+
+<div class="card"><h2>③ 建立／更新工程進度</h2><div class="grid">
+<div><label>工地</label><select id="site" onchange="syncLocations()"></select></div><div><label>工程位置</label><select id="location"></select></div>
+<div class="full"><label>工程項目</label><select id="item"></select></div>
+<div><label>計畫數量</label><input id="plannedQty" type="number" value="10" min="0" step="0.01"></div><div><label>完成數量</label><input id="completedQty" type="number" value="5" min="0" step="0.01"></div>
+<div><label>計畫開始日</label><input id="planStart" type="date"></div><div><label>計畫完成日</label><input id="planEnd" type="date"></div>
+<div class="full"><label>異動原因</label><input id="reason" value="工程進度 V1 測試"></div>
+</div><button class="primary" onclick="saveProgress()">儲存工程進度</button><button class="secondary" onclick="loadProgress()">重新讀取進度</button><div id="progressStatus" class="status">等待操作</div><div id="records"></div></div>
+</div>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+const LIFF_ID='2011467618-lNiVqxsV';
+const GAS_URL='https://script.google.com/macros/s/AKfycbzrmID3lIBP2bxM_qC4nLiEOBEcROB3sFRH9eZsHt--A6o4VZpvuf63pzW0ku4j-TTd0w/exec';
+let userId='',boot={sites:[],locations:[],items:[]};
+const $=id=>document.getElementById(id);function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function status(id,msg,type=''){const e=$(id);e.className='status '+type;e.textContent=msg;}
+async function api(data){const ctrl=new AbortController(),t=setTimeout(()=>ctrl.abort(),25000),st=performance.now();try{const r=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(data),redirect:'follow',signal:ctrl.signal});const text=await r.text();if(!r.ok)throw new Error('HTTP '+r.status);let j;try{j=JSON.parse(text)}catch(_){throw new Error('API 回傳不是 JSON');}j._ms=Math.round(performance.now()-st);return j;}catch(e){if(e.name==='AbortError')throw new Error('API 超過 25 秒未回應');throw e;}finally{clearTimeout(t)}}
+function opts(el,list,valueKey,labelFn){el.innerHTML=list.map(x=>`<option value="${esc(x[valueKey])}">${esc(labelFn(x))}</option>`).join('');}
+async function init(){try{await liff.init({liffId:LIFF_ID});if(!liff.isLoggedIn()){liff.login();return}const p=await liff.getProfile();userId=p.userId;status('identity','✅ LINE 身分：'+p.displayName+'\n正在讀取工程進度設定...');await bootstrap();}catch(e){status('identity','❌ '+(e.message||e),'error')}}
+async function bootstrap(){const r=await api({action:'adminProgressBootstrap',userId});if(!r.success)throw new Error(r.message||'工程進度初始化失敗');boot=r;status('identity',`✅ ${r.operator?.name||''}｜${r.operator?.permission||''}\n工程進度 API 正常（${r._ms} ms）`,'success');opts($('site'),boot.sites,'siteId',x=>x.siteId+'｜'+x.name);opts($('locSite'),boot.sites,'siteId',x=>x.siteId+'｜'+x.name);opts($('item'),boot.items,'itemCode',x=>x.category+'｜'+x.workItem+'｜'+x.unit);syncLocations();const role=String(r.operator?.permission||'').toUpperCase();if(role==='OWNER'||role==='ADMIN'){$('masterCard').classList.remove('hidden');$('itemCard').classList.remove('hidden')}await loadProgress();}
+function syncLocations(){const sid=$('site').value;const list=boot.locations.filter(x=>x.siteId===sid&&String(x.status||'')==='啟用');opts($('location'),list,'locationId',x=>x.locationId+'｜'+x.displayName);}
+async function saveLocation(){status('locStatus','⏳ 正在建立...');try{const r=await api({action:'adminProgressLocationSave',userId,siteId:$('locSite').value,zone:$('zone').value.trim(),floor:$('floor').value.trim(),unit:$('unit').value.trim(),status:'啟用'});if(!r.success)throw new Error(r.message||'建立失敗');status('locStatus','✅ '+r.message+'｜'+r.locationId+`（${r._ms} ms）`,'success');await bootstrap();}catch(e){status('locStatus','❌ '+(e.message||e),'error')}}
+async function saveItem(){status('itemStatus','⏳ 正在建立...');try{const r=await api({action:'adminProgressItemSave',userId,category:$('category').value.trim(),workItem:$('workItem').value.trim(),unit:$('itemUnit').value.trim(),defaultWeight:$('weight').value,includeTotal:'是',status:'啟用'});if(!r.success)throw new Error(r.message||'建立失敗');status('itemStatus','✅ '+r.message+'｜'+r.itemCode+`（${r._ms} ms）`,'success');await bootstrap();}catch(e){status('itemStatus','❌ '+(e.message||e),'error')}}
+async function saveProgress(){if(!$('location').value||!$('item').value){status('progressStatus','❌ 請先建立並選擇工程位置與工程項目','error');return}status('progressStatus','⏳ 正在儲存...');try{const r=await api({action:'adminProgressUpsert',userId,siteId:$('site').value,locationId:$('location').value,itemCode:$('item').value,plannedQty:$('plannedQty').value,completedQty:$('completedQty').value,planStart:$('planStart').value,planEnd:$('planEnd').value,changeReason:$('reason').value.trim(),sourceType:'測試頁'});if(!r.success)throw new Error(r.message||'儲存失敗');status('progressStatus','✅ '+r.message+'｜'+r.progressId+`（${r._ms} ms）`,'success');await loadProgress(false);}catch(e){status('progressStatus','❌ '+(e.message||e),'error')}}
+async function loadProgress(show=true){if(!userId||!$('site').value)return;if(show)status('progressStatus','⏳ 正在讀取...');try{const r=await api({action:'adminProgressList',userId,siteId:$('site').value});if(!r.success)throw new Error(r.message||'讀取失敗');render(r.records||[]);if(show)status('progressStatus',`✅ 已讀取 ${(r.records||[]).length} 筆（${r._ms} ms）`,'success');}catch(e){status('progressStatus','❌ '+(e.message||e),'error')}}
+function render(list){if(!list.length){$('records').innerHTML='<div class="record muted">目前沒有工程進度資料</div>';return}$('records').innerHTML=list.map(x=>`<div class="record"><div><b>${esc(x.siteName)}</b>｜${esc([x.zone,x.floor,x.unit].filter(Boolean).join(' / '))}</div><div>${esc(x.category)}｜${esc(x.workItem)} <span class="pill">${esc(x.progressStatus)}</span><span class="pill">${esc(x.confirmStatus)}</span></div><div class="bar"><i style="width:${Math.max(0,Math.min(100,Number(x.progressPercent)||0))}%"></i></div><div><b>${esc(x.progressPercent)}%</b>　${esc(x.completedQty)} / ${esc(x.plannedQty)} ${esc(x.unit)}</div><div class="small">進度ID：${esc(x.progressId)}｜最後更新：${esc(x.updatedAt||'')}</div>${x.confirmStatus!=='已確認'?`<button class="green" onclick="confirmProgress('${esc(x.progressId)}')">確認這筆進度</button>`:''}</div>`).join('')}
+async function confirmProgress(id){if(!confirm('確定確認這筆工程進度？'))return;status('progressStatus','⏳ 正在確認...');try{const r=await api({action:'adminProgressConfirm',userId,progressId:id,note:'工程進度 V1 測試確認'});if(!r.success)throw new Error(r.message||'確認失敗');status('progressStatus','✅ '+r.message+`（${r._ms} ms）`,'success');await loadProgress(false);}catch(e){status('progressStatus','❌ '+(e.message||e),'error')}}
+init();
+</script></body></html>
