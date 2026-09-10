@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <title>水電工程打卡系統</title>
+
+  <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+
+<body>
+
+  <div class="card">
+
+    <h1 class="title">
+      水電工程打卡系統
+    </h1>
+
+
+    <div class="profile-area">
+
+      <img
+        id="pictureUrl"
+        class="profile-pic"
+        src=""
+        alt="LINE頭像"
+      >
+
+
+      <div id="displayName">
+        LINE 身分確認中...
+      </div>
+
+
+      <div id="employeeInfo">
+      </div>
+
+    </div>
+
+
+    <div class="section">
+
+      <label
+        class="section-title"
+        for="siteSelect"
+      >
+        📍 工作工地
+      </label>
+
+      <select
+        id="siteSelect"
+        disabled
+      >
+        <option value="">
+          正在讀取工地...
+        </option>
+      </select>
+
+    </div>
+
+
+    <div class="section">
+
+      <div class="section-title">
+        GPS 定位
+      </div>
+
+      <div
+        id="gpsBox"
+        class="gps-box"
+      >
+
+        <div class="gps-title">
+          尚未取得位置
+        </div>
+
+        請允許 LINE 使用定位權限。
+
+      </div>
+
+
+      <button
+        id="locationBtn"
+        class="location-btn"
+        onclick="refreshLocation()"
+        disabled
+      >
+        📍 重新取得目前位置
+      </button>
+
+    </div>
+
+
+    <div class="section">
+
+      <label
+        class="section-title"
+        for="workContent"
+      >
+        工作內容
+      </label>
+
+      <input
+        id="workContent"
+        type="text"
+        placeholder="例如：3F A戶給水配管"
+      >
+
+    </div>
+
+
+    <button
+      id="btnIn"
+      class="btn btn-in"
+      onclick="checkIn('上班')"
+      disabled
+    >
+      上班打卡
+    </button>
+
+
+    <button
+      id="btnOut"
+      class="btn btn-out"
+      onclick="checkIn('下班')"
+      disabled
+    >
+      下班打卡
+    </button>
+
+
+    <div
+      id="statusMsg"
+      class="status-normal"
+    >
+      正在連接 LINE...
+    </div>
+
+
+    <div
+      id="dailyReportSection"
+      class="daily-report-section"
+    >
+
+      <div class="section-title">
+        📝 每日回報
+      </div>
+
+      <div class="open-segment-info">
+        日期、工地、工作區域、樓層、戶別只需填一次；下面可以新增多個工作項目，一次提交。
+      </div>
+
+      <div class="daily-report-shared-title">
+        共用資料
+      </div>
+
+      <div class="daily-report-grid">
+
+        <div class="daily-report-field">
+          <label for="dailyReportDate">
+            回報日期
+          </label>
+          <input
+            id="dailyReportDate"
+            type="date"
+          >
+        </div>
+
+        <div class="daily-report-field">
+          <label for="dailyReportSite">
+            工地
+          </label>
+          <select
+            id="dailyReportSite"
+          >
+          </select>
+        </div>
+
+        <div class="daily-report-field">
+          <label for="dailyReportArea">
+            工作區域
+          </label>
+          <input
+            id="dailyReportArea"
+            type="text"
+            placeholder="例如：A棟、公共區域"
+          >
+        </div>
+
+        <div class="daily-report-field">
+          <label for="dailyReportFloor">
+            樓層
+          </label>
+          <input
+            id="dailyReportFloor"
+            type="text"
+            placeholder="例如：5F"
+          >
+        </div>
+
+        <div class="daily-report-field">
+          <label for="dailyReportUnit">
+            戶別
+          </label>
+          <input
+            id="dailyReportUnit"
+            type="text"
+            placeholder="例如：A戶"
+          >
+        </div>
+
+      </div>
+
+      <div class="daily-report-field">
+        <label for="dailyReportTomorrow">
+          明日預定工作
+        </label>
+        <textarea
+          id="dailyReportTomorrow"
+          placeholder="例如：6F A戶給水配管"
+        ></textarea>
+      </div>
+
+      <div class="daily-report-shared-title">
+        今日工作項目
+      </div>
+
+      <div
+        id="dailyReportItems"
+      ></div>
+
+      <button
+        id="dailyReportAddItemButton"
+        class="btn-report-add"
+        onclick="addDailyReportItem()"
+      >
+        ＋ 新增工作項目
+      </button>
+
+      <div
+        id="dailyReportEditingBanner"
+      ></div>
+
+      <button
+        id="dailyReportSubmitButton"
+        class="btn-report-submit"
+        onclick="submitDailyReportBatch()"
+      >
+        一次提交全部工作項目
+      </button>
+
+      <button
+        id="dailyReportCancelEditButton"
+        class="btn-report-cancel-edit"
+        onclick="cancelReturnedDailyReportEdit()"
+      >
+        取消修改
+      </button>
+
+      <button
+        id="dailyReportListButton"
+        class="btn-report-list"
+        onclick="loadOwnDailyReports()"
+      >
+        查看當日已回報內容
+      </button>
+
+      <div
+        id="dailyReportStatusMsg"
+      ></div>
+
+      <div
+        id="dailyReportList"
+      ></div>
+
+    </div>
+
+
+    <div
+      id="adminEntry"
+      class="admin-entry"
+    >
+      <button
+        class="admin-btn"
+        onclick="openAdminPanel()"
+      >
+        🛠️ 管理員補卡
+      </button>
+    </div>
+
+    <div class="small">
+      水電工程管理系統 V3.0
+    </div>
+
+  </div>
+
+  <div
+    id="adminPanel"
+    class="admin-panel"
+  >
+    <h1 class="title">
+      管理員補卡
+    </h1>
+
+    <div class="admin-toolbar">
+      <button
+        class="btn-back"
+        onclick="closeAdminPanel()"
+      >
+        ← 返回打卡
+      </button>
+
+      <button
+        class="btn-refresh"
+        onclick="loadOpenSegments()"
+      >
+        重新整理
+      </button>
+    </div>
+
+    <div
+      id="adminStatus"
+    ></div>
+
+    <div
+      class="open-segment"
+      style="margin-bottom:18px;"
+    >
+      <div class="open-segment-title">
+        ＋ 新增完整補卡
+      </div>
+
+      <div class="open-segment-info">
+        適用於：員工整天忘記打上班卡與下班卡。
+      </div>
+
+      <div class="makeup-form">
+
+        <label for="fullEmployeeId">
+          員工ID
+        </label>
+
+        <input
+          id="fullEmployeeId"
+          type="text"
+          placeholder="例如：EMP001"
+        >
+
+        <label for="fullSiteId">
+          工地
+        </label>
+
+        <select id="fullSiteId">
+          <option value="">
+            請選擇工地
+          </option>
+        </select>
+
+        <label for="fullStartTime">
+          補上班時間
+        </label>
+
+        <input
+          id="fullStartTime"
+          type="datetime-local"
+        >
+
+        <label for="fullEndTime">
+          補下班時間
+        </label>
+
+        <input
+          id="fullEndTime"
+          type="datetime-local"
+        >
+
+        <label for="fullWorkContent">
+          工作內容
+        </label>
+
+        <input
+          id="fullWorkContent"
+          type="text"
+          placeholder="例如：3F A戶給水配管"
+        >
+
+        <label for="fullReason">
+          補卡原因（必填）
+        </label>
+
+        <textarea
+          id="fullReason"
+          placeholder="例如：員工整日忘記打卡"
+        ></textarea>
+
+        <button
+          id="fullMakeupButton"
+          class="makeup-submit"
+          onclick="submitFullMakeup()"
+        >
+          建立完整補卡
+        </button>
+
+      </div>
+    </div>
+
+    <div class="review-section">
+
+      <div class="open-segment-title">
+        📋 出勤審核
+      </div>
+
+      <div class="open-segment-info">
+        依「日期 × 員工 × 工地」彙總工作區段，確認出工日與加班。
+      </div>
+
+      <div class="review-filter">
+
+        <div>
+          <label for="reviewDate">
+            審核日期
+          </label>
+
+          <input
+            id="reviewDate"
+            type="date"
+          >
+        </div>
+
+        <div>
+          <label for="reviewSiteId">
+            工地
+          </label>
+
+          <select id="reviewSiteId">
+            <option value="">
+              全部可管理工地
+            </option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="review-action-row">
+
+        <button
+          id="reviewRefreshButton"
+          class="btn-review-refresh"
+          onclick="refreshAttendanceReview()"
+        >
+          重新彙總
+        </button>
+
+        <button
+          id="reviewListButton"
+          class="btn-review-list"
+          onclick="loadAttendanceReviews()"
+        >
+          讀取審核
+        </button>
+
+      </div>
+
+      <div
+        id="reviewStatusMsg"
+      ></div>
+
+      <div
+        id="attendanceReviewList"
+      >
+        <div class="admin-empty">
+          請先選日期，再按「重新彙總」
+        </div>
+      </div>
+
+    </div>
+
+
+    <div
+      id="dailyReportReviewSection"
+      class="daily-report-review-section"
+    >
+
+      <div class="open-segment-title">
+        📝 每日回報審核
+      </div>
+
+      <div class="open-segment-info">
+        OWNER / ADMIN 可審核全部工地；SITE_MANAGER 只能審核自己負責的工地。退回修正必須填寫原因。
+      </div>
+
+      <div class="review-filter">
+
+        <div>
+          <label for="dailyReportReviewDate">
+            回報日期
+          </label>
+
+          <input
+            id="dailyReportReviewDate"
+            type="date"
+          >
+        </div>
+
+        <div>
+          <label for="dailyReportReviewSite">
+            工地
+          </label>
+
+          <select
+            id="dailyReportReviewSite"
+          >
+            <option value="">
+              全部可管理工地
+            </option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="review-action-row">
+
+        <button
+          id="dailyReportReviewListButton"
+          class="btn-review-list"
+          onclick="loadDailyReportReviews()"
+        >
+          讀取每日回報
+        </button>
+
+      </div>
+
+      <div
+        id="dailyReportReviewStatusMsg"
+      ></div>
+
+      <div
+        id="dailyReportReviewList"
+      >
+        <div class="admin-empty">
+          請先選日期，再按「讀取每日回報」
+        </div>
+      </div>
+
+    </div>
+
+
+    <div
+      id="dailySettlementSection"
+      class="daily-settlement-section"
+      style="display:none;"
+    >
+
+      <div class="open-segment-title">
+        💰 出勤日結
+      </div>
+
+      <div class="open-segment-info">
+        公司級最終出勤日結。一位員工同一天不論跑幾個工地，都只會形成一筆日結。
+      </div>
+
+      <div class="review-filter">
+
+        <div>
+          <label for="dailySettlementDate">
+            日結日期
+          </label>
+
+          <input
+            id="dailySettlementDate"
+            type="date"
+          >
+        </div>
+
+      </div>
+
+      <div class="review-action-row">
+
+        <button
+          id="dailySettlementRefreshButton"
+          class="btn-review-refresh"
+          onclick="refreshDailySettlement()"
+        >
+          重新彙總日結
+        </button>
+
+        <button
+          id="dailySettlementListButton"
+          class="btn-review-list"
+          onclick="loadDailySettlements()"
+        >
+          讀取日結
+        </button>
+
+      </div>
+
+      <div
+        id="dailySettlementStatusMsg"
+      ></div>
+
+      <div
+        id="dailySettlementList"
+      >
+        <div class="admin-empty">
+          請先選日期，再按「重新彙總日結」
+        </div>
+      </div>
+
+    </div>
+
+
+    <div
+      id="payrollSection"
+      class="payroll-section"
+      style="display:none;"
+    >
+
+      <div class="open-segment-title">
+        💵 薪資結算
+      </div>
+
+      <div class="open-segment-info">
+        依「已日結」資料按月份彙總薪資。正式結算後不會被重新彙總直接覆蓋。
+      </div>
+
+      <div class="review-filter">
+
+        <div>
+          <label for="payrollMonth">
+            結算月份
+          </label>
+
+          <input
+            id="payrollMonth"
+            type="month"
+          >
+        </div>
+
+      </div>
+
+      <div class="review-action-row">
+
+        <button
+          id="payrollRefreshButton"
+          class="btn-review-refresh"
+          onclick="refreshPayroll()"
+        >
+          重新彙總薪資
+        </button>
+
+        <button
+          id="payrollListButton"
+          class="btn-review-list"
+          onclick="loadPayrolls()"
+        >
+          讀取薪資
+        </button>
+
+      </div>
+
+      <div
+        id="payrollStatusMsg"
+      ></div>
+
+      <div
+        id="payrollList"
+      >
+        <div class="admin-empty">
+          請先選月份，再按「重新彙總薪資」
+        </div>
+      </div>
+
+    </div>
+
+
+
+    <div
+      id="openSegmentList"
+    >
+      <div class="admin-empty">
+        正在讀取未完成工作區段...
+      </div>
+    </div>
+  </div>
+
+
+  <!-- LINE LIFF SDK -->
+
+  <script
+    src="https://static.line-scdn.net/liff/edge/2/sdk.js">
+  </script>
+
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/attendance.js"></script>
+  <script src="js/daily-report.js"></script>
+  <script src="js/payroll.js"></script>
+  <script src="js/admin-attendance.js"></script>
+  <script src="js/auth.js"></script>
+
+</body>
+
+</html>

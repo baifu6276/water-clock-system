@@ -1,0 +1,998 @@
+* {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 18px;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Noto Sans TC",
+        "Microsoft JhengHei",
+        sans-serif;
+      background: #f3f4f6;
+      color: #222;
+    }
+
+    .card {
+      max-width: 520px;
+      margin: 0 auto;
+      background: white;
+      padding: 24px 18px 28px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+
+    .title {
+      text-align: center;
+      font-size: 25px;
+      margin: 0 0 20px;
+    }
+
+    .profile-area {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .profile-pic {
+      width: 82px;
+      height: 82px;
+      border-radius: 50%;
+      object-fit: cover;
+      display: none;
+      margin: 0 auto 10px;
+      background: #eee;
+    }
+
+    #displayName {
+      font-size: 22px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    #employeeInfo {
+      margin-top: 6px;
+      font-size: 14px;
+      color: #777;
+    }
+
+    .section {
+      margin-top: 18px;
+      text-align: left;
+    }
+
+    .section-title {
+      display: block;
+      font-size: 15px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    select,
+    input,
+    textarea {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: white;
+    }
+
+    select:focus,
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+    }
+
+    .gps-box {
+      margin-top: 8px;
+      padding: 14px;
+      border-radius: 12px;
+      background: #eff6ff;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .gps-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .gps-ok {
+      margin-top: 10px;
+      padding: 9px;
+      border-radius: 8px;
+      background: #dcfce7;
+      color: #166534;
+      font-weight: bold;
+    }
+
+    .gps-error {
+      margin-top: 10px;
+      padding: 9px;
+      border-radius: 8px;
+      background: #fee2e2;
+      color: #991b1b;
+      font-weight: bold;
+    }
+
+    .gps-warn {
+      margin-top: 10px;
+      padding: 9px;
+      border-radius: 8px;
+      background: #fef3c7;
+      color: #92400e;
+      font-weight: bold;
+    }
+
+    .location-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background: #2563eb;
+      color: white;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn {
+      width: 100%;
+      border: none;
+      padding: 17px;
+      margin-top: 14px;
+      border-radius: 10px;
+      color: white;
+      font-size: 19px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-in {
+      background: #16a34a;
+    }
+
+    .btn-out {
+      background: #dc2626;
+    }
+
+    .btn:disabled,
+    .location-btn:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    #statusMsg {
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 15px;
+      line-height: 1.6;
+      font-weight: bold;
+      word-break: break-word;
+      text-align: left;
+      background: #f8fafc;
+    }
+
+    .status-normal {
+      color: #555;
+    }
+
+    .status-success {
+      color: #166534;
+      background: #dcfce7 !important;
+    }
+
+    .status-error {
+      color: #991b1b;
+      background: #fee2e2 !important;
+    }
+
+    .small {
+      margin-top: 20px;
+      color: #999;
+      font-size: 12px;
+      text-align: center;
+    }
+
+
+    .admin-entry {
+      display: none;
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .admin-btn {
+      width: 100%;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      background: #374151;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .admin-panel {
+      display: none;
+      max-width: 720px;
+      margin: 0 auto;
+      background: white;
+      padding: 24px 18px 28px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+
+    .admin-toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .admin-toolbar button {
+      flex: 1;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-back {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-refresh {
+      background: #2563eb;
+      color: white;
+    }
+
+    .open-segment {
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #f9fafb;
+    }
+
+    .open-segment-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .open-segment-info {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #4b5563;
+    }
+
+    .makeup-form {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed #d1d5db;
+    }
+
+    .makeup-form label {
+      display: block;
+      margin: 12px 0 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .makeup-form textarea {
+      width: 100%;
+      min-height: 82px;
+      resize: vertical;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: white;
+      font-family: inherit;
+    }
+
+    .makeup-submit {
+      width: 100%;
+      margin-top: 14px;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      background: #7c3aed;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .makeup-submit:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    .admin-empty {
+      padding: 20px;
+      text-align: center;
+      border-radius: 12px;
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    #adminStatus {
+      margin: 14px 0;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+    }
+
+
+    .review-section {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 2px solid #e5e7eb;
+    }
+
+    .review-filter {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .review-filter label {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .review-action-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .review-action-row button {
+      flex: 1;
+      border: none;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-review-refresh {
+      background: #0f766e;
+      color: white;
+    }
+
+    .btn-review-list {
+      background: #475569;
+      color: white;
+    }
+
+    .review-card {
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .review-card-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .review-meta {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #4b5563;
+    }
+
+    .review-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .review-tag {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .review-tag.warn {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .review-tag.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .review-tag.success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .review-form {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed #d1d5db;
+    }
+
+    .review-form label {
+      display: block;
+      margin: 10px 0 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .review-form textarea {
+      width: 100%;
+      min-height: 72px;
+      resize: vertical;
+      padding: 12px;
+      font-size: 15px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: white;
+      font-family: inherit;
+    }
+
+    .review-button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .review-button-row button {
+      flex: 1;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      color: white;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-review-approve {
+      background: #16a34a;
+    }
+
+    .btn-review-return {
+      background: #dc2626;
+    }
+
+    .review-button-row button:disabled,
+    .review-action-row button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    #reviewStatusMsg {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+      white-space: pre-line;
+    }
+
+    @media (min-width: 640px) {
+      .review-filter {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+
+    .daily-settlement-section {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 2px solid #e5e7eb;
+    }
+
+    .daily-settlement-card {
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .daily-settlement-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .daily-settlement-meta {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #4b5563;
+    }
+
+    .daily-settlement-highlight {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #f8fafc;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .daily-settlement-form {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed #d1d5db;
+    }
+
+    .daily-settlement-form label {
+      display: block;
+      margin: 10px 0 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .daily-settlement-form textarea {
+      width: 100%;
+      min-height: 72px;
+      resize: vertical;
+      padding: 12px;
+      font-size: 15px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: white;
+      font-family: inherit;
+    }
+
+    .btn-daily-settlement {
+      width: 100%;
+      margin-top: 12px;
+      border: none;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-daily-settlement:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    #dailySettlementStatusMsg {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+      white-space: pre-line;
+    }
+
+
+    .payroll-section {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 2px solid #e5e7eb;
+    }
+
+    .payroll-card {
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .payroll-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .payroll-meta {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #4b5563;
+    }
+
+    .payroll-summary {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #f8fafc;
+      font-size: 14px;
+      line-height: 1.9;
+    }
+
+    .payroll-total {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #eef2ff;
+      font-size: 17px;
+      font-weight: bold;
+      line-height: 1.6;
+    }
+
+    .payroll-form {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed #d1d5db;
+    }
+
+    .payroll-form label {
+      display: block;
+      margin: 10px 0 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .payroll-form input,
+    .payroll-form textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      font-size: 15px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: white;
+      font-family: inherit;
+    }
+
+    .payroll-form textarea {
+      min-height: 72px;
+      resize: vertical;
+    }
+
+    .btn-payroll-finalize {
+      width: 100%;
+      margin-top: 12px;
+      border: none;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #7c3aed;
+      color: white;
+    }
+
+    .btn-payroll-finalize:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    .btn-payroll-return {
+      width: 100%;
+      margin-top: 10px;
+      border: none;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-payroll-return:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    #payrollStatusMsg {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+      white-space: pre-line;
+    }
+
+    .daily-report-section {
+      margin-top: 22px;
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    .daily-report-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .daily-report-field {
+      margin-top: 10px;
+    }
+
+    .daily-report-field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .daily-report-field input,
+    .daily-report-field select,
+    .daily-report-field textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      background: white;
+    }
+
+    .daily-report-field textarea {
+      min-height: 76px;
+      resize: vertical;
+    }
+
+    .btn-report-submit,
+    .btn-report-list {
+      width: 100%;
+      margin-top: 12px;
+      border: none;
+      padding: 13px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-report-submit {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-report-list {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-report-submit:disabled,
+    .btn-report-list:disabled {
+      background: #aaa;
+      color: white;
+      cursor: not-allowed;
+    }
+
+    #dailyReportStatusMsg {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+      white-space: pre-line;
+    }
+
+    .daily-report-card {
+      margin-top: 12px;
+      padding: 14px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #f9fafb;
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .daily-report-card-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .daily-report-item-editor {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      background: #f8fbff;
+    }
+
+    .daily-report-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .daily-report-item-title {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .btn-report-remove {
+      border: none;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .btn-report-add {
+      width: 100%;
+      margin-top: 12px;
+      border: 1px dashed #2563eb;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .daily-report-shared-title {
+      margin-top: 14px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #374151;
+    }
+
+    .daily-report-review-section {
+      margin-top: 22px;
+      padding: 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    .daily-report-review-card {
+      margin-top: 12px;
+      padding: 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      background: #f9fafb;
+      line-height: 1.75;
+      font-size: 14px;
+    }
+
+    .daily-report-review-actions {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-report-confirm,
+    .btn-report-return {
+      width: 100%;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-report-confirm {
+      background: #16a34a;
+      color: white;
+    }
+
+    .btn-report-return {
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-report-confirm:disabled,
+    .btn-report-return:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    .returned-note {
+      margin-top: 8px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #fee2e2;
+      color: #991b1b;
+      font-weight: bold;
+      white-space: pre-line;
+    }
+
+    .btn-report-edit-returned {
+      width: 100%;
+      margin-top: 10px;
+      border: none;
+      padding: 11px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #f59e0b;
+      color: white;
+    }
+
+    .btn-report-cancel-edit {
+      width: 100%;
+      margin-top: 10px;
+      border: 1px solid #d1d5db;
+      padding: 11px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      background: white;
+      color: #374151;
+      display: none;
+    }
+
+    #dailyReportEditingBanner {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #fff7ed;
+      color: #9a3412;
+      font-weight: bold;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    #dailyReportReviewStatusMsg {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+      white-space: pre-line;
+    }
+
+    @media (max-width: 640px) {
+      .daily-report-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .payroll-warning {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: #fff7ed;
+      color: #9a3412;
+      font-size: 13px;
+      line-height: 1.6;
+    }
