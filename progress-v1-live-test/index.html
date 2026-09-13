@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>工程進度 V1｜真實 GAS 測試頁</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 16px; background: #f1f5f9; color: #172033; font: 16px/1.6 system-ui, sans-serif; }
+    main { max-width: 820px; margin: auto; }
+    h1 { font-size: 24px; } h2 { font-size: 20px; }
+    .notice { padding: 14px; border: 2px solid #b45309; border-radius: 10px; background: #fffbeb; }
+    .panel, article { margin-top: 16px; padding: 16px; border: 1px solid #cbd5e1; border-radius: 12px; background: white; overflow-wrap: anywhere; }
+    fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    label { display: block; min-width: 0; }
+    input, select, button { font: inherit; min-height: 44px; border-radius: 8px; }
+    input, select { display: block; width: 100%; min-width: 0; margin-top: 4px; border: 1px solid #94a3b8; padding: 9px; background: white; color: #172033; }
+    button { border: 0; padding: 10px 16px; margin: 10px 6px 0 0; background: #175cd3; color: white; cursor: pointer; }
+    button:disabled, fieldset:disabled button { opacity: .5; cursor: wait; }
+    :focus-visible { outline: 3px solid #b45309; outline-offset: 2px; }
+    dt { color: #475569; font-size: 14px; } dd { margin: 0; font-weight: 600; }
+    progress { width: 100%; height: 16px; accent-color: #175cd3; }
+    #message { min-height: 26px; overflow-wrap: anywhere; }
+    [hidden] { display: none !important; }
+    @media (max-width: 480px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>工程進度 V1｜測試頁</h1>
+  <div class="notice"><strong>此頁連接真實 GAS 與資料表。</strong>儲存與確認會修改真實資料並留下異動紀錄，請僅操作指定測試資料。此頁不是正式首頁。</div>
+  <p>預設測試：群邑工地／A棟 / 3樓 / 1戶／給水／冷熱水配管。</p>
+  <p id="identity">正在初始化 LINE 身分…</p>
+  <button id="reload" type="button">重新讀取</button>
+  <p id="message" role="status" aria-live="polite"></p>
+  <fieldset id="controls" disabled>
+    <legend>工程進度測試操作</legend>
+    <section class="panel" aria-label="選擇測試資料">
+      <div class="grid">
+        <label>工地<select id="site"></select></label>
+        <label>工程位置<select id="location"></select></label>
+        <label>工程類別／工作項目／單位<select id="item"></select></label>
+      </div>
+      <p>僅提供既有進度編輯與確認；不會建立位置、項目或新進度。找不到預設資料時，請自行選擇已授權的測試資料。</p>
+    </section>
+    <section id="records" aria-label="目前進度"></section>
+    <form id="editor" class="panel" hidden>
+      <h2>編輯既有進度</h2>
+      <p id="editingName"></p>
+      <p>完成數量請填目前累計值。已確認進度修改後，依後端規則回到待確認。</p>
+      <div class="grid">
+        <label>計畫數量<input id="plannedQty" type="number" min="0" step="any" inputmode="decimal"></label>
+        <label>目前完成數量<input id="completedQty" type="number" min="0" step="any" inputmode="decimal"></label>
+        <label>計畫開始日<input id="planStart" type="date"></label>
+        <label>計畫完成日<input id="planEnd" type="date"></label>
+        <label>異動原因<input id="reason" type="text" placeholder="請說明本次測試修改內容"></label>
+      </div>
+      <button type="submit">儲存至真實資料</button>
+      <button id="cancel" type="button">取消編輯</button>
+    </form>
+  </fieldset>
+</main>
+<!-- 只讀取既有設定，不載入正式首頁的啟動流程或進度模組。 -->
+<script src="../js/config.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const fields = ["plannedQty", "completedQty", "planStart", "planEnd"];
+  const actions = ["adminProgressBootstrap", "adminProgressList", "adminProgressUpsert", "adminProgressConfirm"];
+  const state = { userId: "", initialized: false, boot: null, rows: [], snapshot: null, busy: false, ready: false };
+  const text = value => value == null ? "" : String(value).trim();
+  const key = row => JSON.stringify([String(row.siteId), String(row.locationId), String(row.itemCode)]);
+  const allowed = () => ["OWNER", "ADMIN", "SITE_MANAGER"].includes(text(state.boot?.operator?.permission).toUpperCase());
+  function safe(value, missing = "未提供") {
+    const content = text(value);
+    const ids = [...(state.boot?.sites || []).map(x => x.siteId), ...(state.boot?.locations || []).map(x => x.locationId),
+      ...(state.boot?.items || []).map(x => x.itemCode), ...state.rows.map(x => x.progressId)];
+    return !content || ids.some(id => text(id) && content.includes(String(id))) ||
+      /\b(?:SITE\d+|LOC-[\w-]+|PRG-[\w-]+)\b|siteId|locationId|progressId|itemCode/.test(content) ? missing : content;
+  }
+  const siteName = x => safe(text(x?.name) || text(x?.siteName), "名稱未設定");
+  const locationName = x => safe(text(x?.displayName) || text(x?.name) || [x?.zone, x?.floor, x?.unit].map(text).filter(Boolean).join(" / "), "位置名稱未設定");
+  const itemName = x => [x?.category, x?.workItem, x?.unit].map(v => safe(v, "名稱未設定")).join(" ／ ");
+  const status = message => { $("message").textContent = message; };
+  function node(tag, content) { const el = document.createElement(tag); if (content != null) el.textContent = content; return el; }
+  function options(select, rows, idField, name, selected) {
+    select.replaceChildren();
+    const empty = node("option", "請選擇"); empty.value = ""; select.append(empty);
+    rows.forEach(row => { if (!text(row[idField])) return; const option = node("option", name(row)); option.value = String(row[idField]); select.append(option); });
+    if (rows.some(row => String(row[idField]) === selected)) select.value = selected;
+  }
+  function uniqueDefault(rows, predicate, idField) {
+    const matches = rows.filter(predicate);
+    return matches.length === 1 ? String(matches[0][idField]) : "";
+  }
+  function closeEditor() { state.snapshot = null; $("editor").hidden = true; }
+  function invalidate() { state.ready = false; state.rows = []; closeEditor(); $("records").replaceChildren(); }
+  function scope() {
+    if (!allowed() || !state.boot.sites.some(x => String(x.siteId) === $("site").value)) throw new Error("scope");
+    return $("site").value;
+  }
+  async function api(action, data = {}) {
+    if (!actions.includes(action) || !state.userId || (action !== "adminProgressBootstrap" && !allowed())) throw new Error("permission");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+    try {
+      const response = await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action, userId: state.userId, ...data }), redirect: "follow", signal: controller.signal });
+      if (!response.ok) throw new Error("http");
+      const result = await response.json();
+      if (!result?.success) throw new Error("api");
+      return result;
+    } finally { clearTimeout(timeout); }
+  }
+  async function run(work) {
+    if (state.busy) return;
+    state.busy = true; $("controls").disabled = true; $("reload").disabled = true;
+    try { await work(); }
+    catch (_) { invalidate(); status("操作未完成。請重新讀取；若仍失敗，請確認 LINE 登入、網路與管理權限。"); }
+    finally { state.busy = false; $("controls").disabled = !allowed(); $("reload").disabled = false; }
+  }
+  function locationChoices(preferred = "") {
+    const rows = state.boot.locations.filter(x => String(x.siteId) === $("site").value);
+    const defaultLocation = uniqueDefault(rows, x => locationName(x).replace(/\s/g, "") === "A棟/3樓/1戶", "locationId");
+    options($("location"), rows, "locationId", locationName, preferred || defaultLocation);
+  }
+  async function list() {
+    invalidate();
+    const siteId = scope();
+    const result = await api("adminProgressList", { siteId });
+    if (siteId !== $("site").value || !Array.isArray(result.records)) throw new Error("response");
+    if (result.records.some(x => String(x.siteId) !== siteId || !text(x.locationId) || !text(x.itemCode)) ||
+      new Set(result.records.map(key)).size !== result.records.length) throw new Error("records");
+    state.rows = result.records; state.ready = true; render();
+  }
+  function selectedRow() {
+    if (!state.ready || !allowed()) return null;
+    return state.rows.find(x => key(x) === key({ siteId: $("site").value, locationId: $("location").value, itemCode: $("item").value }));
+  }
+  function render() {
+    closeEditor(); $("records").replaceChildren();
+    const row = selectedRow();
+    if (!row) { status("請選擇既有測試資料；目前選擇沒有對應的進度，未建立任何資料。"); return; }
+    const site = state.boot.sites.find(x => String(x.siteId) === String(row.siteId));
+    const location = state.boot.locations.find(x => String(x.siteId) === String(row.siteId) && String(x.locationId) === String(row.locationId));
+    const item = state.boot.items.find(x => String(x.itemCode) === String(row.itemCode));
+    const card = node("article"); card.append(node("h2", "目前工程進度"));
+    const data = node("dl"); data.className = "grid";
+    [["工地名稱", siteName(site)], ["位置名稱", locationName(location)], ["工程類別", item?.category || row.category],
+      ["工作項目", item?.workItem || row.workItem], ["單位", item?.unit], ["計畫數量", row.plannedQty], ["完成數量", row.completedQty],
+      ["進度百分比", text(row.progressPercent) === "" ? null : safe(row.progressPercent) + "%"], ["進度狀態", row.progressStatus],
+      ["計畫開始", row.planStart], ["計畫完成", row.planEnd], ["實際開始", row.actualStart], ["實際完成", row.actualEnd],
+      ["主要負責人", row.responsibleName], ["確認狀態", row.confirmStatus]].forEach(([title, value]) => {
+      const block = node("div"); block.append(node("dt", title), node("dd", safe(value))); data.append(block);
+    });
+    card.append(data);
+    if (text(row.progressPercent) && Number.isFinite(Number(row.progressPercent))) {
+      const bar = node("progress"); bar.max = 100; bar.value = Math.max(0, Math.min(100, Number(row.progressPercent))); bar.setAttribute("aria-label", "目前進度"); card.append(bar);
+    }
+    const edit = node("button", "編輯既有進度"); edit.type = "button";
+    edit.addEventListener("click", () => {
+      if (state.busy || selectedRow() !== row) return;
+      state.snapshot = Object.freeze({ ...row });
+      fields.forEach(name => {
+        const input = $(name); input.value = text(row[name]); input.disabled = Boolean(text(row[name]) && !input.value);
+        input.title = input.disabled ? "此格式無法直接編輯，儲存時保留原值。" : "";
+      });
+      $("reason").value = "";
+      $("editingName").textContent = [siteName(site), locationName(location), itemName(item)].join(" ｜ ");
+      $("editor").hidden = false;
+    });
+    card.append(edit);
+    if (row.confirmStatus === "待確認" && text(row.progressId)) {
+      const confirm = node("button", "確認此進度"); confirm.type = "button";
+      confirm.addEventListener("click", () => {
+        if (state.busy || selectedRow() !== row || !window.confirm("此操作會確認真實工程進度並留下紀錄，確定送出？")) return;
+        write("adminProgressConfirm", { progressId: row.progressId, note: "工程進度 V1 真實測試" }, row);
+      });
+      card.append(confirm);
+    }
+    $("records").append(card); status("已讀取目前進度；只有編輯儲存或確認才會送出寫入。");
+  }
+  function normalized(value, numeric) {
+    const content = text(value);
+    return content === "" ? null : numeric && Number.isFinite(Number(content)) ? Number(content) : content;
+  }
+  async function write(action, payload, original) {
+    await run(async () => {
+      if (scope() !== String(original.siteId) || !state.ready || key(selectedRow() || {}) !== key(original)) throw new Error("selection");
+      state.ready = false; closeEditor();
+      status("正在送出至真實 GAS，請勿重複操作…");
+      try { await api(action, payload); }
+      catch (_) { invalidate(); status("寫入結果尚未確認，可能已送達後端。請先重新讀取確認結果；本頁不會自動重送。"); return; }
+      try { await list(); status("操作成功，已重新讀取後端資料。"); }
+      catch (_) { invalidate(); status("寫入已成功，但重新讀取失敗。請重新讀取，勿重複送出。"); }
+    });
+  }
+  $("editor").addEventListener("submit", event => {
+    event.preventDefault();
+    const original = state.snapshot;
+    if (state.busy || !state.ready || !original || !$("editor").reportValidity()) return;
+    const values = Object.fromEntries(fields.map(name => [name, $(name).disabled ? original[name] : $(name).value]));
+    if (fields.every(name => normalized(original[name], name.endsWith("Qty")) === normalized(values[name], name.endsWith("Qty")))) {
+      status("內容未變更，無需儲存"); return;
+    }
+    if (!$("planStart").disabled && !$("planEnd").disabled && values.planStart && values.planEnd && values.planStart > values.planEnd) {
+      status("計畫完成日不可早於計畫開始日。"); return;
+    }
+    write("adminProgressUpsert", { siteId: original.siteId, locationId: original.locationId, itemCode: original.itemCode,
+      ...values, changeReason: $("reason").value.trim(), sourceType: "工程進度 V1 真實測試頁" }, original);
+  });
+  async function readOnlyStart() {
+    await run(async () => {
+      invalidate();
+      const previous = { site: $("site").value, location: $("location").value, item: $("item").value };
+      state.boot = null;
+      ["site", "location", "item"].forEach(id => $(id).replaceChildren());
+      status("正在讀取 LINE 身分與工程進度…");
+      if (!state.initialized) { await liff.init({ liffId: LIFF_ID }); state.initialized = true; }
+      if (!liff.isLoggedIn()) { status("請完成 LINE 登入後返回此測試頁。"); liff.login({ redirectUri: window.location.href }); return; }
+      const profile = await liff.getProfile(); state.userId = profile.userId;
+      const result = await api("adminProgressBootstrap");
+      if (![result.sites, result.locations, result.items].every(Array.isArray)) throw new Error("bootstrap");
+      state.boot = result;
+      if (!allowed()) { state.boot = null; $("identity").textContent = "目前帳號無工程進度管理權限。"; status("僅管理者可使用此測試頁。"); return; }
+      $("identity").textContent = "LINE 身分已確認，可操作後端授權工地。";
+      const defaultSite = uniqueDefault(result.sites, x => ["群邑工地", "群邑"].includes(text(x.name) || text(x.siteName)), "siteId");
+      options($("site"), result.sites, "siteId", siteName, previous.site || defaultSite);
+      locationChoices(previous.site === $("site").value ? previous.location : "");
+      const defaultItem = uniqueDefault(result.items, x => text(x.category) === "給水" && text(x.workItem) === "冷熱水配管", "itemCode");
+      options($("item"), result.items, "itemCode", itemName, previous.item || defaultItem);
+      if ($("site").value) await list(); else status("未能唯一匹配群邑工地，請選擇已授權的測試工地。");
+    });
+  }
+  $("reload").addEventListener("click", readOnlyStart);
+  $("site").addEventListener("change", () => run(async () => {
+    invalidate(); locationChoices();
+    if ($("site").value) await list(); else status("請選擇測試工地。");
+  }));
+  ["location", "item"].forEach(id => $(id).addEventListener("change", () => { if (!state.busy) render(); }));
+  $("cancel").addEventListener("click", closeEditor);
+  // 自動啟動只包含身分取得、bootstrap 與 list，絕不觸發 write。
+  readOnlyStart();
+})();
+</script>
+</body>
+</html>
