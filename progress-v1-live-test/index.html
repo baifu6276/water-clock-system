@@ -204,7 +204,9 @@
     if (state.busy || !state.ready || !original || !$("editor").reportValidity()) return;
     const values = Object.fromEntries(fields.map(name => [name, $(name).disabled ? original[name] : $(name).value]));
     if (fields.every(name => normalized(original[name], name.endsWith("Qty")) === normalized(values[name], name.endsWith("Qty")))) {
-      status("內容未變更，無需儲存"); return;
+      status("內容未變更，無需儲存");
+      $("message").scrollIntoView({ block: "center" });
+      return;
     }
     if (!$("planStart").disabled && !$("planEnd").disabled && values.planStart && values.planEnd && values.planStart > values.planEnd) {
       status("計畫完成日不可早於計畫開始日。"); return;
