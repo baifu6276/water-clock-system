@@ -27,6 +27,25 @@
     [row?.zone, row?.floor, row?.unit].map(text).filter(Boolean).join(" / "), "位置名稱未設定");
   const itemName = row => [row?.category, row?.workItem, row?.unit]
     .map(value => label(value, "名稱未設定")).join(" ／ ");
+  const taiwanDateFormatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit"
+  });
+  function displayTaiwanDate(value) {
+    const raw = text(value);
+    if (!raw) return "未提供";
+    // 純日期保留原曆日；帶時區的 ISO 時間才轉換成台灣日期。
+    if (/^\d{4}[-/]\d{2}[-/]\d{2}$/.test(raw)) {
+      const dateText = raw.replace(/\//g, "-");
+      const date = new Date(`${dateText}T00:00:00Z`);
+      return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === dateText
+        ? dateText.replace(/-/g, "/") : "未提供";
+    }
+    if (!/^\d{4}-\d{2}-\d{2}T.+(?:Z|[+-]\d{2}:\d{2})$/i.test(raw)) return "未提供";
+    const date = new Date(raw);
+    if (!Number.isFinite(date.getTime())) return "未提供";
+    const parts = Object.fromEntries(taiwanDateFormatter.formatToParts(date).map(part => [part.type, part.value]));
+    return `${parts.year}/${parts.month}/${parts.day}`;
+  }
   // 僅相容已知的啟用與空值；其他狀態維持不開放新增。
   const locationSelectable = row => row.status == null || text(row.status) === "" || row.status === "啟用";
   const node = (tag, content, className) => {
@@ -191,9 +210,9 @@
       detail(data, "進度狀態", row.progressStatus);
       detail(data, "計畫開始日", row.planStart);
       detail(data, "計畫完成日", row.planEnd);
-      detail(data, "實際開始日", row.actualStart);
-      detail(data, "實際完成日", row.actualEnd);
-      detail(data, "主要負責人", row.responsibleName);
+      detail(data, "實際開始日", displayTaiwanDate(row.actualStart));
+      detail(data, "實際完成日", displayTaiwanDate(row.actualEnd));
+      detail(data, "主要負責人", row.responsibleEmployeeName);
       detail(data, "確認狀態", row.confirmStatus);
       card.append(data);
       button("編輯進度", () => {
