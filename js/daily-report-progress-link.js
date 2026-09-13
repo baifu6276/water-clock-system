@@ -8,6 +8,7 @@
     locations: [],
     items: [],
     standardized: false,
+    legacyReturnedEdit: false,
     loading: false,
     requestToken: 0,
     originalCallApi: null
@@ -15,6 +16,7 @@
 
   const text = value => value == null ? "" : String(value).trim();
   const currentUserId = () => typeof userId === "undefined" ? "" : text(userId);
+  const useStandardizedMode = () => state.standardized && !state.legacyReturnedEdit;
 
   function getSiteSelect() {
     return document.getElementById("dailyReportSite");
@@ -99,7 +101,7 @@
     const field = document.getElementById("dailyReportProgressLocationField");
     if (!select || !field) return;
 
-    if (!state.standardized) {
+    if (!useStandardizedMode()) {
       field.style.display = "none";
       setLegacySharedVisible(true);
       return;
@@ -179,7 +181,7 @@
     const field = select?.closest(".dr-progress-item-field");
     if (!select || !field) return;
 
-    if (!state.standardized) {
+    if (!useStandardizedMode()) {
       field.style.display = "none";
       setLegacyItemVisible(card, true);
       return;
@@ -247,7 +249,7 @@
       renderLocationOptions(preferredLocationId);
       enhanceAllItemCards();
 
-      if (preferredItemCode) {
+      if (preferredItemCode && useStandardizedMode()) {
         const first = document.querySelector("#dailyReportItems .daily-report-item-editor");
         if (first) enhanceItemCard(first, preferredItemCode);
       }
@@ -270,7 +272,7 @@
   }
 
   function validateAndDecoratePayload(payload) {
-    if (!payload || !state.standardized) return payload;
+    if (!payload || !useStandardizedMode()) return payload;
     if (!["dailyReportCreateBatch", "dailyReportUpdateReturned"].includes(payload.action)) return payload;
 
     const locationId = text(getLocationSelect()?.value);
@@ -307,11 +309,25 @@
     if (typeof startReturnedDailyReportEdit !== "function" || startReturnedDailyReportEdit.__progressLinked) return;
     const original = startReturnedDailyReportEdit;
     const wrapped = function(item) {
+      state.legacyReturnedEdit = !(text(item?.locationId) && text(item?.itemCode));
       original(item);
       Promise.resolve(loadOptions(text(item?.locationId), text(item?.itemCode))).catch(console.error);
     };
     wrapped.__progressLinked = true;
     startReturnedDailyReportEdit = wrapped;
+  }
+
+  function wrapFinishReturnedEdit() {
+    if (typeof finishReturnedDailyReportEdit !== "function" || finishReturnedDailyReportEdit.__progressLinked) return;
+    const original = finishReturnedDailyReportEdit;
+    const wrapped = function() {
+      const result = original();
+      state.legacyReturnedEdit = false;
+      Promise.resolve(loadOptions()).catch(console.error);
+      return result;
+    };
+    wrapped.__progressLinked = true;
+    finishReturnedDailyReportEdit = wrapped;
   }
 
   function observeItems() {
@@ -341,6 +357,7 @@
   function init() {
     wrapCallApi();
     wrapReturnedEdit();
+    wrapFinishReturnedEdit();
     ensureLocationField();
     observeItems();
     observeSiteOptions();
@@ -348,7 +365,10 @@
     const site = getSiteSelect();
     if (site && !site.dataset.progressLinkBound) {
       site.dataset.progressLinkBound = "1";
-      site.addEventListener("change", () => loadOptions());
+      site.addEventListener("change", () => {
+        state.legacyReturnedEdit = false;
+        loadOptions().catch(console.error);
+      });
     }
 
     enhanceAllItemCards();
