@@ -34,3 +34,28 @@
       },
       { once: true }
     );
+// 工程進度百分比編輯修正模組。
+window.addEventListener(
+  "load",
+  function() {
+    if (document.querySelector('script[data-progress-percent-editor="1"]')) {
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "js/progress-percent-editor.js";
+    script.dataset.progressPercentEditor = "1";
+    script.async = false;
+
+    script.addEventListener(
+      "error",
+      function() {
+        console.error("工程進度百分比編輯修正模組載入失敗");
+      },
+      { once: true }
+    );
+
+    document.head.appendChild(script);
+  },
+  { once: true }
+);
