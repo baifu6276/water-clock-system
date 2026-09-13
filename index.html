@@ -331,6 +331,13 @@
       id="adminStatus"
     ></div>
 
+    <section id="progressV1" hidden aria-label="工程進度">
+      <h2>工程進度</h2>
+      <button id="progressOpen" type="button" aria-expanded="false" aria-controls="progressBody">開啟工程進度</button>
+      <div id="progressMessage" role="status" aria-live="polite"></div>
+      <div id="progressBody" hidden></div>
+    </section>
+
     <div
       class="open-segment"
       style="margin-bottom:18px;"
@@ -755,6 +762,62 @@
     <script src="js/payroll.js"></script>
     <script src="js/admin-attendance.js"></script>
     <script src="js/auth.js"></script>
+    <script>
+      // 入口只負責權限顯示與載入；工程進度程式在點擊後才下載。
+      (() => {
+        "use strict";
+        const root = document.getElementById("progressV1");
+        const entry = document.getElementById("progressOpen");
+        const message = document.getElementById("progressMessage");
+        let modulePromise = null;
+        let opening = false;
+        const allowed = () => Boolean(userId) && ["OWNER", "ADMIN", "SITE_MANAGER"]
+          .includes(String(employee?.permission || "").trim().toUpperCase());
+        function refreshEntry() { root.hidden = !allowed(); }
+        function loadModule() {
+          if (modulePromise) return modulePromise;
+          modulePromise = new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = "js/progress.js";
+            script.addEventListener("load", () => {
+              if (typeof window.ProgressV1?.open === "function") resolve();
+              else { script.remove(); reject(new Error("module")); }
+            }, { once: true });
+            script.addEventListener("error", () => {
+              script.remove();
+              reject(new Error("script"));
+            }, { once: true });
+            document.head.append(script);
+          }).catch(error => {
+            modulePromise = null;
+            throw error;
+          });
+          return modulePromise;
+        }
+        entry.addEventListener("click", async () => {
+          if (!allowed() || opening) return;
+          opening = true;
+          entry.disabled = true;
+          message.textContent = "正在載入工程進度功能…";
+          try {
+            await loadModule();
+            if (allowed()) await window.ProgressV1.open();
+          } catch (_) {
+            message.textContent = "工程進度功能載入失敗，請再點一次重試。";
+          } finally {
+            opening = false;
+            entry.disabled = false;
+            refreshEntry();
+          }
+        });
+        const observer = new MutationObserver(refreshEntry);
+        ["adminEntry", "adminPanel"].forEach(id => {
+          const target = document.getElementById(id);
+          if (target) observer.observe(target, { attributes: true, attributeFilter: ["style"] });
+        });
+        refreshEntry();
+      })();
+    </script>
 
 </body>
 
