@@ -14,6 +14,7 @@
   };
 
   const text = value => value == null ? "" : String(value).trim();
+  const currentUserId = () => typeof userId === "undefined" ? "" : text(userId);
 
   function getSiteSelect() {
     return document.getElementById("dailyReportSite");
@@ -208,18 +209,19 @@
   }
 
   function setModeMessage(message, type = "normal") {
-    if (typeof window.showDailyReportStatus === "function") {
-      window.showDailyReportStatus(message, type);
+    if (typeof showDailyReportStatus === "function") {
+      showDailyReportStatus(message, type);
     }
   }
 
   async function loadOptions(preferredLocationId = "", preferredItemCode = "") {
     const siteId = text(getSiteSelect()?.value);
+    const uid = currentUserId();
     state.siteId = siteId;
     state.requestToken += 1;
     const token = state.requestToken;
 
-    if (!siteId || !state.originalCallApi || !window.userId) {
+    if (!siteId || !state.originalCallApi || !uid) {
       state.locations = [];
       state.items = [];
       state.standardized = false;
@@ -232,7 +234,7 @@
     try {
       const result = await state.originalCallApi({
         action: "dailyReportProgressOptions",
-        userId: window.userId,
+        userId: uid,
         siteId
       });
       if (token !== state.requestToken) return;
@@ -294,22 +296,22 @@
   }
 
   function wrapCallApi() {
-    if (state.originalCallApi || typeof window.callApi !== "function") return;
-    state.originalCallApi = window.callApi;
-    window.callApi = function(payload) {
+    if (state.originalCallApi || typeof callApi !== "function") return;
+    state.originalCallApi = callApi;
+    callApi = function(payload) {
       return state.originalCallApi(validateAndDecoratePayload(payload));
     };
   }
 
   function wrapReturnedEdit() {
-    if (typeof window.startReturnedDailyReportEdit !== "function" || window.startReturnedDailyReportEdit.__progressLinked) return;
-    const original = window.startReturnedDailyReportEdit;
+    if (typeof startReturnedDailyReportEdit !== "function" || startReturnedDailyReportEdit.__progressLinked) return;
+    const original = startReturnedDailyReportEdit;
     const wrapped = function(item) {
       original(item);
       Promise.resolve(loadOptions(text(item?.locationId), text(item?.itemCode))).catch(console.error);
     };
     wrapped.__progressLinked = true;
-    window.startReturnedDailyReportEdit = wrapped;
+    startReturnedDailyReportEdit = wrapped;
   }
 
   function observeItems() {
@@ -319,11 +321,29 @@
     observer.observe(wrap, { childList: true });
   }
 
+  function observeSiteOptions() {
+    const site = getSiteSelect();
+    if (!site) return;
+    const observer = new MutationObserver(() => {
+      if (text(site.value) && currentUserId()) loadOptions().catch(console.error);
+    });
+    observer.observe(site, { childList: true });
+  }
+
+  function scheduleInitialLoads() {
+    [0, 500, 1500, 3000].forEach(delay => {
+      setTimeout(() => {
+        if (text(getSiteSelect()?.value) && currentUserId()) loadOptions().catch(console.error);
+      }, delay);
+    });
+  }
+
   function init() {
     wrapCallApi();
     wrapReturnedEdit();
     ensureLocationField();
     observeItems();
+    observeSiteOptions();
 
     const site = getSiteSelect();
     if (site && !site.dataset.progressLinkBound) {
@@ -332,7 +352,7 @@
     }
 
     enhanceAllItemCards();
-    loadOptions().catch(console.error);
+    scheduleInitialLoads();
   }
 
   if (document.readyState === "loading") {
