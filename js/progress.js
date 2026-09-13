@@ -6,6 +6,21 @@
   const state = { boot: null, rows: [], snapshot: null, busy: false, ready: false };
   let root, body, message, controls, site, location, item, editor, list, masters;
   let eventsBound = false;
+  let percentModulePromise;
+  function loadPercentModule() {
+    if (window.ProgressPercentEditor) return Promise.resolve();
+    if (!percentModulePromise) {
+      percentModulePromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "js/progress-percent-editor.js";
+        const fail = () => { script.remove(); reject(new Error("百分比編輯模組載入失敗，請重新開啟工程進度。")); };
+        script.addEventListener("load", () => window.ProgressPercentEditor ? resolve() : fail(), { once: true });
+        script.addEventListener("error", fail, { once: true });
+        document.head.append(script);
+      }).catch(error => { percentModulePromise = null; throw error; });
+    }
+    return percentModulePromise;
+  }
   const inputs = {};
   const role = () => String(employee?.permission || "").trim().toUpperCase();
   const allowed = () => Boolean(userId) && roles.includes(role());
@@ -131,7 +146,7 @@
     const found = state.rows.find(row => key(row) === key({ siteId: site.value, locationId: location.value, itemCode: item.value }));
     if (found) {
       state.snapshot = Object.freeze({ ...found });
-      businessFields.forEach(name => {
+      [...businessFields, "progressPercent"].forEach(name => {
         inputs[name].value = text(found[name]);
         if (text(found[name]) && !inputs[name].value) {
           inputs[name].disabled = true;
@@ -225,7 +240,6 @@
           select.value = String(value);
         });
         selectExisting();
-        inputs.plannedQty.focus();
         editor.scrollIntoView({ block: "start", behavior: "smooth" });
       }, card);
       if (row.confirmStatus === "待確認" && text(row.progressId)) {
@@ -240,12 +254,12 @@
     return numeric && Number.isFinite(Number(valueText)) ? Number(valueText) : valueText;
   }
   function unchanged(original, values) {
-    return businessFields.every(name => normalized(original[name], name.endsWith("Qty")) === normalized(values[name], name.endsWith("Qty")));
+    return businessFields.every(name => normalized(original[name], name.endsWith("Qty")) === normalized(values[name], name.endsWith("Qty"))) && window.ProgressPercentEditor.unchanged(original, values);
   }
   async function saveProgress(event) {
     event.preventDefault();
     if (state.busy || !state.ready || !editor.reportValidity()) return;
-    const values = Object.fromEntries(businessFields.map(name => [name,
+    const values = Object.fromEntries([...businessFields, "progressPercent"].map(name => [name,
       inputs[name].disabled && state.snapshot ? state.snapshot[name] : inputs[name].value]));
     if (values.planStart && values.planEnd && values.planStart > values.planEnd) { announce("計畫完成日不可早於開始日。"); return; }
     if (!location.value || !item.value) { announce("請先選擇工程位置與工程項目。"); return; }
@@ -254,6 +268,9 @@
     if (original && key(original) === key(identity) && unchanged(original, values)) {
       announce("內容未變更，無需儲存"); return;
     }
+    if (!inputs.changeReason.value.trim()) { announce("請填寫異動原因。"); return; }
+    // 空白不當作 0；省略百分比才交由後端依數量計算。
+    if (!text(values.progressPercent)) delete values.progressPercent;
     await run(async () => {
       scope();
       if (!original && (!state.boot.locations.some(row => String(row.locationId) === location.value && String(row.siteId) === site.value && locationSelectable(row)) ||
@@ -326,6 +343,8 @@
     location.required = true; item.required = true;
     location.addEventListener("change", selectExisting); item.addEventListener("change", selectExisting);
     [["plannedQty", "計畫數量", "number"], ["completedQty", "目前完成數量", "number"], ["planStart", "計畫開始日", "date"], ["planEnd", "計畫完成日", "date"], ["changeReason", "異動原因", "text"]].forEach(([name, title, type]) => { inputs[name] = field(grid, title, name, type); });
+    inputs.progressPercent = field(grid, "目前進度百分比（留空依數量計算）", "progressPercent", "number");
+    inputs.progressPercent.max = "100";
     const submit = node("button", "儲存工程進度"); submit.type = "submit"; editor.append(submit);
     editor.addEventListener("submit", saveProgress);
     controls.append(editor, node("h3", "目前工程進度"));
@@ -337,6 +356,8 @@
     masterForm("新增工程項目", [["category", "工程類別"], ["workItem", "工作項目"], ["unit", "計量單位"]], "adminProgressItemSave");
   }
   async function open() {
+    if (!allowed()) return;
+    await loadPercentModule();
     if (!allowed()) return;
     bindEventsOnce();
     body.hidden = false;
