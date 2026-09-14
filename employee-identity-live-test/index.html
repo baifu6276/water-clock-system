@@ -56,6 +56,29 @@
         TERMINATED: '離職'
       };
       const safeErrors = {
+        LINE_CHANNEL_ID_MISSING: "未設定 LINE_LOGIN_CHANNEL_ID。",
+        LINE_TOKEN_MISSING_OR_INVALID: "ID token 缺少或格式不符，請重新登入。",
+        LINE_VERIFY_NETWORK_ERROR: "GAS 無法完成 LINE verify 連線；請確認外部請求授權、配額與網路。",
+        LINE_VERIFY_HTTP_ERROR: "LINE verify 回傳非預期 HTTP 狀態，可能為限流或服務錯誤。",
+        LINE_TOKEN_REJECTED: "LINE 拒絕此 token；未取得可確認的細分類原因。",
+        LINE_AUDIENCE_MISMATCH: "LINE token 與設定的 LINE Login channel ID 不符；不可使用 LIFF ID 或其他 channel ID。",
+        LINE_ISSUER_MISMATCH: "LINE token issuer 不符。",
+        LINE_TOKEN_EXPIRED: "LINE token 已過期，請重新登入。",
+        LINE_SUB_MISSING: "LINE verify 成功回應缺少有效 sub。",
+        LINE_VERIFY_MALFORMED_RESPONSE: "LINE verify 回應不是預期 JSON／claims 格式。",
+        BACKEND_SCHEMA_ERROR: "後端資料表缺少或表頭不符。",
+        BACKEND_IDENTITY_CONFLICT: "員工或 LINE 綁定資料衝突。",
+        BACKEND_LOOKUP_ERROR: "後端讀取員工／綁定資料失敗，請確認 Spreadsheet 綁定與授權。",
+        BACKEND_INTERNAL_ERROR: "後端新身分流程發生未預期錯誤。",
+        GAS_NETWORK_ERROR: "瀏覽器未取得 GAS 回應，請確認網路、CORS 或部署存取設定。",
+        GAS_HTTP_ERROR: "GAS 回傳非成功 HTTP 狀態，請確認部署存取設定。",
+        GAS_NON_JSON_RESPONSE: "GAS 回應無法解析為 JSON，可能為登入／錯誤頁或部署問題。",
+        GAS_RESPONSE_INVALID: "GAS JSON 不符合新身分 API 回應格式，請確認部署版本。",
+        LOGIN_REQUIRED: '尚未登入 LINE。',
+        TOKEN_UNAVAILABLE: '無法取得 ID token，請確認 LIFF 已啟用 openid scope。',
+        LIFF_INIT_ERROR: 'LIFF 初始化或登入失敗，請從 LINE 重新開啟。',
+        REQUEST_FAILED: '未能完成身分檢查，請重新從 LINE 開啟。',
+
         AUTH_ERROR: 'LINE 身分驗證失敗，請重新從 LINE 開啟。',
         CONFIG_ERROR: '後端設定尚未完成。',
         SCHEMA_ERROR: '後端資料表尚未設定完成。',
@@ -71,19 +94,36 @@
       let busy = false;
 
       async function identityBootstrap(idToken) {
-        const response = await fetch(GAS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          redirect: 'follow',
-          body: JSON.stringify({ action: 'identityBootstrap', idToken })
-        });
-        if (!response.ok) throw new Error('NETWORK');
-        return response.json();
+        let response, result;
+        try {
+          response = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            redirect: 'follow',
+            body: JSON.stringify({ action: 'identityBootstrap', idToken })
+          });
+        } catch (_) { throw transportError('GAS_NETWORK_ERROR'); }
+        if (!response.ok) throw transportError('GAS_HTTP_ERROR');
+        try { result = await response.json(); }
+        catch (_) { throw transportError('GAS_NON_JSON_RESPONSE'); }
+        if (!result || typeof result !== 'object' || Array.isArray(result) || typeof result.success !== 'boolean') {
+          throw transportError('GAS_RESPONSE_INVALID');
+        }
+        return result;
       }
 
-      function fail(code, fallback) {
-        put('code', code || 'UNKNOWN');
-        put('message', safeErrors[code] || fallback || '無法完成身分驗證，請聯絡管理員。');
+      function transportError(code) {
+        const error = new Error(safeErrors[code]);
+        error.safeCode = code;
+        return error;
+      }
+      function isSafeCode(code) {
+        return typeof code === 'string' && Object.prototype.hasOwnProperty.call(safeErrors, code);
+      }
+      function fail(code) {
+        const safe = isSafeCode(code) ? code : 'REQUEST_FAILED';
+        put('code', safe);
+        put('message', safeErrors[safe]);
       }
 
       async function check() {
@@ -101,7 +141,8 @@
         try {
           if (!initialized) {
             put('init', '初始化中');
-            await liff.init({ liffId: LIFF_ID });
+            try { await liff.init({ liffId: LIFF_ID }); }
+            catch (_) { put('init', '失敗'); fail('LIFF_INIT_ERROR'); return; }
             initialized = true;
             put('init', '成功');
           }
@@ -111,14 +152,14 @@
           if (!liff.isLoggedIn()) {
             put('token', '否');
             byId('login').hidden = false;
-            fail('LOGIN_REQUIRED', '尚未登入 LINE。');
+            fail('LOGIN_REQUIRED');
             return;
           }
 
           const idToken = liff.getIDToken();
           put('token', idToken ? '是（不顯示內容）' : '否');
           if (!idToken) {
-            fail('TOKEN_UNAVAILABLE', '無法取得 ID token，請確認 LIFF 已啟用 openid scope。');
+            fail('TOKEN_UNAVAILABLE');
             return;
           }
 
@@ -127,13 +168,13 @@
 
           if (!result || result.success !== true) {
             put('state', '失敗');
-            fail(result && result.code, '後端未完成身分驗證。');
+            fail(isSafeCode(result.diagnosticCode) ? result.diagnosticCode : result.code);
             return;
           }
 
           if (!knownStates.has(result.state)) {
             put('state', '無法確認');
-            fail('RESPONSE_ERROR', '後端回傳未知身分狀態。');
+            fail('GAS_RESPONSE_INVALID');
             return;
           }
 
@@ -143,9 +184,9 @@
             put('employeeName', result.employee && typeof result.employee.name === 'string' ? result.employee.name : '—');
           }
           put('message', '身分狀態讀取完成；未執行任何業務寫入。');
-        } catch (_) {
+        } catch (error) {
           put('state', '失敗');
-          fail('REQUEST_FAILED', '連線或 LIFF 初始化失敗，請重新從 LINE 開啟後再試。');
+          fail(error && error.safeCode);
         } finally {
           busy = false;
           byId('retry').disabled = false;
@@ -157,7 +198,7 @@
         try {
           liff.login({ redirectUri: location.origin + location.pathname });
         } catch (_) {
-          fail('LIFF_INIT_ERROR', '無法啟動 LINE 登入。');
+          fail('LIFF_INIT_ERROR');
         }
       });
 
