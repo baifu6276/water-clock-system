@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>員工身分驗證測試頁</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; background: #f3f5f7; color: #172331; }
+    main { max-width: 600px; margin: auto; padding: 20px; background: white; border-radius: 12px; }
+    h1 { font-size: 24px; }
+    .badge { color: #8b3500; font-weight: bold; }
+    dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 14px; }
+    dt { font-weight: bold; }
+    dd { margin: 0; overflow-wrap: anywhere; }
+    button { padding: 12px; margin: 8px 0; width: 100%; font: inherit; min-height: 48px; }
+    #message { overflow-wrap: anywhere; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="badge">獨立測試頁 · 非正式操作介面</p>
+    <h1>員工 LINE 身分驗證</h1>
+    <p>只讀取身分狀態。此頁不會執行打卡、薪資、工程進度或其他業務寫入。</p>
+    <dl>
+      <dt>LIFF 初始化</dt><dd id="init">尚未開始</dd>
+      <dt>是否在 LINE 內</dt><dd id="inLine">尚未確認</dd>
+      <dt>ID token 是否可取得</dt><dd id="token">尚未確認（不顯示內容）</dd>
+      <dt>identityBootstrap 狀態</dt><dd id="state">尚未呼叫</dd>
+      <dt>員工編號</dt><dd id="employeeId">—</dd>
+      <dt>姓名</dt><dd id="employeeName">—</dd>
+      <dt>錯誤代碼</dt><dd id="code">—</dd>
+    </dl>
+    <p id="message" role="status" aria-live="polite">準備初始化。</p>
+    <button id="retry" type="button" disabled>重新檢查身分</button>
+    <button id="login" type="button" hidden>使用 LINE 登入</button>
+  </main>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      const LIFF_ID = '2011467618-lNiVqxsV';
+      const GAS_URL = 'https://script.google.com/macros/s/AKfycbzrmID3lIBP2bxM_qC4nLiEOBEcROB3sFRH9eZsHt--A6o4VZpvuf63pzW0ku4j-TTd0w/exec';
+      const byId = id => document.getElementById(id);
+      const put = (id, text) => { byId(id).textContent = text; };
+      const knownStates = new Set(['ACTIVE_EMPLOYEE', 'UNREGISTERED', 'APPLICATION_PENDING', 'SUSPENDED', 'LEAVE', 'TERMINATED']);
+      const stateLabels = {
+        ACTIVE_EMPLOYEE: '在職員工',
+        UNREGISTERED: '尚未註冊',
+        APPLICATION_PENDING: '申請待審核',
+        SUSPENDED: '停職',
+        LEAVE: '留停',
+        TERMINATED: '離職'
+      };
+      const safeErrors = {
+        AUTH_ERROR: 'LINE 身分驗證失敗，請重新從 LINE 開啟。',
+        CONFIG_ERROR: '後端設定尚未完成。',
+        SCHEMA_ERROR: '後端資料表尚未設定完成。',
+        REQUEST_CONFLICT: '請求衝突，請聯絡管理員。',
+        VERSION_CONFLICT: '資料版本已變更，請重新讀取。',
+        FORBIDDEN: '沒有權限操作。',
+        ALREADY_EMPLOYEE: '已有員工資料。',
+        VALIDATION_ERROR: '資料驗證失敗。',
+        INVALID_STATE: '目前狀態不可執行此操作。'
+      };
+
+      let initialized = false;
+      let busy = false;
+
+      async function identityBootstrap(idToken) {
+        const response = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          redirect: 'follow',
+          body: JSON.stringify({ action: 'identityBootstrap', idToken })
+        });
+        if (!response.ok) throw new Error('NETWORK');
+        return response.json();
+      }
+
+      function fail(code, fallback) {
+        put('code', code || 'UNKNOWN');
+        put('message', safeErrors[code] || fallback || '無法完成身分驗證，請聯絡管理員。');
+      }
+
+      async function check() {
+        if (busy) return;
+        busy = true;
+        byId('retry').disabled = true;
+        byId('login').hidden = true;
+        put('employeeId', '—');
+        put('employeeName', '—');
+        put('code', '—');
+        put('state', '尚未呼叫');
+        put('token', '尚未確認（不顯示內容）');
+        put('message', '正在檢查…');
+
+        try {
+          if (!initialized) {
+            put('init', '初始化中');
+            await liff.init({ liffId: LIFF_ID });
+            initialized = true;
+            put('init', '成功');
+          }
+
+          put('inLine', liff.isInClient() ? '是' : '否（外部瀏覽器）');
+
+          if (!liff.isLoggedIn()) {
+            put('token', '否');
+            byId('login').hidden = false;
+            fail('LOGIN_REQUIRED', '尚未登入 LINE。');
+            return;
+          }
+
+          const idToken = liff.getIDToken();
+          put('token', idToken ? '是（不顯示內容）' : '否');
+          if (!idToken) {
+            fail('TOKEN_UNAVAILABLE', '無法取得 ID token，請確認 LIFF 已啟用 openid scope。');
+            return;
+          }
+
+          put('state', '讀取中');
+          const result = await identityBootstrap(idToken);
+
+          if (!result || result.success !== true) {
+            put('state', '失敗');
+            fail(result && result.code, '後端未完成身分驗證。');
+            return;
+          }
+
+          if (!knownStates.has(result.state)) {
+            put('state', '無法確認');
+            fail('RESPONSE_ERROR', '後端回傳未知身分狀態。');
+            return;
+          }
+
+          put('state', `${result.state}（${stateLabels[result.state]}）`);
+          if (result.state === 'ACTIVE_EMPLOYEE') {
+            put('employeeId', result.employee && result.employee.employeeId ? result.employee.employeeId : '—');
+            put('employeeName', result.employee && typeof result.employee.name === 'string' ? result.employee.name : '—');
+          }
+          put('message', '身分狀態讀取完成；未執行任何業務寫入。');
+        } catch (_) {
+          put('state', '失敗');
+          fail('REQUEST_FAILED', '連線或 LIFF 初始化失敗，請重新從 LINE 開啟後再試。');
+        } finally {
+          busy = false;
+          byId('retry').disabled = false;
+        }
+      }
+
+      byId('retry').addEventListener('click', check);
+      byId('login').addEventListener('click', () => {
+        try {
+          liff.login({ redirectUri: location.origin + location.pathname });
+        } catch (_) {
+          fail('LIFF_INIT_ERROR', '無法啟動 LINE 登入。');
+        }
+      });
+
+      check();
+    })();
+  </script>
+</body>
+</html>
