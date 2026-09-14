@@ -150,4 +150,36 @@ test('schemas and duplicate identity fail safely; no silent sheet creation', () 
   e.tables['員工資料表'].rows.push([...e.tables['員工資料表'].rows[1]]);
   assert.equal(e.call('identityBootstrap',{},'owner').code,'IDENTITY_CONFLICT'); assert.equal(e.writes,0);
 });
+test('safe verify diagnostics cover HTTP, documented rejection, claims and backend failures', () => {
+  const cases = [
+    [503, 'sensitive upstream text', 'LINE_VERIFY_HTTP_ERROR'],
+    [200, 'not JSON', 'LINE_VERIFY_MALFORMED_RESPONSE'],
+    [200, 'null', 'LINE_VERIFY_MALFORMED_RESPONSE'],
+    [400, {error_description:'Invalid IdToken Audience.'}, 'LINE_AUDIENCE_MISMATCH'],
+    [400, {error_description:'Invalid IdToken Issuer.'}, 'LINE_ISSUER_MISMATCH'],
+    [400, {error_description:'IdToken expired.'}, 'LINE_TOKEN_EXPIRED'],
+    [400, {error_description:'diagnostic-secret'}, 'LINE_TOKEN_REJECTED'],
+    [200, {iss:'wrong'}, 'LINE_ISSUER_MISMATCH'],
+    [200, {iss:'https://access.line.me',aud:'wrong'}, 'LINE_AUDIENCE_MISMATCH'],
+    [200, {iss:'https://access.line.me',aud:'test-channel',exp:'wrong'}, 'LINE_VERIFY_MALFORMED_RESPONSE'],
+    [200, {iss:'https://access.line.me',aud:'test-channel',exp:1}, 'LINE_TOKEN_EXPIRED'],
+    [200, {iss:'https://access.line.me',aud:'test-channel',exp:Date.now()/1000+600}, 'LINE_SUB_MISSING']
+  ];
+  for(const [status,body,code] of cases) {
+    const e=env();
+    e.ctx.Utilities.computeDigest=()=>{throw Error('authentication must not hash tokens')};
+    e.ctx.UrlFetchApp.fetch=()=>{assert(!e.locked);return {getResponseCode:()=>status,getContentText:()=>typeof body==='string'?body:JSON.stringify(body)}};
+    const result=e.call('identityBootstrap',{idToken:'diagnostic-secret'});
+    assert.equal(result.diagnosticCode,code);assert.equal(result.state,'AUTH_ERROR');
+    assert(!JSON.stringify(result).includes('diagnostic-secret'));assert.equal(e.writes,0);assert.equal(e.logs.length,0);
+  }
+  let e=env(); e.ctx.PropertiesService.getScriptProperties=()=>({getProperty:()=>''});
+  assert.equal(e.call('identityBootstrap').diagnosticCode,'LINE_CHANNEL_ID_MISSING');assert.equal(e.verifies,0);
+  e=env();assert.equal(e.call('identityBootstrap',{idToken:'network-secret'}).diagnosticCode,'LINE_VERIFY_NETWORK_ERROR');
+  assert.equal(e.call('identityBootstrap',{idToken:''}).diagnosticCode,'LINE_TOKEN_MISSING_OR_INVALID');
+  delete e.tables['員工資料表'];assert.equal(e.call('identityBootstrap').diagnosticCode,'BACKEND_SCHEMA_ERROR');
+  e=env();e.ctx.employeeLegacyRows_=()=>{throw Error('diagnostic-secret')};
+  const lookup=e.call('identityBootstrap');assert.equal(lookup.diagnosticCode,'BACKEND_LOOKUP_ERROR');assert(!JSON.stringify(lookup).includes('diagnostic-secret'));
+  e=env();e.ctx.employeeBootstrap_=()=>{throw Error('diagnostic-secret')};assert.equal(e.call('identityBootstrap').diagnosticCode,'BACKEND_INTERNAL_ERROR');
+});
 console.log(`${checks} test groups passed; no network or production writes.`);

@@ -52,3 +52,24 @@ requestId 為 16–100 字元英數／底線／連字號，前端使用 UUID。�
 `node tests/employee-foundation-browser.cjs`（需環境提供 Playwright；可用 `PLAYWRIGHT_MODULE` 指定模組路徑、`CHROME_PATH` 指定 Chrome。）
 
 測試只使用虛構資料與記憶體 Sheet，瀏覽器攔截全部網路。未執行真實 LINE verify、正式 GAS 寫入或 migration。真實 LIFF openid、GAS 執行授權、Sheet 格式與部署版本仍需上線前人工小量驗證。
+
+## 安全診斷（需另行人工更新部署）
+
+原本的 `AUTH_ERROR` 同時涵蓋 LINE 連線、HTTP、token 拒絕及 claims 檢查，不能單憑此代碼確認根因。GAS catch 後正常回傳 JSON，因此 execution completed 不是驗證成功證據。main 的獨立測試頁也把拋出的例外統一轉成 REQUEST_FAILED，可能是 fetch、HTTP 或 JSON 解析失敗，不能當成第二次 token 拒絕的證據。
+
+新後端保留原 `code`／`state`，另加固定白名單語意的 `diagnosticCode`：
+
+- `LINE_CHANNEL_ID_MISSING`：Script Property 未設定；不是 LIFF ID，必須是該 LIFF 所屬 LINE Login channel ID。
+- `LINE_TOKEN_MISSING_OR_INVALID`：輸入缺少或不符合既有基本限制。
+- `LINE_VERIFY_NETWORK_ERROR`：UrlFetch／取得狀態發生例外，包含可能的授權或配額問題，無法單靠此碼進一步辨別。
+- `LINE_VERIFY_HTTP_ERROR`：非 200／400／401（例如 429、5xx），不輸出原始 body。
+- `LINE_TOKEN_REJECTED`：400／401 未提供可對應的已知拒絕原因。
+- `LINE_AUDIENCE_MISMATCH`、`LINE_ISSUER_MISMATCH`、`LINE_TOKEN_EXPIRED`：成功 claims 檢查或 LINE 官方精確 error_description 對應。未知描述不猜測分類。
+- `LINE_SUB_MISSING`、`LINE_VERIFY_MALFORMED_RESPONSE`：缺有效 sub 或 JSON／claims 格式不符。
+- `BACKEND_SCHEMA_ERROR`、`BACKEND_IDENTITY_CONFLICT`、`BACKEND_LOOKUP_ERROR`、`BACKEND_INTERNAL_ERROR`：資料表、身分衝突、查詢或其他新流程錯誤。
+
+前端另區分 `GAS_NETWORK_ERROR`、`GAS_HTTP_ERROR`、`GAS_NON_JSON_RESPONSE`、`GAS_RESPONSE_INVALID`。只顯示內建訊息，未知 code 不原樣顯示。沒有新增 log、token 雜湊、token 儲存或原始 LINE 回應輸出。
+
+人工更新 GAS 時只需更新 `EmployeeIdentity.gs`（新增 employeeAuthFailure_、更新 verifyLiffIdentity_）與 `EmployeeApplication.gs` 的 handleEmployeeFoundation_（分階段及診斷欄位）。本輪沒有變更 Code.gs、employeeFoundationRequest_ 或 LifecycleStore；既有 dispatcher 分流仍需已部署。
+
+main 現有測試頁是自含 inline API 的版本，與此 feature 的共用 identity.js 版本不同。之後必須另行批准更新其 inline identityBootstrap fetch／catch 及 fail 顯示：接收 diagnosticCode、只用安全訊息對照、區分四種 GAS transport 錯誤。不要直接把 feature 頁面覆蓋到 main 而遺漏其 js/identity.js 相依，也不要為測試改動正式登入流程。本輪不修改 main、不部署 GAS。

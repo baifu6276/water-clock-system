@@ -44,6 +44,7 @@
       const byId = id => document.getElementById(id);
       const put = (id, text) => { byId(id).textContent = text; };
       const errors = {
+        ...window.EmployeeIdentity?.diagnostics,
         CONFIG_ERROR: '設定尚未完成，請聯絡管理員確認 LINE channel 與 GAS 部署。',
         LIFF_INIT_ERROR: 'LIFF 初始化失敗，請從 LINE 重新開啟。',
         LOGIN_REQUIRED: '尚未登入，請按「使用 LINE 登入」。',
@@ -109,7 +110,8 @@
           if (result.state === 'AUTH_ERROR') fail('AUTH_ERROR');
           else put('message', '身分狀態讀取完成；未執行任何業務寫入。');
         } catch (error) {
-          put('state', '無法確認'); fail(error && typeof error.code === 'string' ? error.code : 'REQUEST_FAILED');
+          put('state', '無法確認'); fail(error?.diagnosticCode || (error && typeof error.code === 'string' ? error.code : 'REQUEST_FAILED'));
+          if (error?.code === 'AUTH_ERROR') put('state', 'AUTH_ERROR（驗證失敗）');
         } finally { busy = false; byId('retry').disabled = false; }
       }
       byId('retry').addEventListener('click', check);

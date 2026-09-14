@@ -9,8 +9,12 @@ function employeeFoundationRequest_(e) {
   } catch (_) { return null; }
 }
 function handleEmployeeFoundation_(data) {
+  var stage = 'VERIFY';
   try {
-    var context = resolveEmployeeIdentity_(data.idToken); // No ScriptLock during LINE request.
+    var verified = verifyLiffIdentity_(data.idToken);
+    stage = 'LOOKUP';
+    var context = employeeContext_(verified); // No ScriptLock during LINE request.
+    stage = 'ACTION';
     var action = data.action.trim(), result;
     if (action === 'identityBootstrap') result = employeeBootstrap_(context);
     else if (action === 'employeeApplicationListOwn') result = { success: true, applications: employeeOwnApplications_(context).map(employeePublicApplication_) };
@@ -26,6 +30,9 @@ function handleEmployeeFoundation_(data) {
     // Only locally authored errors may cross the API boundary.
     return jsonResponse_({ success: false, code: error.employeeCode || 'OPERATION_ERROR',
       state: error.employeeCode === 'AUTH_ERROR' ? 'AUTH_ERROR' : undefined,
+      diagnosticCode: error.employeeDiagnosticCode || (error.employeeCode === 'SCHEMA_ERROR' ? 'BACKEND_SCHEMA_ERROR' :
+        error.employeeCode === 'IDENTITY_CONFLICT' ? 'BACKEND_IDENTITY_CONFLICT' :
+        !error.employeeCode ? (stage === 'LOOKUP' ? 'BACKEND_LOOKUP_ERROR' : 'BACKEND_INTERNAL_ERROR') : undefined),
       message: error.employeeCode ? error.message : '操作結果尚未確認，請以原操作重試或聯絡管理員。' });
   }
 }

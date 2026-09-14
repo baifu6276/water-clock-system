@@ -5,27 +5,45 @@ function employeeFailure_(code, message) {
   throw error;
 }
 
+// Only locally authored diagnostic codes/messages cross the API boundary.
+function employeeAuthFailure_(diagnosticCode) {
+  var error = new Error('LINE 身分驗證未完成，請依安全診斷代碼確認。');
+  error.employeeCode = diagnosticCode === 'LINE_CHANNEL_ID_MISSING' ? 'CONFIG_ERROR' : 'AUTH_ERROR';
+  error.employeeDiagnosticCode = diagnosticCode;
+  throw error;
+}
 function verifyLiffIdentity_(idToken) {
   var channelId = PropertiesService.getScriptProperties().getProperty('LINE_LOGIN_CHANNEL_ID');
-  if (!channelId) employeeFailure_('CONFIG_ERROR', '身分驗證尚未設定，請聯絡管理員。');
-  if (typeof idToken !== 'string' || !idToken.trim() || idToken.length > 16384) {
-    employeeFailure_('AUTH_ERROR', '請重新開啟 LINE 並登入。');
-  }
-  var response;
+  if (!channelId || !String(channelId).trim()) employeeAuthFailure_('LINE_CHANNEL_ID_MISSING');
+  if (typeof idToken !== 'string' || !idToken.trim() || idToken.length > 16384) employeeAuthFailure_('LINE_TOKEN_MISSING_OR_INVALID');
+  var response, status;
   try {
     response = UrlFetchApp.fetch('https://api.line.me/oauth2/v2.1/verify', {
       method: 'post', contentType: 'application/x-www-form-urlencoded',
       payload: { id_token: idToken, client_id: channelId }, muteHttpExceptions: true
     });
-  } catch (_) { employeeFailure_('AUTH_ERROR', '目前無法驗證 LINE 身分，請稍後再試。'); }
+    status = response.getResponseCode();
+  } catch (_) { employeeAuthFailure_('LINE_VERIFY_NETWORK_ERROR'); }
+  // Do not inspect or return error bodies for redirects/rate limits/server errors.
+  if (status !== 200 && status !== 400 && status !== 401) employeeAuthFailure_('LINE_VERIFY_HTTP_ERROR');
   var claims;
   try { claims = JSON.parse(response.getContentText()); }
-  catch (_) { employeeFailure_('AUTH_ERROR', 'LINE 身分驗證失敗，請重新登入。'); }
-  if (response.getResponseCode() !== 200 || !claims || claims.iss !== 'https://access.line.me' ||
-      String(claims.aud) !== String(channelId) || typeof claims.sub !== 'string' || !claims.sub.trim() ||
-      typeof claims.exp !== 'number' || !Number.isFinite(claims.exp) || claims.exp <= Date.now() / 1000) {
-    employeeFailure_('AUTH_ERROR', 'LINE 身分驗證失敗，請重新登入。');
+  catch (_) { employeeAuthFailure_('LINE_VERIFY_MALFORMED_RESPONSE'); }
+  if (!claims || typeof claims !== 'object' || Array.isArray(claims)) employeeAuthFailure_('LINE_VERIFY_MALFORMED_RESPONSE');
+  if (status !== 200) {
+    // Exact documented LINE descriptions only; never forward raw error text.
+    var known = {
+      'Invalid IdToken Audience.': 'LINE_AUDIENCE_MISMATCH',
+      'Invalid IdToken Issuer.': 'LINE_ISSUER_MISMATCH',
+      'IdToken expired.': 'LINE_TOKEN_EXPIRED'
+    };
+    employeeAuthFailure_(Object.prototype.hasOwnProperty.call(known, claims.error_description) ? known[claims.error_description] : 'LINE_TOKEN_REJECTED');
   }
+  if (claims.iss !== 'https://access.line.me') employeeAuthFailure_('LINE_ISSUER_MISMATCH');
+  if (String(claims.aud) !== String(channelId)) employeeAuthFailure_('LINE_AUDIENCE_MISMATCH');
+  if (typeof claims.exp !== 'number' || !Number.isFinite(claims.exp)) employeeAuthFailure_('LINE_VERIFY_MALFORMED_RESPONSE');
+  if (claims.exp <= Date.now() / 1000) employeeAuthFailure_('LINE_TOKEN_EXPIRED');
+  if (typeof claims.sub !== 'string' || !claims.sub.trim()) employeeAuthFailure_('LINE_SUB_MISSING');
   return { sub: claims.sub, channelId: String(channelId) };
 }
 
