@@ -1,0 +1,7 @@
+#employeeIdentityPanel { margin-top: 20px; text-align: left; overflow-wrap: anywhere; }
+#employeeIdentityPanel fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+#employeeIdentityPanel label { display: block; margin: 12px 0; }
+#employeeIdentityPanel input, #employeeIdentityPanel textarea { display: block; width: 100%; box-sizing: border-box; font-size: 16px; padding: 10px; }
+#employeeIdentityPanel button { margin: 8px 0; padding: 12px; width: 100%; font-size: 16px; }
+#employeeIdentityPanel article { padding: 12px; margin-top: 12px; border: 1px solid #ddd; border-radius: 8px; }
+#employeeIdentityPanel [hidden] { display: none !important; }

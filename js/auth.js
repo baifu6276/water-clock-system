@@ -133,6 +133,8 @@
         );
 
 
+        if (!await window.EmployeeIdentity.route()) return;
+
         const result =
           await callApi({
 

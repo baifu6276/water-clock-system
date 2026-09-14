@@ -1,0 +1,54 @@
+# 人員身分與加入申請基礎層（第一批）
+
+本批沒有部署 GAS、建立正式 Sheet 或執行 migration。沒有核准、離職、回任、停職、重綁或薪資寫入功能。
+
+## 正式來源
+
+`Code.gs` 搬入自使用者提供的正式 `Code_v3_4_3_progress_percent_override.txt`。
+原始檔 SHA-256：`8afc109fb41c98682f1bc3d0a7ab7406587d03d3d4df597d8f5eecd934399e73`。
+來源內較舊的版本註解／health 字串原樣保留。唯一變更是 `doPost` 開頭的新 action 分流；測試以雜湊確認其餘來源完整。
+
+## 部署前置條件（人工處理）
+
+1. 在原 Apps Script 專案 Script Properties 設定 `LINE_LOGIN_CHANNEL_ID`，值為目前 LIFF 所屬 LINE Login channel 的 ID，不能填 LIFF ID。這不是 secret。本方案不需要 channel secret。
+2. 確認目前 LIFF 已啟用 `openid` scope，可取得 `liff.getIDToken()`。不改現有 LIFF ID 或 GAS Web App URL。
+3. 由管理員在原 Spreadsheet 準備四張空表，第一列依 `EmployeeLifecycleStore.gs` 的 `EMPLOYEE_TABLES_` headers，完整且同序：員工加入申請 A:Q、員工任職紀錄 A:U、員工LINE綁定紀錄 A:N、員工異動紀錄 A:R。程式只驗證、不自動建立表；不改員工資料表 A:L。不要加入額外非空欄位。
+4. 四個 `.gs` 檔須同時置入同一個原有、綁定 Spreadsheet 的 GAS 專案，使用 V8 runtime；更新既有 Web App deployment。保留原部署設定，不新增另一個 endpoint。
+5. 先確認 GAS 設定／部署，再發布 frontend；新 frontend 的登入需要 `identityBootstrap`，後端未部署會阻止登入，不以舊信任模式繞過失敗。必須實機驗證既有員工登入，再驗證新人申請。
+
+LINE token 僅放本次請求記憶體，不寫 Sheet、audit、sessionStorage 或 log。使用 LINE 官方驗證端點及 `client_id`，檢查 issuer、audience、sub、expiry；不能用前端 decoded profile 代替。
+參考：[LINE ID token verify](https://developers.line.biz/en/reference/line-login/#verify-id-token)、[LIFF 使用者資料安全](https://developers.line.biz/en/docs/liff/using-user-profile/)。
+
+## 新 action 契約
+
+全部維持 POST、`text/plain;charset=utf-8`、JSON body、`redirect: "follow"`。共同欄位為 `action`、`idToken`；忽略前端 userId／employeeId／role。
+
+| action | 額外 request 欄位 | 成功回應 |
+|---|---|---|
+| identityBootstrap | 無 | success, state, employee（最小 ID／姓名／權限或 null） |
+| employeeApplicationSubmit | requestId, type=`NEW_EMPLOYEE`, name, phone, note | success, application |
+| employeeApplicationListOwn | 無 | success, applications |
+| employeeApplicationCancel | requestId, applicationId, expectedVersion（整數） | success, application |
+| employeeLifecycleBaselineDryRun | 無 | success, dryRun, duplicateEmployeeIds, duplicateLineUids, blankEmployeeId, blankLineUid, unknownStatus, noOwner, eligibleEmploymentCount, eligibleBindingCount, exceptions |
+
+application 只回傳 applicationId/type/name/phone/note/status/createdAt/cancelledAt/version，不回傳 LINE identity 或 request hash。
+requestId 為 16–100 字元英數／底線／連字號，前端使用 UUID。錯誤格式為 `success:false, code, message`，驗證錯誤另有 `state:AUTH_ERROR`，不會降級成 UNREGISTERED。
+
+## 鎖、重試與資料完整性
+
+- 新 action 在舊 dispatcher 全域鎖之前識別，LINE 驗證在無鎖時執行；舊 action 及其鎖原樣保留。
+- 申請／取消在驗證後取得短 ScriptLock，重新查員工與綁定，再做 requestId/hash、version、本人範圍檢查及 Sheet 寫入。
+- 變更新增 STARTED audit intent、寫申請、追加 COMPLETED audit。若中途失敗，以原 requestId 恢復；before/after image 與版本不符則拒絕，不覆寫不明變更。
+- 相同 requestId 相同內容不重複寫入；不同內容回 REQUEST_CONFLICT。另一個 requestId 遇到既有待審申請只記接收紀錄 `APPLICATION_SUBMIT_EXISTING`，不新增申請，不提升版本。
+- 同一身分有未完成 intent 時，其他變更回 OPERATION_PENDING。前端保留未確認的業務請求於 sessionStorage，只由使用者按「重試前次操作」重送，不儲存 token、不自動重送。關閉視窗／清除儲存會失去前端重試資料；需管理員查 audit 的原 requestId 處理，不應另建申請或手動覆寫版本。
+- baseline 僅強驗證後的在職 OWNER/ADMIN 可用，全程只讀。`noOwner` 表示沒有在職 OWNER。缺到職日保持未知；既有任職／綁定列不重建。此批不提供 baseline 正式套用工具。
+- 舊員工以主檔 LINE 欄匹配；有正式綁定紀錄時以有效綁定為準，衝突 fail closed。此批不建立綁定，也不實作重綁；未來重綁需同步處理 legacy API 相容性後才可開放。
+- 舊 attendance/payroll/daily report/progress action 尚未改為 token 驗證，不能宣稱本批已完成全系統強授權或歷史薪資保護改造。
+
+## 本機測試
+
+`node tests/employee-foundation.test.cjs`
+
+`node tests/employee-foundation-browser.cjs`（需環境提供 Playwright；可用 `PLAYWRIGHT_MODULE` 指定模組路徑、`CHROME_PATH` 指定 Chrome。）
+
+測試只使用虛構資料與記憶體 Sheet，瀏覽器攔截全部網路。未執行真實 LINE verify、正式 GAS 寫入或 migration。真實 LIFF openid、GAS 執行授權、Sheet 格式與部署版本仍需上線前人工小量驗證。
