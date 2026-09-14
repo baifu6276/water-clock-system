@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>員工身分驗證測試頁</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; background: #f3f5f7; color: #172331; }
+    main { max-width: 600px; margin: auto; padding: 20px; background: white; border-radius: 12px; }
+    h1 { font-size: 24px; } .badge { color: #8b3500; font-weight: bold; }
+    dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 14px; }
+    dt { font-weight: bold; } dd { margin: 0; overflow-wrap: anywhere; }
+    button { padding: 12px; margin: 8px 0; width: 100%; font: inherit; min-height: 48px; }
+    #message { overflow-wrap: anywhere; } [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="badge">獨立測試頁 · 非正式操作介面</p>
+    <h1>員工 LINE 身分驗證</h1>
+    <p>只讀取身分狀態。此頁沒有申請送出、打卡、薪資或工程進度寫入功能。</p>
+    <dl>
+      <dt>LIFF 初始化</dt><dd id="init">尚未開始</dd>
+      <dt>是否在 LINE 內</dt><dd id="inLine">尚未確認</dd>
+      <dt>ID token 是否可取得</dt><dd id="token">尚未確認（不顯示內容）</dd>
+      <dt>identityBootstrap 狀態</dt><dd id="state">尚未呼叫</dd>
+      <dt>員工編號（測試診斷）</dt><dd id="employeeId">—</dd>
+      <dt>姓名</dt><dd id="employeeName">—</dd>
+      <dt>錯誤代碼</dt><dd id="code">—</dd>
+    </dl>
+    <p id="message" role="status" aria-live="polite">準備初始化。</p>
+    <button id="retry" type="button" disabled>重新檢查身分</button>
+    <button id="login" type="button" hidden>使用 LINE 登入</button>
+    <p>驗證失敗不代表尚未註冊。若後端尚未部署新 action，請聯絡管理員。</p>
+  </main>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="../js/identity.js"></script>
+  <script>
+    // identity.js request() reads this lexical setting; never invoke its production route().
+    let GAS_URL;
+    (() => {
+      'use strict';
+      const byId = id => document.getElementById(id);
+      const put = (id, text) => { byId(id).textContent = text; };
+      const errors = {
+        CONFIG_ERROR: '設定尚未完成，請聯絡管理員確認 LINE channel 與 GAS 部署。',
+        LIFF_INIT_ERROR: 'LIFF 初始化失敗，請從 LINE 重新開啟。',
+        LOGIN_REQUIRED: '尚未登入，請按「使用 LINE 登入」。',
+        TOKEN_UNAVAILABLE: '無法取得 ID token，請重新登入；若仍失敗，請確認 LIFF openid 設定。',
+        AUTH_ERROR: 'LINE 身分驗證失敗，不能視為尚未註冊。',
+        SCHEMA_ERROR: '後端資料表尚未設定完成，請聯絡管理員。',
+        IDENTITY_CONFLICT: '員工或 LINE 綁定資料需要管理員確認。',
+        OPERATION_ERROR: '後端操作未完成，請聯絡管理員。',
+        RESPONSE_ERROR: '身分回應格式不符，請確認部署版本。',
+        REQUEST_FAILED: '未取得有效回應，請稍後手動重試並確認 GAS 部署。'
+      };
+      const states = {
+        ACTIVE_EMPLOYEE: '在職員工', UNREGISTERED: '尚未註冊', APPLICATION_PENDING: '申請待審核',
+        SUSPENDED: '停職', LEAVE: '留停', TERMINATED: '離職', AUTH_ERROR: '驗證失敗'
+      };
+      function fail(code) {
+        const safe = Object.hasOwn(errors, code) ? code : 'REQUEST_FAILED';
+        put('code', safe); put('message', errors[safe]);
+        if (safe === 'AUTH_ERROR') put('state', 'AUTH_ERROR（驗證失敗）');
+      }
+      let busy = false, initialized = false;
+      async function check() {
+        if (busy) return;
+        busy = true; byId('retry').disabled = true; byId('login').hidden = true;
+        ['employeeId', 'employeeName', 'code'].forEach(id => put(id, '—'));
+        put('state', '尚未呼叫'); put('token', '尚未確認（不顯示內容）');
+        put('message', '正在檢查…');
+        try {
+          if (!initialized) {
+            put('init', '初始化中');
+            // config.js has a production load listener. Read only the two string constants;
+            // do not execute/eval it or load any production workflow modules.
+            let config;
+            try {
+              const response = await fetch('../js/config.js', { cache: 'no-store' });
+              if (!response.ok) throw new Error();
+              config = await response.text();
+              const id = config.match(/\bconst\s+LIFF_ID\s*=\s*"([^"\r\n]+)"\s*;/);
+              const url = config.match(/\bconst\s+GAS_URL\s*=\s*"([^"\r\n]+)"\s*;/);
+              if (!id || !url || new URL(url[1]).origin !== 'https://script.google.com') throw new Error();
+              GAS_URL = url[1];
+              config = id[1];
+            } catch (_) { put('init', '設定讀取失敗'); fail('CONFIG_ERROR'); return; }
+            try { await liff.init({ liffId: config }); }
+            catch (_) { put('init', '失敗'); fail('LIFF_INIT_ERROR'); return; }
+            initialized = true; put('init', '成功');
+          }
+          put('inLine', liff.isInClient() ? '是' : '否（外部瀏覽器）');
+          if (!liff.isLoggedIn()) { put('token', '否'); byId('login').hidden = false; fail('LOGIN_REQUIRED'); return; }
+          const available = Boolean(liff.getIDToken());
+          put('token', available ? '是（不顯示內容）' : '否');
+          if (!available) { fail('TOKEN_UNAVAILABLE'); return; }
+          put('state', '讀取中');
+          const result = await window.EmployeeIdentity.request('identityBootstrap');
+          if (!Object.hasOwn(states, result.state)) { put('state', '無法確認'); fail('RESPONSE_ERROR'); return; }
+          if (result.state === 'ACTIVE_EMPLOYEE') {
+            if (typeof result.employee?.employeeId !== 'string' || !result.employee.employeeId || typeof result.employee.name !== 'string') {
+              put('state', '無法確認'); fail('RESPONSE_ERROR'); return;
+            }
+            put('employeeId', result.employee.employeeId); put('employeeName', result.employee.name || '名稱未設定');
+          }
+          put('state', result.state + '（' + states[result.state] + '）');
+          if (result.state === 'AUTH_ERROR') fail('AUTH_ERROR');
+          else put('message', '身分狀態讀取完成；未執行任何業務寫入。');
+        } catch (error) {
+          put('state', '無法確認'); fail(error && typeof error.code === 'string' ? error.code : 'REQUEST_FAILED');
+        } finally { busy = false; byId('retry').disabled = false; }
+      }
+      byId('retry').addEventListener('click', check);
+      byId('login').addEventListener('click', () => {
+        try { liff.login({ redirectUri: location.origin + location.pathname }); }
+        catch (_) { fail('LIFF_INIT_ERROR'); }
+      });
+      check();
+    })();
+  </script>
+</body>
+</html>
