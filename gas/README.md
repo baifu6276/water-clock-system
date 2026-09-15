@@ -1,5 +1,16 @@
 # 人員身分與加入申請基礎層（第一批）
 
+## 身分基礎層驗收與操作備忘
+
+使用者已回報原 Web App 原址更新至版本 40 後，真實 LIFF 初始化、LINE 環境、ID token 取得與在職員工的 identityBootstrap 均成功，結果為 ACTIVE_EMPLOYEE；本輪未重新呼叫正式 API。先前 editor probe 的權限錯誤，在明列 scopes 並由部署帳號重新授權後，變為 HTTP_RESPONSE_RECEIVED／400，確認該次問題是 UrlFetch 授權。此紀錄不保存員工姓名、ID、LINE sub 或 token。
+
+- UrlFetchApp 需要 `script.external_request`；目前 manifest 同時保留既有試算表需求 `spreadsheets.currentonly`，與使用者確認成功的線上設定一致。
+- 新增／調整 scope 後，原部署帳號須先在 editor 手動執行 `employeeIdentityEditorConnectivityTest()`，依提示完成新 scope 授權。
+- probe 僅用固定假資料，不經 API、未讀寫 Sheet；HTTP_RESPONSE_RECEIVED 加上假資料 400／401 表示可取得 LINE HTTP 回應，不表示假 token 有效。
+- 授權與 probe 成功後，將**現有 Web App deployment**更新至新版本，保留原 /exec URL；不必另建 deployment。
+- 正式驗證仍由 LINE server-side verify 判定真 token，再檢查 issuer／audience／expiry／sub；identityBootstrap 只讀。token／原始 LINE 回應不記錄或持久化；申請與 audit 中必要的 verified sub 關聯依原核准 schema 保留，並非所有 sub 都禁止儲存。
+- 本次只驗收身分基礎層；管理員正式核准尚未實作。下方排查說明保留歷程，其中「尚未驗證」應以本節的使用者實測回報更新理解。
+
 目前授權修復請以本文末「完整 scope 盤點與人工授權順序」為準；前面的診斷段落保留排查經過。
 
 本批沒有部署 GAS、建立正式 Sheet 或執行 migration。沒有核准、離職、回任、停職、重綁或薪資寫入功能。

@@ -255,4 +255,16 @@ test('complete explicit manifest preserves deployment settings and current-file 
   assert(!/\b(DriveApp|GmailApp|MailApp|CalendarApp|DocumentApp|SlidesApp|FormApp|ScriptApp|HtmlService)\s*\./.test(source));
   assert(!/Session\s*\.\s*(getActiveUser|getEffectiveUser)\s*\(/.test(source));
 });
+test('acceptance: active bootstrap is read-only and doPost cannot dispatch editor probe', () => {
+  const e=env(), before=JSON.stringify(e.tables);
+  const result=e.call('identityBootstrap',{},'owner');
+  assert.equal(result.state,'ACTIVE_EMPLOYEE');assert.equal(result.employee.employeeId,'E-owner');
+  assert.equal(JSON.stringify(e.tables),before);assert.equal(e.writes,0);assert.equal(e.logs.length,0);
+  assert(!JSON.stringify(result).includes('token:'));assert(!JSON.stringify(result).includes('lineSub'));
+  const verifies=e.verifies;
+  e.ctx.employeeIdentityEditorConnectivityTest=()=>{throw Error('must not dispatch editor probe')};
+  const rejected=e.call('employeeIdentityEditorConnectivityTest');
+  assert.equal(rejected.success,false);assert.equal(e.verifies,verifies);
+  assert.equal(JSON.stringify(e.tables),before);assert.equal(e.writes,0);assert.equal(e.logs.length,0);
+});
 console.log(`${checks} test groups passed; no network or production writes.`);
