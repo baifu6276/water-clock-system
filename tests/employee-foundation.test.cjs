@@ -238,4 +238,21 @@ test('editor-only dummy probe: status only, no identity reads, writes, hashes or
   for(const [message,hint] of cases){const error=Error(message+' secret-sentinel');const r=probe(null,error);assert.equal(r.success,false);assert.equal(r.hint,hint);assert.equal(r.exceptionType,'Error');}
   const hostile=Error('secret-sentinel');hostile.name='secret-sentinel';assert.equal(probe(null,hostile).exceptionType,'UNCLASSIFIED');
 });
+test('complete explicit manifest preserves deployment settings and current-file scope', () => {
+  const manifest=JSON.parse(read('gas/appsscript.json'));
+  assert.equal(manifest.timeZone,'Asia/Taipei');assert.equal(manifest.runtimeVersion,'V8');
+  assert.equal(manifest.exceptionLogging,'STACKDRIVER');assert.deepEqual(manifest.dependencies,{});
+  assert.deepEqual(manifest.webapp,{executeAs:'USER_DEPLOYING',access:'ANYONE_ANONYMOUS'});
+  assert.deepEqual(manifest.oauthScopes,[
+    'https://www.googleapis.com/auth/spreadsheets.currentonly',
+    'https://www.googleapis.com/auth/script.external_request'
+  ]);
+  // New service/file use needs a fresh scope audit, not a silently stale manifest.
+  const gs=fs.readdirSync(path.join(root,'gas')).filter(f=>f.endsWith('.gs')).sort();
+  assert.deepEqual(gs,files.map(f=>f+'.gs').sort());
+  const source=gs.map(f=>read('gas/'+f)).join('\n');
+  assert(!/SpreadsheetApp\s*\.\s*(openById|openByUrl|create)\s*\(/.test(source));
+  assert(!/\b(DriveApp|GmailApp|MailApp|CalendarApp|DocumentApp|SlidesApp|FormApp|ScriptApp|HtmlService)\s*\./.test(source));
+  assert(!/Session\s*\.\s*(getActiveUser|getEffectiveUser)\s*\(/.test(source));
+});
 console.log(`${checks} test groups passed; no network or production writes.`);

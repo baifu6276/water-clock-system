@@ -1,5 +1,7 @@
 # 人員身分與加入申請基礎層（第一批）
 
+目前授權修復請以本文末「完整 scope 盤點與人工授權順序」為準；前面的診斷段落保留排查經過。
+
 本批沒有部署 GAS、建立正式 Sheet 或執行 migration。沒有核准、離職、回任、停職、重綁或薪資寫入功能。
 
 ## 正式來源
@@ -91,3 +93,58 @@ repo 沒有 appsscript.json，不能据此推斷線上 manifest 有或沒有 ext
 GAS_HTTP_ERROR 是瀏覽器 fetch 得到非成功 HTTP 狀態時產生。新後端 catch 回傳的是 ContentService JSON，沒有設定非 2xx；LINE_VERIFY_* 不會被程式直接轉成 GAS_HTTP_ERROR。部署／Google 前端／重新導向鏈或平台層失敗仍可能影響 HTTP；Completed 也不能證明瀏覽器成功收到 JSON。需要該次 HTTP 狀態等證據再判斷，不變更 Web App URL 或存取政策。
 
 本次手動替換 GAS 只需 EmployeeIdentity.gs（新 helper 與 verifyLiffIdentity_ catch），更新原 deployment 的版本。EmployeeApplication.gs、Code.gs、store 不變。現有 main 測試頁尚無以上五個新代碼白名單，僅更新 GAS 時可能回退顯示 AUTH_ERROR；需另行授權只擴充 main 測試頁的安全訊息表，才能在手機看見細分類。本輪只更新 feature 前端對照表，未修改 main。
+
+## 完整 scope 盤點與人工授權順序
+
+實測 editor probe 回傳 PERMISSION_ERROR + EXTERNAL_REQUEST_SCOPE_MENTIONED，證明當次執行缺 UrlFetch 授權；不能据此斷言「没有 oauthScopes 就是錯誤」。GAS 原本可自動偵測 scopes，也可能是執行帳號尚未重新授權。新增顯式 scopes 後，它是完整需求清單，不會自動補入未列出的服務。
+
+### 原始碼盤點
+
+檢查 repository 全部四個 GAS 檔案：Code.gs、EmployeeIdentity.gs、EmployeeApplication.gs、EmployeeLifecycleStore.gs；没有 clasp 設定或其他 GAS 子專案。GAS 原始碼集中在 gas/，故 manifest 版控於 gas/appsscript.json；手動貼到線上專案的 appsscript.json，不是建立 gas 子資料夾，也不放 GitHub Pages 根目錄。
+
+| 實際服務 | 實際方法／用途 | 所需 OAuth |
+|---|---|---|
+| SpreadsheetApp | getActiveSpreadsheet、flush；衍生 Spreadsheet/Sheet/Range 的 getSheetByName、getDataRange、getRange、getLastRow、getLastColumn、getValues、appendRow、setValue、setValues、clearContent | spreadsheets.currentonly |
+| UrlFetchApp | fetch：LINE verify 與假資料 editor probe | script.external_request |
+| PropertiesService | getScriptProperties().getProperty：讀 channel ID | 無額外 OAuth scope |
+| LockService | getScriptLock、waitLock、tryLock、releaseLock | 無額外 OAuth scope |
+| Utilities | formatDate、getUuid、computeDigest（业务 request hash）、DigestAlgorithm/Charset 列舉 | 無額外 OAuth scope |
+| ContentService | createTextOutput、setMimeType、MimeType.JSON | 無額外 OAuth scope |
+| Session | 僅 getScriptTimeZone，沒有讀使用者 email | 無額外 OAuth scope，不加 userinfo.email |
+| console | 編輯器診斷固定安全 JSON | 無額外 OAuth scope |
+
+沒有 DriveApp、HtmlService、ScriptApp、GmailApp、MailApp、CalendarApp、DocumentApp、SlidesApp、FormApp、CacheService、Jdbc、Maps、LanguageApp 或進階 Drive/Sheets API 呼叫。照片牆／Drive 仍未實作於目前 GAS，不能先加未来權限。JSON、Date、Math 等是 JavaScript 內建，不是 Google OAuth 服務。
+
+出勤、薪資、每日回報、工地日報、工程進度均於 Code.gs 讀寫目前試算表；人員申請/audit/store 同樣讀寫目前試算表。沒有 SpreadsheetApp.openById/openByUrl/create、copyTo 另一檔或 Drive 操作。故使用支援這些方法的較窄 spreadsheets.currentonly，而非全 spreadsheets 或 readonly（既有模組必須寫入）。原本就依賴 getActiveSpreadsheet 的執行環境，此批不改其綁定／檔案選擇方式。
+
+完整 manifest 見同目錄 appsscript.json。只新增 oauthScopes 兩項；其餘欄位完全沿用使用者提供的線上 manifest。沒有改 URL、executeAs、access 或 runtime。
+
+### Google 官方依據
+
+- [明列 scopes 與最小權限](https://developers.google.com/apps-script/concepts/scopes)
+- [SpreadsheetApp.getActiveSpreadsheet 的 currentonly 選項](https://developers.google.com/apps-script/reference/spreadsheet/spreadsheet-app#getActiveSpreadsheet())
+- [Sheet.appendRow 授權](https://developers.google.com/apps-script/reference/spreadsheet/sheet#appendRow(Object))、[Range 讀寫授權](https://developers.google.com/apps-script/reference/spreadsheet/range)
+- [UrlFetchApp 的 external_request 要求](https://developers.google.com/apps-script/reference/url-fetch/url-fetch-app)
+- [Session.getScriptTimeZone](https://developers.google.com/apps-script/reference/base/session#getScriptTimeZone())
+- [PropertiesService](https://developers.google.com/apps-script/reference/properties/properties-service)、[LockService](https://developers.google.com/apps-script/reference/lock/lock-service)、[Utilities](https://developers.google.com/apps-script/reference/utilities/utilities)、[ContentService](https://developers.google.com/apps-script/reference/content/content-service)
+- [重新授權與未驗證畫面](https://developers.google.com/apps-script/guides/services/authorization)、[Web App 執行身分](https://developers.google.com/apps-script/guides/web)
+
+### 操作步驟（不需改任何 Sheet）
+
+1. 留在目前原 GAS 專案，確認右上角是原 Web App 的部署帳號。USER_DEPLOYING 使用部署者授權；不同帳號在 editor 成功不能保證部署者也有權限。
+2. 若目前已開 appsscript.json，直接保留一份舊內容，再用本 repo gas/appsscript.json 完整內容替換；若未顯示，開左側齒輪「專案設定」，勾選顯示 appsscript.json，再回編輯器打開。不要刪除其他 .gs。
+3. 儲存。確認 executeAs 仍為 USER_DEPLOYING、access 仍為 ANYONE_ANONYMOUS、timezone/runtime 不變。這一輪只需替換 manifest；若 editor probe 已存在，不用重新貼任何 .gs。
+4. 上方函式選單選 employeeIdentityEditorConnectivityTest，按「執行」。不選 doPost，不貼 token。這是最新已儲存原始碼的 editor 執行，不必先部署。
+5. 若帳號尚未授權所需 scopes，執行時應出現「需要授權／檢視權限」。選原部署帳號，核對目前試算表存取及外部服務連線需求後允許。已經授權過可能不再提示；不要為了強迫彈窗而撤銷整個正式專案權限。
+6. 若出現「Google hasn't verified this app」，僅在確認是自己管理的原專案、帳號、合理權限，且頁面提供進階入口時，選「進階」→「前往〔自己的專案名稱〕（不安全）」→核對並允許。若專案名稱不符、要求郵件/Drive 等非預期權限，或顯示 blocked／沒有入口，停止，交由 Workspace 管理員／專案管理員確認；不繞過組織政策。
+7. 授權完成後必要時再按一次執行。看安全 JSON：預期 success:true、category:HTTP_RESPONSE_RECEIVED，400/401 是假資料正常拒絕。這只證明 editor 外部請求可取得回應，尚未證明真 token、Sheet 授權或 Web App 都正常。
+8. 若仍 PERMISSION_ERROR，先儲存並重新整理 editor，檢查同一個原部署帳號、manifest scopes 拼寫及外部連線是否獲允許；不要把錯誤當成成功或直接加全 Drive 權限。
+9. probe 成功後，右上「部署」→「管理部署」→選目前正式 Web App →鉛筆編輯→版本選「新版本」→部署。使用同一筆 deployment，保留存取與執行設定；核對 /exec URL 與原本完全相同。不要按建立另一個新 deployment。
+10. 從 LINE 重新開啟既有身分測試頁，重試只讀 identityBootstrap。在職且資料對應正確時預期 ACTIVE_EMPLOYEE 與本人姓名/員工ID；新人則 UNREGISTERED 或 APPLICATION_PENDING，其他狀態依資料正常呈現，不强制在職。
+11. 同時以既有正式介面做只讀載入確認：出勤、薪資、每日回報、工地日報、工程進度清單；不要按刷新結算／儲存／確認等寫入按鈕。明列 scopes 改變授權範圍，應確認所有既有模組的 Sheet 讀取仍正常。正式寫入回歸另以已授權的小量案例驗證。
+
+### 執行模式與完成標準
+
+ANYONE_ANONYMOUS 只代表不要求呼叫者 Google 登入，不會免除部署帳號的 OAuth 授權，也不會把訪客當成員工。新 actions 仍須驗證 LINE ID token；舊 API 原有 userId 信任限制不在本輪擴改。外部請求與試算表操作使用部署者權限與相應配額，設定保持不變。
+
+本次 scope 集合對 repo 現有程式是完整最小集合；若線上另有未版控的其他 .gs／library，不能宣稱涵蓋未知程式。本機 mock 不執行 Google OAuth，無法保證真實 scope 授權結果。必須等部署帳號重新授權、probe 成功、原 deployment 更新、真 LINE 身分及既有 Sheet 模組載入通過，才可稱授權問題已解決。GAS_HTTP_ERROR、Sheet schema、LINE token 拒絕等若仍出現，須分別追查。
