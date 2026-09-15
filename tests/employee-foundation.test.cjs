@@ -206,4 +206,36 @@ test('UrlFetch exception categories never disclose exception data or hash tokens
     assert(!JSON.stringify(result).includes('sensitive-token-sentinel'));assert.equal(e.logs.length,0);assert.equal(e.writes,0);
   }
 });
+test('editor-only dummy probe: status only, no identity reads, writes, hashes or API exposure', () => {
+  function probe(status, error) {
+    const e=env();
+    e.ctx.PropertiesService.getScriptProperties=()=>{throw Error('must not read properties')};
+    e.ctx.SpreadsheetApp.getActiveSpreadsheet=()=>{throw Error('must not read sheets')};
+    e.ctx.Utilities.computeDigest=()=>{throw Error('must not hash')};
+    e.ctx.UrlFetchApp.fetch=(url,options)=>{
+      assert(!e.locked);assert.equal(url,'https://api.line.me/oauth2/v2.1/verify');
+      assert.equal(options.method,'post');assert.equal(options.contentType,'application/x-www-form-urlencoded');
+      assert.equal(options.payload.id_token,'dummy-invalid-editor-probe');assert.equal(options.payload.client_id,'0');assert(options.muteHttpExceptions);
+      if(error)throw error;
+      return {getResponseCode:()=>status,getContentText:()=>{throw Error('must not read body')}};
+    };
+    const result=e.ctx.employeeIdentityEditorConnectivityTest();
+    assert.equal(e.logs.length,1);assert.equal(e.writes,0);
+    const log=JSON.stringify(e.logs);assert(!log.includes('secret-sentinel'));assert(!log.includes('dummy-invalid-editor-probe'));
+    assert.equal(e.ctx.EMPLOYEE_ACTIONS_.includes('employeeIdentityEditorConnectivityTest'),false);
+    assert.equal(e.ctx.employeeFoundationRequest_({postData:{contents:JSON.stringify({action:'employeeIdentityEditorConnectivityTest'})}}),null);
+    return result;
+  }
+  for(const status of [200,400,401,429,500]){const r=probe(status);assert.equal(r.success,true);assert.equal(r.httpStatus,status);}
+  const cases=[
+    ['You do not have permission to call UrlFetchApp.fetch. script.external_request','EXTERNAL_REQUEST_SCOPE_MENTIONED'],
+    ['UrlFetchApp is not defined','URLFETCH_SERVICE_UNAVAILABLE'],
+    ['fetch is not a function','FETCH_METHOD_UNAVAILABLE'],
+    ['Unexpected error while getting the method or property fetch on object UrlFetchApp.','SERVICE_METHOD_ACCESS_ERROR'],
+    ['Service unavailable','SERVICE_INTERNAL_ERROR'],
+    ['Other unknown error','UNCLASSIFIED']
+  ];
+  for(const [message,hint] of cases){const error=Error(message+' secret-sentinel');const r=probe(null,error);assert.equal(r.success,false);assert.equal(r.hint,hint);assert.equal(r.exceptionType,'Error');}
+  const hostile=Error('secret-sentinel');hostile.name='secret-sentinel';assert.equal(probe(null,hostile).exceptionType,'UNCLASSIFIED');
+});
 console.log(`${checks} test groups passed; no network or production writes.`);

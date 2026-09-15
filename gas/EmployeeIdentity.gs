@@ -1,4 +1,37 @@
 // New actions only. Never log tokens, request bodies or LINE error responses.
+// TEMPORARY EDITOR-ONLY probe: deliberately absent from every API dispatcher.
+// Select this no-argument function in the Apps Script editor and click Run.
+function employeeIdentityEditorConnectivityTest() {
+  var result;
+  try {
+    var response = UrlFetchApp.fetch('https://api.line.me/oauth2/v2.1/verify', {
+      method: 'post', contentType: 'application/x-www-form-urlencoded',
+      payload: { id_token: 'dummy-invalid-editor-probe', client_id: '0' },
+      muteHttpExceptions: true
+    });
+    var status = response.getResponseCode();
+    if (!Number.isInteger(status) || status < 100 || status > 599) throw new Error('Unexpected HTTP status type');
+    result = { success: true, category: 'HTTP_RESPONSE_RECEIVED', httpStatus: status };
+    // Do not read response headers/body. HTTP 400/401 is expected for dummy data.
+  } catch (error) {
+    var type = 'UNCLASSIFIED', hint = 'UNCLASSIFIED';
+    // Only fixed labels leave this function. Even exception names/stacks may be unsafe.
+    try {
+      if (error && ['Error', 'TypeError', 'ReferenceError', 'Exception'].indexOf(error.name) >= 0) type = error.name;
+      var message = error && typeof error.message === 'string' ? error.message : '';
+      if (/script\.external_request/i.test(message)) hint = 'EXTERNAL_REQUEST_SCOPE_MENTIONED';
+      else if (/UrlFetchApp is not defined/i.test(message)) hint = 'URLFETCH_SERVICE_UNAVAILABLE';
+      else if (/fetch is not a function/i.test(message)) hint = 'FETCH_METHOD_UNAVAILABLE';
+      else if (/Unexpected error while getting.*(?:fetch|UrlFetchApp)/i.test(message)) hint = 'SERVICE_METHOD_ACCESS_ERROR';
+      else if (/Service unavailable|Internal error|server error occurred/i.test(message)) hint = 'SERVICE_INTERNAL_ERROR';
+    } catch (_) {}
+    result = { success: false, category: employeeUrlFetchDiagnostic_(error), exceptionType: type, hint: hint };
+  }
+  // This exact allowlisted object is the ONLY editor log; no exception/body logging.
+  console.log(JSON.stringify(result));
+  return result;
+}
+
 function employeeFailure_(code, message) {
   var error = new Error(message);
   error.employeeCode = code;
