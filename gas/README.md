@@ -9,13 +9,57 @@
 - probe 僅用固定假資料，不經 API、未讀寫 Sheet；HTTP_RESPONSE_RECEIVED 加上假資料 400／401 表示可取得 LINE HTTP 回應，不表示假 token 有效。
 - 授權與 probe 成功後，將**現有 Web App deployment**更新至新版本，保留原 /exec URL；不必另建 deployment。
 - 正式驗證仍由 LINE server-side verify 判定真 token，再檢查 issuer／audience／expiry／sub；identityBootstrap 只讀。token／原始 LINE 回應不記錄或持久化；申請與 audit 中必要的 verified sub 關聯依原核准 schema 保留，並非所有 sub 都禁止儲存。
-- 本次只驗收身分基礎層；管理員正式核准尚未實作。下方排查說明保留歷程，其中「尚未驗證」應以本節的使用者實測回報更新理解。
+- 這段紀錄只驗收身分基礎層。管理員審核後端已於後續批次新增，尚未部署或真實寫入驗證，詳見下方審核操作章節。下方診斷排查說明保留歷程。
 
 目前授權修復請以本文末「完整 scope 盤點與人工授權順序」為準；前面的診斷段落保留排查經過。
 
-本批沒有部署 GAS、建立正式 Sheet 或執行 migration。沒有核准、離職、回任、停職、重綁或薪資寫入功能。
+本批沒有部署 GAS、建立正式 Sheet 或執行 migration。審核只處理真正新人，不提供離職、回任、停職、重綁或既有員工薪資異動。
 
-## 正式來源
+## 管理員加入申請審核（backend-only，未部署）
+
+新增 `EmployeeApplicationAdmin.gs`；`EmployeeApplication.gs` 擴充 action 分流與未完成審核保護。`Code.gs`、強驗證 helper、四表 schema、manifest、正式 frontend 均不變。尚未提供管理 UI，亦未對正式資料做寫入測試。
+
+### Action 契約
+
+三個 action 共用既有 POST `text/plain;charset=utf-8`、JSON、`redirect:"follow"`，必須提供真實 `idToken`。token 只交給 LINE verify，不寫 audit、hash、log 或 response。
+
+| action | 額外參數 | 回應 |
+|---|---|---|
+| `employeeApplicationAdminList` | `status` 可省略（預設待審核），允許四種既有申請狀態 | `success, applications`；既有公開申請欄位加 `reviewedAt, reviewReason, recoveryRequired`，無 LINE sub／Channel ID／薪資／request hash |
+| `employeeApplicationApprove` | `requestId, applicationId, expectedVersion, grade, salaryType, salaryAmount, systemRole, hireDate, adminNote` | `success, application, employeeId` |
+| `employeeApplicationReject` | `requestId, applicationId, expectedVersion, adminNote`（必填拒絕原因） | `success, application, employeeId:""` |
+
+`requestId` 沿用 16–100 字元規則；`expectedVersion` 為正整數。`salaryType` 只接受既有「日薪／月薪」，`salaryAmount` 為非負有限數字，`hireDate` 為有效 `YYYY-MM-DD`；grade 必填，不把級職當系統權限。核准的 adminNote 可省略。姓名、手機、LINE 身分來自原申請，不採用前端傳來的 employeeId／name／LINE UID。此階段不增加未來到職權限排程或薪資算法。
+
+在職 OWNER 可授予全部四種角色；在職 ADMIN 可授予 ADMIN／SITE_MANAGER／EMPLOYEE，不能授予 OWNER。SITE_MANAGER／EMPLOYEE／非在職者不能列出、核准、拒絕。每次 server-side verify 後解析目前主檔，寫入取鎖後再讀一次角色與身分。LINE UrlFetch 不持鎖；舊 API 鎖行為不變。
+
+### 核准順序與恢復
+
+1. 驗證管理員、解析輸入後，在 ScriptLock 內重新讀取申請、版本、schema、歷史关联與 request 收據。只接受 `NEW_EMPLOYEE`／待審核。相同姓名／手機不自動合併。
+2. 依主檔、申請、任職、綁定及 audit 中所有 `EMP` 數字尾碼的最大值加一，至少三位補零，例如 `EMP099 → EMP100`。STARTED 中保留的 employeeId 也不重用。既有非此格式 ID 原樣保留，未知到職歷史不猜、不 migration；格式依 repo EMP001 慣例，未讀正式 Sheet 做編號盤點。
+3. 寫入 `STARTED` audit：原申請快照、預定五表相關資料、穩定新 ID、業務請求摘要與原始成功結果。audit 的 `afterJson` 在審核 action 使用 `format:1` bundle，其他舊 action 格式不變。保留必要 LINE 關聯與人事快照供追溯，因此 Sheet/audit 僅限授權管理員存取；不含 token。
+4. 新增任職紀錄（任職序號 1、到職日及級職／薪資／角色快照），再新增有效 LINE 綁定。
+5. 更新申請為已核准，版本加一，填審核人／時間／核定員工 ID。
+6. 最後 append 一筆在職員工主檔 A:L：ID、LINE UID、申請姓名、級職、薪資制、薪資金額、權限、到職日、空離職日、在職、申請電話、管理備註。不更新舊員工列或欄位。
+7. 再讀檢查一致後 append `COMPLETED` audit，回傳保存的成功結果。
+
+拒絕只寫 STARTED → 申請已拒絕／版本加一 → COMPLETED，不建立員工、任職或綁定。
+
+Google Sheets 沒有跨表原子交易。本實作逐階段 flush；同一 requestId／同一內容重試時，僅補缺少的 checkpoint，精確符合快照的列直接跳過，最後補 COMPLETED。已完成重試回原結果，不採後來被改動的申請。不明差異、重複列、缺少較早 checkpoint 或損壞 intent 回 `RECOVERY_REQUIRED`，不覆寫。日期型別只在比對日曆欄位時正規化為台灣日期。
+
+若員工主檔已建立而 COMPLETED 寫入失敗，必要業務表與 STARTED 均已存在，員工可被既有登入流程辨識；原審核請求重試只補完成收據。若更早失敗尚未建立主檔，綁定不足的身分會 fail closed。這不是回滾交易；不可手動刪除 checkpoint 後換新 requestId。
+
+同 requestId 不同業務內容回 `REQUEST_CONFLICT`；過期版本回 `VERSION_CONFLICT`；已核准／拒絕／取消回 `APPLICATION_NOT_PENDING`。已有 LINE 歷史主檔／綁定／核准申請，或已有任職關聯，回 `IDENTITY_CONFLICT`／`LINE_BINDING_CONFLICT`／`EMPLOYMENT_CONFLICT`，交由人工處理，不自動回任。權限及輸入錯誤使用 `FORBIDDEN`／`INVALID_ROLE_ASSIGNMENT`／`INVALID_APPROVAL_DATA`。寫入失敗使用固定安全錯誤，無 raw exception。
+
+未完成審核會阻擋其他 request 審核及申請人取消。原管理員保留原 requestId、完整業務參數及 expectedVersion，取得新有效 token 後明確重試；不自動重送。若仍 RECOVERY_REQUIRED 或原管理員已失權，由授權管理員人工核對 audit 與五表；本批沒有強制接管／修復 API，不要清除 audit、覆寫狀態或另建員工。舊 API 尚有 userId 信任限制，未在本批擴改。
+
+### 人工測試前準備
+
+在原 Apps Script 專案**新增** `EmployeeApplicationAdmin.gs`，並**完整替換** `EmployeeApplication.gs`，兩者必須一起更新。保留現有 Code、EmployeeIdentity、EmployeeLifecycleStore 及 manifest；不用新增 scopes、不改 URL/access/executeAs。確認五張既有 Sheet 表頭正確，不新增表、不搬遷舊列。由使用者另行更新既有 Web App 的新版本後，才以授權的小量案例測核准／拒絕與原 requestId 重試。本輪未代為部署、操作 Sheets 或提供正式 UI。
+
+離線測試：`node tests/employee-foundation.test.cjs`（28 組，含每個 checkpoint 寫入前／後失敗注入、角色矩陣、鎖競爭、原 action 契約與強驗證），以及既有兩支模擬瀏覽器測試。mock 不能證明 Google 真實跨表 I/O、日期欄格式與部署權限，需後續小量實機確認。
+
+## 正式來源（V3.4.3）
 
 `Code.gs` 搬入自使用者提供的正式 `Code_v3_4_3_progress_percent_override.txt`。
 原始檔 SHA-256：`8afc109fb41c98682f1bc3d0a7ab7406587d03d3d4df597d8f5eecd934399e73`。
@@ -26,7 +70,7 @@
 1. 在原 Apps Script 專案 Script Properties 設定 `LINE_LOGIN_CHANNEL_ID`，值為目前 LIFF 所屬 LINE Login channel 的 ID，不能填 LIFF ID。這不是 secret。本方案不需要 channel secret。
 2. 確認目前 LIFF 已啟用 `openid` scope，可取得 `liff.getIDToken()`。不改現有 LIFF ID 或 GAS Web App URL。
 3. 由管理員在原 Spreadsheet 準備四張空表，第一列依 `EmployeeLifecycleStore.gs` 的 `EMPLOYEE_TABLES_` headers，完整且同序：員工加入申請 A:Q、員工任職紀錄 A:U、員工LINE綁定紀錄 A:N、員工異動紀錄 A:R。程式只驗證、不自動建立表；不改員工資料表 A:L。不要加入額外非空欄位。
-4. 四個 `.gs` 檔須同時置入同一個原有、綁定 Spreadsheet 的 GAS 專案，使用 V8 runtime；更新既有 Web App deployment。保留原部署設定，不新增另一個 endpoint。
+4. 五個 `.gs` 檔須同時置入同一個原有、綁定 Spreadsheet 的 GAS 專案，使用 V8 runtime；更新既有 Web App deployment。保留原部署設定，不新增另一個 endpoint。
 5. 先確認 GAS 設定／部署，再發布 frontend；新 frontend 的登入需要 `identityBootstrap`，後端未部署會阻止登入，不以舊信任模式繞過失敗。必須實機驗證既有員工登入，再驗證新人申請。
 
 LINE token 僅放本次請求記憶體，不寫 Sheet、audit、sessionStorage 或 log。使用 LINE 官方驗證端點及 `client_id`，檢查 issuer、audience、sub、expiry；不能用前端 decoded profile 代替。
@@ -55,7 +99,7 @@ requestId 為 16–100 字元英數／底線／連字號，前端使用 UUID。�
 - 相同 requestId 相同內容不重複寫入；不同內容回 REQUEST_CONFLICT。另一個 requestId 遇到既有待審申請只記接收紀錄 `APPLICATION_SUBMIT_EXISTING`，不新增申請，不提升版本。
 - 同一身分有未完成 intent 時，其他變更回 OPERATION_PENDING。前端保留未確認的業務請求於 sessionStorage，只由使用者按「重試前次操作」重送，不儲存 token、不自動重送。關閉視窗／清除儲存會失去前端重試資料；需管理員查 audit 的原 requestId 處理，不應另建申請或手動覆寫版本。
 - baseline 僅強驗證後的在職 OWNER/ADMIN 可用，全程只讀。`noOwner` 表示沒有在職 OWNER。缺到職日保持未知；既有任職／綁定列不重建。此批不提供 baseline 正式套用工具。
-- 舊員工以主檔 LINE 欄匹配；有正式綁定紀錄時以有效綁定為準，衝突 fail closed。此批不建立綁定，也不實作重綁；未來重綁需同步處理 legacy API 相容性後才可開放。
+- 舊員工以主檔 LINE 欄匹配；有正式綁定紀錄時以有效綁定為準，衝突 fail closed。新人核准建立新綁定；既有員工不自動 migration，也不實作重綁。未來重綁需同步處理 legacy API 相容性後才可開放。
 - 舊 attendance/payroll/daily report/progress action 尚未改為 token 驗證，不能宣稱本批已完成全系統強授權或歷史薪資保護改造。
 
 ## 本機測試

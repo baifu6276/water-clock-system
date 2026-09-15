@@ -1,5 +1,6 @@
 var EMPLOYEE_ACTIONS_ = ['identityBootstrap', 'employeeApplicationSubmit', 'employeeApplicationListOwn',
-  'employeeApplicationCancel', 'employeeLifecycleBaselineDryRun'];
+  'employeeApplicationCancel', 'employeeLifecycleBaselineDryRun', 'employeeApplicationAdminList',
+  'employeeApplicationApprove', 'employeeApplicationReject'];
 
 // Malformed/legacy requests retain the original doPost error and lock behavior.
 function employeeFoundationRequest_(e) {
@@ -19,9 +20,13 @@ function handleEmployeeFoundation_(data) {
     if (action === 'identityBootstrap') result = employeeBootstrap_(context);
     else if (action === 'employeeApplicationListOwn') result = { success: true, applications: employeeOwnApplications_(context).map(employeePublicApplication_) };
     else if (action === 'employeeLifecycleBaselineDryRun') result = employeeLifecycleBaselineDryRun_(context);
+    else if (action === 'employeeApplicationAdminList') result = employeeApplicationAdminList_(context, data);
     else result = employeeWithLock_(function() {
       // Re-read employee state under the write lock, without re-sending token to LINE.
       context = employeeContext_(context);
+      if (action === 'employeeApplicationApprove' || action === 'employeeApplicationReject') {
+        return employeeApplicationReview_(context, data, action === 'employeeApplicationApprove');
+      }
       if (action === 'employeeApplicationSubmit') return employeeSubmit_(context, data);
       return employeeCancel_(context, data);
     });
@@ -74,6 +79,7 @@ function employeeSubmit_(context, data) {
   var pending = employeeOwnApplications_(context).filter(function(a) { return a.status === '待審核'; });
   if (pending.length > 1) employeeFailure_('DATA_CONFLICT', '申請資料需要管理員確認。');
   if (pending.length) {
+    if (employeeReviewPending_(pending[0].applicationId).length) employeeReviewRecovery_();
     // Record the request receipt without creating another application. A later
     // retry of this request must still detect a changed payload after cancellation.
     employeeAuditAppend_({ auditId: Utilities.getUuid(), requestId: requestId, requestHash: hash,
@@ -100,6 +106,7 @@ function employeeCancel_(context, data) {
   if (replay) return employeeApplicationResult_(replay);
   employeeEnsureNoPendingIntent_(context);
   var before = owned[0];
+  if (employeeReviewPending_(before.applicationId).length) employeeReviewRecovery_();
   if (Number(before.version) !== data.expectedVersion) employeeFailure_('VERSION_CONFLICT', '申請已變更，請重新讀取。');
   if (before.status !== '待審核') employeeFailure_('INVALID_STATE', '只能取消待審核申請。');
   var after = Object.assign({}, before, { status: '已取消', cancelledAt: new Date().toISOString(), version: data.expectedVersion + 1 });

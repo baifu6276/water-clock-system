@@ -6,11 +6,11 @@ const crypto = require('node:crypto');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
-const files = ['Code', 'EmployeeIdentity', 'EmployeeLifecycleStore', 'EmployeeApplication'];
+const files = ['Code', 'EmployeeIdentity', 'EmployeeLifecycleStore', 'EmployeeApplication', 'EmployeeApplicationAdmin'];
 let checks = 0;
 function test(name, work) { work(); checks++; console.log('PASS', name); }
-function env() {
-  let locked = false, writes = 0, verifies = 0, failTable = null, failAfter = 0;
+function env(allowEmployeeWrites = false) {
+  let locked = false, writes = 0, verifies = 0, failTable = null, failAfter = 0, failPersisted = false, beforeLock = null, onWrite = null;
   const tables = {}, logs = [];
   function sheet(name, rows) {
     const s = { rows, getLastRow: () => rows.length, getLastColumn: () => rows[0].length,
@@ -19,10 +19,14 @@ function env() {
         getValues: () => Array.from({length:n}, (_, i) => Array.from({length:m}, (_, j) => rows[r-1+i]?.[c-1+j] ?? '')),
         setValues: values => {
           assert.equal(locked, true, 'writes must hold lock');
-          assert.notEqual(name, '員工資料表');
-          if (failTable === name && failAfter-- === 0) { failTable = null; throw Error('simulated storage failure'); }
+          if (!allowEmployeeWrites) assert.notEqual(name, '員工資料表');
+          const fail = failTable === name && failAfter-- === 0;
+          if (fail) failTable = null;
+          if (fail && !failPersisted) throw Error('simulated storage failure');
           writes++;
           values.forEach((row, i) => { rows[r-1+i] = row.map(v => typeof v === 'string' && v.startsWith("'") ? v.slice(1) : v); });
+          if (onWrite) { const hook=onWrite; onWrite=null; hook(); }
+          if (fail) throw Error('simulated uncertain storage acknowledgement');
         }
       }) };
     tables[name] = s; return s;
@@ -31,8 +35,9 @@ function env() {
     Logger: {log: (...v) => logs.push(v)},
     PropertiesService: { getScriptProperties: () => ({getProperty: () => 'test-channel'}) },
     SpreadsheetApp: {getActiveSpreadsheet: () => ({getSheetByName: name => tables[name] || null}), flush: () => {}},
-    LockService: {getScriptLock: () => ({tryLock: () => { assert(!locked); locked=true; return true; }, waitLock: () => { assert(!locked); locked=true; }, releaseLock: () => {locked=false;}})},
+    LockService: {getScriptLock: () => ({tryLock: () => { if(locked)return false; if(beforeLock){const hook=beforeLock;beforeLock=null;hook();} locked=true; return true; }, waitLock: () => { assert(!locked); locked=true; }, releaseLock: () => {locked=false;}})},
     Utilities: {getUuid: crypto.randomUUID, DigestAlgorithm: {SHA_256:'sha256'}, Charset:{UTF_8:'utf8'},
+      formatDate: date => new Date(date.getTime()+8*3600000).toISOString().slice(0,10),
       computeDigest: (_, str) => [...crypto.createHash('sha256').update(str).digest()]},
     ContentService: {MimeType:{JSON:'json'}, createTextOutput: text => ({setMimeType: () => JSON.parse(text)})},
     UrlFetchApp: {fetch: (url, options) => {
@@ -51,7 +56,8 @@ function env() {
   sheet('員工資料表', [Array(12).fill('header'), ['E-owner','owner','測試管理員','', '', 0,'OWNER','','','在職','','']]);
   Object.values(ctx.EMPLOYEE_TABLES_).forEach(s => sheet(s.name, [[...s.headers]]));
   return {ctx, tables, logs, get writes(){return writes;}, get verifies(){return verifies;}, get locked(){return locked;},
-    fail: (name, after=0) => {failTable=name;failAfter=after;},
+    fail: (name, after=0, persisted=false) => {failTable=name;failAfter=after;failPersisted=persisted;},
+    beforeLock: hook => {beforeLock=hook;}, onWrite: hook => {onWrite=hook;},
     call: (action, data={}, sub='new') => ctx.doPost({postData:{contents:JSON.stringify({action,idToken:'token:'+sub,...data})}}) };
 }
 const payload = {requestId:'request-submit-0001', type:'NEW_EMPLOYEE', name:'測試申請', phone:'0900000000', note:'測試資料'};
@@ -266,5 +272,139 @@ test('acceptance: active bootstrap is read-only and doPost cannot dispatch edito
   const rejected=e.call('employeeIdentityEditorConnectivityTest');
   assert.equal(rejected.success,false);assert.equal(e.verifies,verifies);
   assert.equal(JSON.stringify(e.tables),before);assert.equal(e.writes,0);assert.equal(e.logs.length,0);
+});
+function reviewEnv(role='OWNER') {
+  const e=env(true); e.tables['員工資料表'].rows[1][6]=role;
+  const a=e.call('employeeApplicationSubmit',payload).application;
+  return {e, p:{applicationId:a.applicationId,requestId:'request-approve-0001',expectedVersion:1,
+    grade:'師傅',salaryType:'日薪',salaryAmount:2000,systemRole:'EMPLOYEE',hireDate:'2026-09-15',adminNote:'測試審核'}};
+}
+function rows(e,table){return e.ctx.employeeStoreRows_(table);}
+function seed(e,table,object){e.tables[e.ctx.EMPLOYEE_TABLES_[table].name].rows.push(e.ctx.EMPLOYEE_TABLES_[table].keys.map(k=>object[k]??''));}
+function approve(e,p,sub='owner'){return e.call('employeeApplicationApprove',p,sub);}
+function consistent(e,r) {
+  assert.equal(r.success,true,JSON.stringify(r));
+  const app=rows(e,'applications')[0], periods=rows(e,'employments'), bindings=rows(e,'bindings');
+  assert.equal(app.status,'已核准'); assert.equal(app.version,2); assert.equal(app.employeeId,r.employeeId);
+  assert.equal(periods.length,1); assert.equal(bindings.length,1);
+  assert.equal(periods[0].employeeId,r.employeeId); assert.equal(periods[0].endDate,'');
+  assert.equal(bindings[0].employeeId,r.employeeId); assert.equal(bindings[0].status,'有效');
+  assert.equal(e.tables['員工資料表'].rows.length,3); assert.equal(e.tables['員工資料表'].rows[2][9],'在職');
+  assert.equal(rows(e,'audit').filter(a=>a.action==='APPLICATION_APPROVE'&&a.phase==='COMPLETED').length,1);
+  assert.equal(e.call('identityBootstrap').state,'ACTIVE_EMPLOYEE');
+  assert(!JSON.stringify(e.tables).includes('token:'));assert.equal(e.logs.length,0);
+}
+test('approval role matrix, authoritative applicant identity and consistent five-table state',()=>{
+  for(const [actor,assigned] of [['OWNER','EMPLOYEE'],['OWNER','ADMIN'],['OWNER','OWNER'],['OWNER','SITE_MANAGER'],
+    ['ADMIN','EMPLOYEE'],['ADMIN','SITE_MANAGER'],['ADMIN','ADMIN']]) {
+    const {e,p}=reviewEnv(actor), old=JSON.stringify(e.tables['員工資料表'].rows[1]);
+    const r=approve(e,{...p,systemRole:assigned,employeeId:'EMP999',name:'forged',lineSub:'forged',userId:'forged'});
+    consistent(e,r);assert.equal(r.employeeId,'EMP001');
+    assert.equal(e.tables['員工資料表'].rows[2][1],'new');assert.equal(e.tables['員工資料表'].rows[2][2],payload.name);
+    assert.equal(e.tables['員工資料表'].rows[2][6],assigned);assert.equal(JSON.stringify(e.tables['員工資料表'].rows[1]),old);
+  }
+});
+test('unauthorized reviewers, role escalation and stale actor after lock denied without writes',()=>{
+  for(const role of ['ADMIN','SITE_MANAGER','EMPLOYEE']){
+    const {e,p}=reviewEnv(role), w=e.writes;
+    assert.equal(approve(e,{...p,systemRole:'OWNER'}).code,role==='ADMIN'?'INVALID_ROLE_ASSIGNMENT':'FORBIDDEN');
+    if(role!=='ADMIN')assert.equal(e.call('employeeApplicationReject',p,'owner').code,'FORBIDDEN');
+    assert.equal(e.writes,w);
+  }
+  for(const mutation of [e=>e.tables['員工資料表'].rows[1][6]='EMPLOYEE',e=>e.tables['員工資料表'].rows[1][9]='離職']){
+    const {e,p}=reviewEnv(),w=e.writes;e.beforeLock(()=>mutation(e));assert.equal(approve(e,p).code,'FORBIDDEN');assert.equal(e.writes,w);
+  }
+});
+test('admin list default/status filtering is readonly and excludes identity internals and payroll',()=>{
+  const {e,p}=reviewEnv(),w=e.writes;const list=e.call('employeeApplicationAdminList',{},'owner');
+  assert.equal(list.applications.length,1);assert.equal(e.writes,w);
+  for(const key of ['lineSub','channelId','requestHash','idToken','salaryAmount'])assert(!JSON.stringify(list).includes(key));
+  assert.equal(e.call('employeeApplicationAdminList').code,'FORBIDDEN');
+  assert.equal(e.call('employeeApplicationAdminList',{status:'bogus'},'owner').code,'VALIDATION_ERROR');
+  approve(e,p);assert.equal(e.call('employeeApplicationAdminList',{},'owner').applications.length,0);
+  assert.equal(e.call('employeeApplicationAdminList',{status:'已核准'},'owner').applications.length,1);
+});
+test('reject requires reason, writes no master/period/binding and cannot later be approved',()=>{
+  const {e,p}=reviewEnv(),w=e.writes;
+  assert.equal(e.call('employeeApplicationReject',{...p,adminNote:''},'owner').code,'INVALID_APPROVAL_DATA');assert.equal(e.writes,w);
+  const r=e.call('employeeApplicationReject',p,'owner');assert.equal(r.application.status,'已拒絕');
+  assert.equal(rows(e,'employments').length,0);assert.equal(rows(e,'bindings').length,0);assert.equal(e.tables['員工資料表'].rows.length,2);
+  const after=e.writes;assert.deepEqual(e.call('employeeApplicationReject',p,'owner'),r);assert.equal(e.writes,after);
+  assert.equal(approve(e,{...p,requestId:'request-other-0001',expectedVersion:2}).code,'APPLICATION_NOT_PENDING');
+});
+test('versions, cancelled applications and invalid grade/salary/date rejected before mutation',()=>{
+  const {e,p}=reviewEnv(),w=e.writes;
+  assert.equal(approve(e,{...p,expectedVersion:2}).code,'VERSION_CONFLICT');
+  for(const change of [{grade:''},{salaryType:'guess'},{salaryAmount:-1},{salaryAmount:'2000'},{hireDate:'2026-02-30'},{hireDate:''}])
+    assert.equal(approve(e,{...p,...change}).code,'INVALID_APPROVAL_DATA');
+  assert.equal(e.writes,w);
+  e.call('employeeApplicationCancel',{requestId:'request-cancel-1000',applicationId:p.applicationId,expectedVersion:1});
+  assert.equal(approve(e,{...p,expectedVersion:2}).code,'APPLICATION_NOT_PENDING');
+});
+test('completed replay returns original result, changed payload conflicts and another request cannot duplicate',()=>{
+  const {e,p}=reviewEnv(),r=approve(e,p);consistent(e,r);const w=e.writes;
+  assert.deepEqual(approve(e,p),r);assert.equal(e.writes,w);
+  assert.equal(approve(e,{...p,salaryAmount:2100}).code,'REQUEST_CONFLICT');
+  assert.equal(approve(e,{...p,requestId:'request-approve-0002'}).code,'APPLICATION_NOT_PENDING');
+  e.tables['員工加入申請'].rows[1][6]='後續人工修改';
+  assert.deepEqual(approve(e,p),r);assert.equal(e.writes,w);
+});
+test('ID allocation reserves historic maximum and independent applicants cannot share IDs',()=>{
+  const {e,p}=reviewEnv();e.tables['員工資料表'].rows.push(['EMP007','legacy','假資料','','',0,'EMPLOYEE','','','離職','','']);
+  seed(e,'employments',{employeeId:'EMP099'});seed(e,'audit',{employeeId:'EMP123',phase:'STARTED',requestId:'reserved'});
+  assert.equal(approve(e,p).employeeId,'EMP124');
+  const a=e.call('employeeApplicationSubmit',{...payload,requestId:'request-submit-other'},'other').application;
+  assert.equal(approve(e,{...p,applicationId:a.applicationId,requestId:'request-approve-other'}).employeeId,'EMP125');
+});
+test('historical LINE, active/historic binding and existing open employment cannot create duplicate people',()=>{
+  for(const kind of ['master','binding','employment','application']){
+    const {e,p}=reviewEnv();
+    if(kind==='master')e.tables['員工資料表'].rows.push(['EMP008','new','假資料','','',0,'EMPLOYEE','','','離職','','']);
+    if(kind==='binding')seed(e,'bindings',{bindingId:'historic',employeeId:'EMP008',lineSub:'new',status:'有效'});
+    if(kind==='employment')seed(e,'employments',{employmentId:'historic',employeeId:'EMP008',applicationId:p.applicationId,status:'在職'});
+    if(kind==='application')seed(e,'applications',{applicationId:'historic',lineSub:'new',employeeId:'EMP008',status:'已核准'});
+    const w=e.writes;assert.equal(approve(e,p).code,{master:'IDENTITY_CONFLICT',binding:'LINE_BINDING_CONFLICT',employment:'EMPLOYMENT_CONFLICT',application:'IDENTITY_CONFLICT'}[kind]);assert.equal(e.writes,w);
+  }
+});
+test('every approval checkpoint recovers same request before/after uncertain persistence without duplicates',()=>{
+  for(const persisted of [false,true])for(const [table,after] of [['員工異動紀錄',0],['員工任職紀錄',0],['員工LINE綁定紀錄',0],['員工加入申請',0],['員工資料表',0],['員工異動紀錄',1]]){
+    const {e,p}=reviewEnv();e.fail(table,after,persisted);
+    assert.equal(approve(e,p).success,false,table);assert.equal(e.locked,false);
+    const r=approve(e,p);consistent(e,r);const w=e.writes;assert.deepEqual(approve(e,p),r);assert.equal(e.writes,w);
+  }
+});
+test('ambiguous partial records require manual recovery and block applicant cancellation/different review',()=>{
+  const {e,p}=reviewEnv();e.fail('員工LINE綁定紀錄');assert.equal(approve(e,p).success,false);
+  assert.equal(e.call('employeeApplicationCancel',{requestId:'request-cancel-blocked',applicationId:p.applicationId,expectedVersion:1}).code,'RECOVERY_REQUIRED');
+  assert.equal(approve(e,{...p,requestId:'request-approve-other'}).code,'RECOVERY_REQUIRED');
+  e.tables['員工任職紀錄'].rows[1][7]='人工衝突';const w=e.writes;
+  assert.equal(approve(e,p).code,'RECOVERY_REQUIRED');assert.equal(e.writes,w);
+  assert.equal(e.call('employeeApplicationAdminList',{},'owner').applications[0].recoveryRequired,true);
+});
+test('reject resumes partial app/audit checkpoints without employee writes',()=>{
+  for(const persisted of [false,true])for(const [table,after] of [['員工加入申請',0],['員工異動紀錄',1]]){
+    const {e,p}=reviewEnv();e.fail(table,after,persisted);assert.equal(e.call('employeeApplicationReject',p,'owner').success,false);
+    assert.equal(e.call('employeeApplicationReject',p,'owner').application.status,'已拒絕');
+    assert.equal(e.tables['員工資料表'].rows.length,2);assert.equal(rows(e,'bindings').length,0);assert.equal(rows(e,'employments').length,0);
+  }
+});
+test('recovery accepts Sheets calendar Date cells and guards duplicate checkpoint rows',()=>{
+  const {e,p}=reviewEnv();e.fail('員工異動紀錄',1);assert.equal(approve(e,p).success,false);
+  const date=vm.runInContext("new Date('2026-09-14T16:00:00.000Z')",e.ctx);
+  e.tables['員工資料表'].rows[2][7]=date;
+  e.tables['員工任職紀錄'].rows[1][3]=date;e.tables['員工任職紀錄'].rows[1][11]=date;
+  consistent(e,approve(e,p));
+  const second=reviewEnv();second.e.fail('員工異動紀錄',1);approve(second.e,second.p);
+  second.e.tables['員工LINE綁定紀錄'].rows.push([...second.e.tables['員工LINE綁定紀錄'].rows[1]]);
+  const w=second.e.writes;assert.equal(approve(second.e,second.p).code,'RECOVERY_REQUIRED');assert.equal(second.e.writes,w);
+});
+test('overlapping review is locked out and cannot duplicate after lock release',()=>{
+  const {e,p}=reviewEnv();let concurrent;
+  // Model a second verified caller arriving while the first owns the write lock.
+  const verified=e.ctx.employeeContext_({sub:'owner',channelId:'test-channel'});
+  e.onWrite(()=>{try{e.ctx.employeeWithLock_(()=>e.ctx.employeeApplicationReview_(verified,{...p,requestId:'request-second-review'},true));}
+    catch(error){concurrent=error.employeeCode;}});
+  consistent(e,approve(e,p));assert.equal(concurrent,'BUSY');
+  assert.equal(approve(e,{...p,requestId:'request-second-review'}).code,'APPLICATION_NOT_PENDING');
 });
 console.log(`${checks} test groups passed; no network or production writes.`);
