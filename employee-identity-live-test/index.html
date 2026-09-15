@@ -48,160 +48,75 @@
       const put = (id, text) => { byId(id).textContent = text; };
       const knownStates = new Set(['ACTIVE_EMPLOYEE', 'UNREGISTERED', 'APPLICATION_PENDING', 'SUSPENDED', 'LEAVE', 'TERMINATED']);
       const stateLabels = {
-        ACTIVE_EMPLOYEE: '在職員工',
-        UNREGISTERED: '尚未註冊',
-        APPLICATION_PENDING: '申請待審核',
-        SUSPENDED: '停職',
-        LEAVE: '留停',
-        TERMINATED: '離職'
+        ACTIVE_EMPLOYEE: '在職員工', UNREGISTERED: '尚未註冊', APPLICATION_PENDING: '申請待審核',
+        SUSPENDED: '停職', LEAVE: '留停', TERMINATED: '離職'
       };
       const safeErrors = {
-        LINE_CHANNEL_ID_MISSING: "未設定 LINE_LOGIN_CHANNEL_ID。",
-        LINE_TOKEN_MISSING_OR_INVALID: "ID token 缺少或格式不符，請重新登入。",
-        LINE_VERIFY_NETWORK_ERROR: "GAS 無法完成 LINE verify 連線；請確認外部請求授權、配額與網路。",
-        LINE_VERIFY_HTTP_ERROR: "LINE verify 回傳非預期 HTTP 狀態，可能為限流或服務錯誤。",
-        LINE_TOKEN_REJECTED: "LINE 拒絕此 token；未取得可確認的細分類原因。",
-        LINE_AUDIENCE_MISMATCH: "LINE token 與設定的 LINE Login channel ID 不符；不可使用 LIFF ID 或其他 channel ID。",
-        LINE_ISSUER_MISMATCH: "LINE token issuer 不符。",
-        LINE_TOKEN_EXPIRED: "LINE token 已過期，請重新登入。",
-        LINE_SUB_MISSING: "LINE verify 成功回應缺少有效 sub。",
-        LINE_VERIFY_MALFORMED_RESPONSE: "LINE verify 回應不是預期 JSON／claims 格式。",
-        BACKEND_SCHEMA_ERROR: "後端資料表缺少或表頭不符。",
-        BACKEND_IDENTITY_CONFLICT: "員工或 LINE 綁定資料衝突。",
-        BACKEND_LOOKUP_ERROR: "後端讀取員工／綁定資料失敗，請確認 Spreadsheet 綁定與授權。",
-        BACKEND_INTERNAL_ERROR: "後端新身分流程發生未預期錯誤。",
-        GAS_NETWORK_ERROR: "瀏覽器未取得 GAS 回應，請確認網路、CORS 或部署存取設定。",
-        GAS_HTTP_ERROR: "GAS 回傳非成功 HTTP 狀態，請確認部署存取設定。",
-        GAS_NON_JSON_RESPONSE: "GAS 回應無法解析為 JSON，可能為登入／錯誤頁或部署問題。",
-        GAS_RESPONSE_INVALID: "GAS JSON 不符合新身分 API 回應格式，請確認部署版本。",
-        LOGIN_REQUIRED: '尚未登入 LINE。',
-        TOKEN_UNAVAILABLE: '無法取得 ID token，請確認 LIFF 已啟用 openid scope。',
-        LIFF_INIT_ERROR: 'LIFF 初始化或登入失敗，請從 LINE 重新開啟。',
-        REQUEST_FAILED: '未能完成身分檢查，請重新從 LINE 開啟。',
-
-        AUTH_ERROR: 'LINE 身分驗證失敗，請重新從 LINE 開啟。',
-        CONFIG_ERROR: '後端設定尚未完成。',
-        SCHEMA_ERROR: '後端資料表尚未設定完成。',
-        REQUEST_CONFLICT: '請求衝突，請聯絡管理員。',
-        VERSION_CONFLICT: '資料版本已變更，請重新讀取。',
-        FORBIDDEN: '沒有權限操作。',
-        ALREADY_EMPLOYEE: '已有員工資料。',
-        VALIDATION_ERROR: '資料驗證失敗。',
-        INVALID_STATE: '目前狀態不可執行此操作。'
+        LINE_CHANNEL_ID_MISSING: '未設定 LINE_LOGIN_CHANNEL_ID。',
+        LINE_TOKEN_MISSING_OR_INVALID: 'ID token 缺少或格式不符，請重新登入。',
+        LINE_VERIFY_NETWORK_ERROR: 'GAS 無法完成 LINE verify 連線；請確認外部請求授權、配額與網路。',
+        LINE_VERIFY_PERMISSION_ERROR: 'UrlFetch 權限或授權不足，請確認 script.external_request scope 與執行身分授權。',
+        LINE_VERIFY_QUOTA_ERROR: 'UrlFetch 呼叫遇到配額或服務使用限制。',
+        LINE_VERIFY_CONNECTIVITY_ERROR: 'UrlFetch 回報 DNS、連線、逾時或 SSL 問題。',
+        LINE_VERIFY_REQUEST_ERROR: 'UrlFetch 回報請求參數或方法簽章不符。',
+        LINE_VERIFY_FETCH_ERROR: 'UrlFetch 發生未能安全細分的例外；未輸出原始訊息。',
+        LINE_VERIFY_HTTP_ERROR: 'LINE verify 回傳非預期 HTTP 狀態，可能為限流或服務錯誤。',
+        LINE_TOKEN_REJECTED: 'LINE 拒絕此 token；未取得可確認的細分類原因。',
+        LINE_AUDIENCE_MISMATCH: 'LINE token 與設定的 LINE Login channel ID 不符；不可使用 LIFF ID 或其他 channel ID。',
+        LINE_ISSUER_MISMATCH: 'LINE token issuer 不符。',
+        LINE_TOKEN_EXPIRED: 'LINE token 已過期，請重新登入。',
+        LINE_SUB_MISSING: 'LINE verify 成功回應缺少有效 sub。',
+        LINE_VERIFY_MALFORMED_RESPONSE: 'LINE verify 回應不是預期 JSON／claims 格式。',
+        BACKEND_SCHEMA_ERROR: '後端資料表缺少或表頭不符。',
+        BACKEND_IDENTITY_CONFLICT: '員工或 LINE 綁定資料衝突。',
+        BACKEND_LOOKUP_ERROR: '後端讀取員工／綁定資料失敗，請確認 Spreadsheet 綁定與授權。',
+        BACKEND_INTERNAL_ERROR: '後端新身分流程發生未預期錯誤。',
+        GAS_NETWORK_ERROR: '瀏覽器未取得 GAS 回應，請確認網路、CORS 或部署存取設定。',
+        GAS_HTTP_ERROR: 'GAS 回傳非成功 HTTP 狀態，請確認部署存取設定。',
+        GAS_NON_JSON_RESPONSE: 'GAS 回應無法解析為 JSON，可能為登入／錯誤頁或部署問題。',
+        GAS_RESPONSE_INVALID: 'GAS JSON 不符合新身分 API 回應格式，請確認部署版本。',
+        LOGIN_REQUIRED: '尚未登入 LINE。', TOKEN_UNAVAILABLE: '無法取得 ID token，請確認 LIFF 已啟用 openid scope。',
+        LIFF_INIT_ERROR: 'LIFF 初始化或登入失敗，請從 LINE 重新開啟。', REQUEST_FAILED: '未能完成身分檢查，請重新從 LINE 開啟。',
+        AUTH_ERROR: 'LINE 身分驗證失敗，請重新從 LINE 開啟。', CONFIG_ERROR: '後端設定尚未完成。',
+        SCHEMA_ERROR: '後端資料表尚未設定完成。', REQUEST_CONFLICT: '請求衝突，請聯絡管理員。',
+        VERSION_CONFLICT: '資料版本已變更，請重新讀取。', FORBIDDEN: '沒有權限操作。',
+        ALREADY_EMPLOYEE: '已有員工資料。', VALIDATION_ERROR: '資料驗證失敗。', INVALID_STATE: '目前狀態不可執行此操作。'
       };
 
-      let initialized = false;
-      let busy = false;
-
+      let initialized = false, busy = false;
       async function identityBootstrap(idToken) {
         let response, result;
         try {
-          response = await fetch(GAS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            redirect: 'follow',
-            body: JSON.stringify({ action: 'identityBootstrap', idToken })
-          });
+          response = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow', body: JSON.stringify({ action: 'identityBootstrap', idToken }) });
         } catch (_) { throw transportError('GAS_NETWORK_ERROR'); }
         if (!response.ok) throw transportError('GAS_HTTP_ERROR');
-        try { result = await response.json(); }
-        catch (_) { throw transportError('GAS_NON_JSON_RESPONSE'); }
-        if (!result || typeof result !== 'object' || Array.isArray(result) || typeof result.success !== 'boolean') {
-          throw transportError('GAS_RESPONSE_INVALID');
-        }
+        try { result = await response.json(); } catch (_) { throw transportError('GAS_NON_JSON_RESPONSE'); }
+        if (!result || typeof result !== 'object' || Array.isArray(result) || typeof result.success !== 'boolean') throw transportError('GAS_RESPONSE_INVALID');
         return result;
       }
-
-      function transportError(code) {
-        const error = new Error(safeErrors[code]);
-        error.safeCode = code;
-        return error;
-      }
-      function isSafeCode(code) {
-        return typeof code === 'string' && Object.prototype.hasOwnProperty.call(safeErrors, code);
-      }
-      function fail(code) {
-        const safe = isSafeCode(code) ? code : 'REQUEST_FAILED';
-        put('code', safe);
-        put('message', safeErrors[safe]);
-      }
+      function transportError(code) { const error = new Error(safeErrors[code]); error.safeCode = code; return error; }
+      function isSafeCode(code) { return typeof code === 'string' && Object.prototype.hasOwnProperty.call(safeErrors, code); }
+      function fail(code) { const safe = isSafeCode(code) ? code : 'REQUEST_FAILED'; put('code', safe); put('message', safeErrors[safe]); }
 
       async function check() {
-        if (busy) return;
-        busy = true;
-        byId('retry').disabled = true;
-        byId('login').hidden = true;
-        put('employeeId', '—');
-        put('employeeName', '—');
-        put('code', '—');
-        put('state', '尚未呼叫');
-        put('token', '尚未確認（不顯示內容）');
-        put('message', '正在檢查…');
-
+        if (busy) return; busy = true; byId('retry').disabled = true; byId('login').hidden = true;
+        put('employeeId','—'); put('employeeName','—'); put('code','—'); put('state','尚未呼叫'); put('token','尚未確認（不顯示內容）'); put('message','正在檢查…');
         try {
-          if (!initialized) {
-            put('init', '初始化中');
-            try { await liff.init({ liffId: LIFF_ID }); }
-            catch (_) { put('init', '失敗'); fail('LIFF_INIT_ERROR'); return; }
-            initialized = true;
-            put('init', '成功');
-          }
-
+          if (!initialized) { put('init','初始化中'); try { await liff.init({ liffId: LIFF_ID }); } catch (_) { put('init','失敗'); fail('LIFF_INIT_ERROR'); return; } initialized=true; put('init','成功'); }
           put('inLine', liff.isInClient() ? '是' : '否（外部瀏覽器）');
-
-          if (!liff.isLoggedIn()) {
-            put('token', '否');
-            byId('login').hidden = false;
-            fail('LOGIN_REQUIRED');
-            return;
-          }
-
-          const idToken = liff.getIDToken();
-          put('token', idToken ? '是（不顯示內容）' : '否');
-          if (!idToken) {
-            fail('TOKEN_UNAVAILABLE');
-            return;
-          }
-
-          put('state', '讀取中');
-          const result = await identityBootstrap(idToken);
-
-          if (!result || result.success !== true) {
-            put('state', '失敗');
-            fail(isSafeCode(result.diagnosticCode) ? result.diagnosticCode : result.code);
-            return;
-          }
-
-          if (!knownStates.has(result.state)) {
-            put('state', '無法確認');
-            fail('GAS_RESPONSE_INVALID');
-            return;
-          }
-
+          if (!liff.isLoggedIn()) { put('token','否'); byId('login').hidden=false; fail('LOGIN_REQUIRED'); return; }
+          const idToken=liff.getIDToken(); put('token', idToken ? '是（不顯示內容）' : '否'); if (!idToken) { fail('TOKEN_UNAVAILABLE'); return; }
+          put('state','讀取中'); const result=await identityBootstrap(idToken);
+          if (!result || result.success !== true) { put('state','失敗'); fail(isSafeCode(result.diagnosticCode) ? result.diagnosticCode : result.code); return; }
+          if (!knownStates.has(result.state)) { put('state','無法確認'); fail('GAS_RESPONSE_INVALID'); return; }
           put('state', `${result.state}（${stateLabels[result.state]}）`);
-          if (result.state === 'ACTIVE_EMPLOYEE') {
-            put('employeeId', result.employee && result.employee.employeeId ? result.employee.employeeId : '—');
-            put('employeeName', result.employee && typeof result.employee.name === 'string' ? result.employee.name : '—');
-          }
-          put('message', '身分狀態讀取完成；未執行任何業務寫入。');
-        } catch (error) {
-          put('state', '失敗');
-          fail(error && error.safeCode);
-        } finally {
-          busy = false;
-          byId('retry').disabled = false;
-        }
+          if (result.state === 'ACTIVE_EMPLOYEE') { put('employeeId', result.employee && result.employee.employeeId ? result.employee.employeeId : '—'); put('employeeName', result.employee && typeof result.employee.name === 'string' ? result.employee.name : '—'); }
+          put('message','身分狀態讀取完成；未執行任何業務寫入。');
+        } catch (error) { put('state','失敗'); fail(error && error.safeCode); }
+        finally { busy=false; byId('retry').disabled=false; }
       }
-
       byId('retry').addEventListener('click', check);
-      byId('login').addEventListener('click', () => {
-        try {
-          liff.login({ redirectUri: location.origin + location.pathname });
-        } catch (_) {
-          fail('LIFF_INIT_ERROR');
-        }
-      });
-
+      byId('login').addEventListener('click', () => { try { liff.login({ redirectUri: location.origin + location.pathname }); } catch (_) { fail('LIFF_INIT_ERROR'); } });
       check();
     })();
   </script>
