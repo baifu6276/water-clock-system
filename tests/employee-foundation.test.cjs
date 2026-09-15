@@ -175,11 +175,35 @@ test('safe verify diagnostics cover HTTP, documented rejection, claims and backe
   }
   let e=env(); e.ctx.PropertiesService.getScriptProperties=()=>({getProperty:()=>''});
   assert.equal(e.call('identityBootstrap').diagnosticCode,'LINE_CHANNEL_ID_MISSING');assert.equal(e.verifies,0);
-  e=env();assert.equal(e.call('identityBootstrap',{idToken:'network-secret'}).diagnosticCode,'LINE_VERIFY_NETWORK_ERROR');
+  e=env();assert.equal(e.call('identityBootstrap',{idToken:'network-secret'}).diagnosticCode,'LINE_VERIFY_FETCH_ERROR');
   assert.equal(e.call('identityBootstrap',{idToken:''}).diagnosticCode,'LINE_TOKEN_MISSING_OR_INVALID');
   delete e.tables['員工資料表'];assert.equal(e.call('identityBootstrap').diagnosticCode,'BACKEND_SCHEMA_ERROR');
   e=env();e.ctx.employeeLegacyRows_=()=>{throw Error('diagnostic-secret')};
   const lookup=e.call('identityBootstrap');assert.equal(lookup.diagnosticCode,'BACKEND_LOOKUP_ERROR');assert(!JSON.stringify(lookup).includes('diagnostic-secret'));
   e=env();e.ctx.employeeBootstrap_=()=>{throw Error('diagnostic-secret')};assert.equal(e.call('identityBootstrap').diagnosticCode,'BACKEND_INTERNAL_ERROR');
+});
+test('UrlFetch exception categories never disclose exception data or hash tokens', () => {
+  const cases=[
+    ['You do not have permission to call UrlFetchApp.fetch. Required permissions: https://www.googleapis.com/auth/script.external_request','LINE_VERIFY_PERMISSION_ERROR'],
+    ['Exception: Authorization is required to perform that action.','LINE_VERIFY_PERMISSION_ERROR'],
+    ['Service invoked too many times for one day: urlfetch.','LINE_VERIFY_QUOTA_ERROR'],
+    ['Limit exceeded: URL Fetch POST size.','LINE_VERIFY_QUOTA_ERROR'],
+    ['DNS error: https://api.line.me','LINE_VERIFY_CONNECTIVITY_ERROR'],
+    ['Address unavailable: https://api.line.me','LINE_VERIFY_CONNECTIVITY_ERROR'],
+    ['Connection timed out','LINE_VERIFY_CONNECTIVITY_ERROR'],
+    ['SSL error','LINE_VERIFY_CONNECTIVITY_ERROR'],
+    ['Invalid argument: payload','LINE_VERIFY_REQUEST_ERROR'],
+    ["The parameters (String,Object) don't match the method signature for UrlFetchApp.fetch.",'LINE_VERIFY_REQUEST_ERROR'],
+    ['未知例外','LINE_VERIFY_FETCH_ERROR'],
+    ['Unexpected failure','LINE_VERIFY_FETCH_ERROR']
+  ];
+  for(const [message,expected] of cases){
+    const e=env();
+    e.ctx.Utilities.computeDigest=()=>{throw Error('must not hash token')};
+    e.ctx.UrlFetchApp.fetch=()=>{assert(!e.locked);throw Error(message+' sensitive-token-sentinel')};
+    const result=e.call('identityBootstrap',{idToken:'sensitive-token-sentinel'});
+    assert.equal(result.diagnosticCode,expected);assert.equal(result.code,'AUTH_ERROR');
+    assert(!JSON.stringify(result).includes('sensitive-token-sentinel'));assert.equal(e.logs.length,0);assert.equal(e.writes,0);
+  }
 });
 console.log(`${checks} test groups passed; no network or production writes.`);

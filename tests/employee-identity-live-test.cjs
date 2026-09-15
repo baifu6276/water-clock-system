@@ -8,7 +8,7 @@ for (const m of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)) new vm.Sc
 (async () => {
   const browser = await chromium.launch({headless:true, ...(process.env.CHROME_PATH ? {executablePath:process.env.CHROME_PATH} : {})});
   try {
-    for (const scenario of ['ACTIVE_EMPLOYEE','UNREGISTERED','APPLICATION_PENDING','AUTH_ERROR','unsafe-error','no-token','logged-out','outside-line','init-error','network-error','http-error','non-json','invalid-json','diagnostic']) {
+    for (const scenario of ['ACTIVE_EMPLOYEE','UNREGISTERED','APPLICATION_PENDING','AUTH_ERROR','unsafe-error','no-token','logged-out','outside-line','init-error','network-error','http-error','non-json','invalid-json','diagnostic','fetch-permission']) {
       const context = await browser.newContext({viewport:{width:360,height:800}});
       const page = await context.newPage(); const calls = [], logs = [], scripts = [];
       page.on('console', msg => logs.push(msg.text())); page.on('pageerror', e => logs.push(e.message));
@@ -27,6 +27,7 @@ for (const m of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)) new vm.Sc
           if (scenario==='http-error') return route.fulfill({status:503,body:'mock-secret-token'});
           if (scenario==='non-json') return route.fulfill({body:'mock-secret-token'});
           if (scenario==='invalid-json') return route.fulfill({json:{message:'mock-secret-token'}});
+          if (scenario==='fetch-permission') return route.fulfill({json:{success:false,code:'AUTH_ERROR',diagnosticCode:'LINE_VERIFY_PERMISSION_ERROR',message:'mock-secret-token'}});
           if (scenario==='diagnostic') return route.fulfill({json:{success:false,code:'AUTH_ERROR',diagnosticCode:'LINE_AUDIENCE_MISMATCH',message:'mock-secret-token'}});
           const result = scenario==='unsafe-error' ? {success:false,code:'mock-secret-token',message:'mock-secret-token'} :
             scenario==='AUTH_ERROR' ? {success:false,code:'AUTH_ERROR',message:'mock-secret-token'} :
@@ -54,7 +55,7 @@ for (const m of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)) new vm.Sc
         assert.equal(await page.locator('#employeeId').innerText(),'TEST-EMPLOYEE');
         assert.equal(await page.locator('#employeeName b').count(),0);
       } else assert.equal(await page.locator('#employeeId').innerText(),'—');
-      const expected = {'AUTH_ERROR':'AUTH_ERROR','unsafe-error':'OPERATION_ERROR','no-token':'TOKEN_UNAVAILABLE','logged-out':'LOGIN_REQUIRED','init-error':'LIFF_INIT_ERROR','network-error':'GAS_NETWORK_ERROR','http-error':'GAS_HTTP_ERROR','non-json':'GAS_NON_JSON_RESPONSE','invalid-json':'GAS_RESPONSE_INVALID','diagnostic':'LINE_AUDIENCE_MISMATCH'}[scenario];
+      const expected = {'AUTH_ERROR':'AUTH_ERROR','unsafe-error':'OPERATION_ERROR','no-token':'TOKEN_UNAVAILABLE','logged-out':'LOGIN_REQUIRED','init-error':'LIFF_INIT_ERROR','network-error':'GAS_NETWORK_ERROR','http-error':'GAS_HTTP_ERROR','non-json':'GAS_NON_JSON_RESPONSE','invalid-json':'GAS_RESPONSE_INVALID','diagnostic':'LINE_AUDIENCE_MISMATCH','fetch-permission':'LINE_VERIFY_PERMISSION_ERROR'}[scenario];
       if(expected) assert.equal(await page.locator('#code').innerText(),expected);
       else assert((await page.locator('#state').innerText()).includes(scenario==='outside-line'?'UNREGISTERED':scenario));
       if(scenario==='outside-line') assert((await page.locator('#inLine').innerText()).startsWith('否'));

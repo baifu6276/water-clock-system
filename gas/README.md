@@ -73,3 +73,21 @@ requestId 為 16–100 字元英數／底線／連字號，前端使用 UUID。�
 人工更新 GAS 時只需更新 `EmployeeIdentity.gs`（新增 employeeAuthFailure_、更新 verifyLiffIdentity_）與 `EmployeeApplication.gs` 的 handleEmployeeFoundation_（分階段及診斷欄位）。本輪沒有變更 Code.gs、employeeFoundationRequest_ 或 LifecycleStore；既有 dispatcher 分流仍需已部署。
 
 main 現有測試頁是自含 inline API 的版本，與此 feature 的共用 identity.js 版本不同。之後必須另行批准更新其 inline identityBootstrap fetch／catch 及 fail 顯示：接收 diagnosticCode、只用安全訊息對照、區分四種 GAS transport 錯誤。不要直接把 feature 頁面覆蓋到 main 而遺漏其 js/identity.js 相依，也不要為測試改動正式登入流程。本輪不修改 main、不部署 GAS。
+
+### UrlFetch 例外細分類
+
+原 LINE_VERIFY_NETWORK_ERROR 也可能是缺 scope、未授權、配額或參數例外，不能證明網路故障。本次只增加 employeeUrlFetchDiagnostic_，以暫存的例外訊息比對固定服務語句，回傳下列固定代碼；不輸出／儲存／雜湊例外訊息或 token。未知或本地化語句一律泛化，不保證所有 GAS 例外都能細分。
+
+| diagnosticCode | 意義／下一步 |
+|---|---|
+| LINE_VERIFY_PERMISSION_ERROR | 授權／權限訊息；檢查原專案 manifest 的 oauthScopes 是否包含 `https://www.googleapis.com/auth/script.external_request`（若明列 scopes），及部署執行身分是否已完成新增 scope 授權。保留其他既有 scopes。 |
+| LINE_VERIFY_QUOTA_ERROR | 配額、呼叫頻率或服務使用限制訊息；檢查對應執行帳號的限制，不自動重試。 |
+| LINE_VERIFY_CONNECTIVITY_ERROR | DNS、連線、逾時或 SSL 訊息；不關閉憑證驗證，不換 URL。 |
+| LINE_VERIFY_REQUEST_ERROR | GAS 回報參數／方法簽章不符；核對正式部署檔案。 |
+| LINE_VERIFY_FETCH_ERROR | 無法安全識別的例外，仍拒絕驗證，不能推斷是網路問題。 |
+
+repo 沒有 appsscript.json，不能据此推斷線上 manifest 有或沒有 external_request。未新增猜測的 manifest，也未修改權限政策。字串 form payload、method post、contentType 與 muteHttpExceptions 用法符合 [UrlFetchApp 文件](https://developers.google.com/apps-script/reference/url-fetch/url-fetch-app)。muteHttpExceptions 只讓 HTTP 錯誤回應不拋例外，不能略過執行授權／配額。配額例外參見 [Google 文件](https://developers.google.com/apps-script/guides/services/quotas)。
+
+GAS_HTTP_ERROR 是瀏覽器 fetch 得到非成功 HTTP 狀態時產生。新後端 catch 回傳的是 ContentService JSON，沒有設定非 2xx；LINE_VERIFY_* 不會被程式直接轉成 GAS_HTTP_ERROR。部署／Google 前端／重新導向鏈或平台層失敗仍可能影響 HTTP；Completed 也不能證明瀏覽器成功收到 JSON。需要該次 HTTP 狀態等證據再判斷，不變更 Web App URL 或存取政策。
+
+本次手動替換 GAS 只需 EmployeeIdentity.gs（新 helper 與 verifyLiffIdentity_ catch），更新原 deployment 的版本。EmployeeApplication.gs、Code.gs、store 不變。現有 main 測試頁尚無以上五個新代碼白名單，僅更新 GAS 時可能回退顯示 AUTH_ERROR；需另行授權只擴充 main 測試頁的安全訊息表，才能在手機看見細分類。本輪只更新 feature 前端對照表，未修改 main。

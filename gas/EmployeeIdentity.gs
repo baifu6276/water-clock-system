@@ -12,6 +12,26 @@ function employeeAuthFailure_(diagnosticCode) {
   error.employeeDiagnosticCode = diagnosticCode;
   throw error;
 }
+// GAS has no stable typed UrlFetch exception API. Match only recognizable service
+// phrases in memory; never return/log the message (it may contain request data).
+// Unrecognized/localized messages deliberately remain generic.
+function employeeUrlFetchDiagnostic_(error) {
+  var message = '';
+  try { if (error && typeof error.message === 'string') message = error.message; } catch (_) {}
+  if (/^(?:Exception:\s*)?(?:You do not have permission to call|You do not have permission to access|Authorization is required|Required permissions:)/i.test(message)) {
+    return 'LINE_VERIFY_PERMISSION_ERROR';
+  }
+  if (/^(?:Exception:\s*)?(?:Service invoked too many times|Service using too much computer time|Limit exceeded:|Quota exceeded|Too many scripts running simultaneously)/i.test(message)) {
+    return 'LINE_VERIFY_QUOTA_ERROR';
+  }
+  if (/^(?:Exception:\s*)?(?:DNS error|Address unavailable|Connection timed out|Connection refused|Socket timeout|Timeout:|SSL error|SSL handshake)/i.test(message)) {
+    return 'LINE_VERIFY_CONNECTIVITY_ERROR';
+  }
+  if (/^(?:Exception:\s*)?(?:Invalid argument:|Invalid arguments:|Invalid value:|The parameters .* don't match the method signature for UrlFetchApp\.fetch)/i.test(message)) {
+    return 'LINE_VERIFY_REQUEST_ERROR';
+  }
+  return 'LINE_VERIFY_FETCH_ERROR';
+}
 function verifyLiffIdentity_(idToken) {
   var channelId = PropertiesService.getScriptProperties().getProperty('LINE_LOGIN_CHANNEL_ID');
   if (!channelId || !String(channelId).trim()) employeeAuthFailure_('LINE_CHANNEL_ID_MISSING');
@@ -23,7 +43,7 @@ function verifyLiffIdentity_(idToken) {
       payload: { id_token: idToken, client_id: channelId }, muteHttpExceptions: true
     });
     status = response.getResponseCode();
-  } catch (_) { employeeAuthFailure_('LINE_VERIFY_NETWORK_ERROR'); }
+  } catch (error) { employeeAuthFailure_(employeeUrlFetchDiagnostic_(error)); }
   // Do not inspect or return error bodies for redirects/rate limits/server errors.
   if (status !== 200 && status !== 400 && status !== 401) employeeAuthFailure_('LINE_VERIFY_HTTP_ERROR');
   var claims;
