@@ -53,7 +53,14 @@
         FORBIDDEN: '沒有操作這筆資料的權限。',
         ALREADY_EMPLOYEE: '已有員工資料，請聯絡管理員處理。',
         VALIDATION_ERROR: '請檢查姓名、手機與申請說明。',
-        INVALID_STATE: '申請已非待審核狀態，請重新讀取。'
+        INVALID_STATE: '申請已非待審核狀態，請重新讀取。',
+        APPLICATION_NOT_PENDING: '申請已非待審核，請重新讀取。',
+        APPLICATION_NOT_FOUND: '找不到申請，請重新讀取。',
+        INVALID_ROLE_ASSIGNMENT: '沒有授予此系統權限的資格。',
+        INVALID_APPROVAL_DATA: '審核資料格式不符，請檢查必填欄位。',
+        RECOVERY_REQUIRED: '資料需要確認，請保留原操作重試或聯絡管理員。',
+        LINE_BINDING_CONFLICT: '既有身分關聯需要管理員人工確認。',
+        EMPLOYMENT_CONFLICT: '已有任職關聯，請聯絡管理員。'
       };
       const error = new Error(messages[result?.code] || '操作尚未完成，請以原操作重試或聯絡管理員。');
       error.code = Object.hasOwn(messages, result.code) ? result.code : 'OPERATION_ERROR';
@@ -79,7 +86,11 @@
   }
   async function route() {
     document.getElementById('legacyEmployeeContent').hidden = true;
+    managerAllowed = false;
+    if (adminEntry) adminEntry.hidden = true;
     const result = await request('identityBootstrap');
+    managerAllowed = result.state === 'ACTIVE_EMPLOYEE' && ['OWNER', 'ADMIN'].includes(result.employee?.permission);
+    if (adminEntry) adminEntry.hidden = !managerAllowed;
     if (result.state === 'ACTIVE_EMPLOYEE') {
       if (!result.employee?.employeeId) throw new Error('員工資料不完整，請聯絡管理員。');
       document.getElementById('legacyEmployeeContent').hidden = false;
@@ -93,5 +104,20 @@
     await window.EmployeeManagement.open(result.state);
     return false;
   }
+  const adminEntry = document.getElementById('employeeAdminEntry');
+  const adminOpen = document.getElementById('employeeAdminOpen');
+  let managerAllowed = false, managerOpening = false;
+  adminOpen?.addEventListener('click', async () => {
+    if (!managerAllowed || managerOpening) return;
+    managerOpening = true; adminOpen.disabled = true;
+    const message = document.getElementById('employeeAdminEntryMessage');
+    message.textContent = '正在載入人員管理…';
+    try {
+      await loadApplicationModule();
+      await window.EmployeeManagement.openAdmin();
+      message.textContent = '';
+    } catch (_) { message.textContent = '人員管理載入失敗，請再點一次重試。'; }
+    finally { managerOpening = false; adminOpen.disabled = false; }
+  });
   window.EmployeeIdentity = Object.freeze({ request, route, diagnostics });
 })();

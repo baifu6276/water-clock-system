@@ -5,3 +5,14 @@
 #employeeIdentityPanel button { margin: 8px 0; padding: 12px; width: 100%; font-size: 16px; }
 #employeeIdentityPanel article { padding: 12px; margin-top: 12px; border: 1px solid #ddd; border-radius: 8px; }
 #employeeIdentityPanel [hidden] { display: none !important; }
+
+#employeeAdminEntry { margin: 20px 0; text-align: left; overflow-wrap: anywhere; }
+#employeeAdminEntry [hidden] { display: none !important; }
+#employeeAdminEntry button { width: 100%; min-height: 48px; margin: 8px 0; padding: 12px; font-size: 16px; white-space: normal; }
+#employeeAdminPanel fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+#employeeAdminPanel label { display: block; margin: 12px 0; }
+#employeeAdminPanel input, #employeeAdminPanel select, #employeeAdminPanel textarea { display: block; width: 100%; min-width: 0; box-sizing: border-box; padding: 10px; font-size: 16px; }
+#employeeAdminPanel input[readonly] { background: #f2f4f6; color: #394653; }
+#employeeAdminPanel article, #employeeAdminPanel form { border: 1px solid #d4dce4; border-radius: 8px; padding: 12px; margin: 12px 0; }
+#employeeAdminStatus { padding: 10px; background: #edf4fb; border-radius: 6px; }
+#employeeAdminPanel button:disabled { opacity: .55; cursor: not-allowed; }
