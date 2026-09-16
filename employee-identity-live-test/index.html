@@ -12,6 +12,8 @@
     dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 14px; }
     dt { font-weight: bold; } dd { margin: 0; overflow-wrap: anywhere; }
     button { padding: 12px; margin: 8px 0; width: 100%; font: inherit; min-height: 48px; }
+    #adminTest { margin-top: 28px; border-top: 2px solid #dce2e8; padding-top: 16px; }
+    #adminTest li, #adminMessage { overflow-wrap: anywhere; }
     #message { overflow-wrap: anywhere; } [hidden] { display: none !important; }
   </style>
 </head>
@@ -19,7 +21,7 @@
   <main>
     <p class="badge">獨立測試頁 · 非正式操作介面</p>
     <h1>員工 LINE 身分驗證</h1>
-    <p>只讀取身分狀態。此頁沒有申請送出、打卡、薪資或工程進度寫入功能。</p>
+    <p>只讀取身分狀態與管理員待審清單。此頁沒有申請送出、打卡、薪資或工程進度寫入功能。</p>
     <dl>
       <dt>LIFF 初始化</dt><dd id="init">尚未開始</dd>
       <dt>是否在 LINE 內</dt><dd id="inLine">尚未確認</dd>
@@ -33,18 +35,51 @@
     <button id="retry" type="button" disabled>重新檢查身分</button>
     <button id="login" type="button" hidden>使用 LINE 登入</button>
     <p>驗證失敗不代表尚未註冊。若後端尚未部署新 action，請聯絡管理員。</p>
+    <section id="adminTest" aria-labelledby="adminTitle">
+      <h2 id="adminTitle">管理員待審申請測試</h2>
+      <p>僅讀取待審申請，由後端驗證在職 OWNER／ADMIN 權限，不變更任何資料。</p>
+      <button id="adminCheck" type="button" disabled>檢查待審申請</button>
+      <dl>
+        <dt>授權／結果狀態</dt><dd id="adminStatus">尚未檢查</dd>
+        <dt>待審申請數</dt><dd id="adminCount">—</dd>
+        <dt>錯誤代碼</dt><dd id="adminCode">—</dd>
+      </dl>
+      <p id="adminMessage" role="status" aria-live="polite">請按按鈕執行只讀測試。</p>
+      <ul id="adminApplications"></ul>
+    </section>
   </main>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="../js/identity.js"></script>
   <script>
-    // identity.js request() reads this lexical setting; never invoke its production route().
-    let GAS_URL;
     (() => {
       'use strict';
+      let GAS_URL;
       const byId = id => document.getElementById(id);
       const put = (id, text) => { byId(id).textContent = text; };
       const errors = {
-        ...window.EmployeeIdentity?.diagnostics,
+        "LINE_CHANNEL_ID_MISSING": "未設定 LINE_LOGIN_CHANNEL_ID。",
+        "LINE_TOKEN_MISSING_OR_INVALID": "ID token 缺少或格式不符，請重新登入。",
+        "LINE_VERIFY_NETWORK_ERROR": "GAS 無法完成 LINE verify 連線；請確認外部請求授權、配額與網路。",
+        "LINE_VERIFY_PERMISSION_ERROR": "UrlFetch 權限或授權不足，請確認 script.external_request scope 與執行身分授權。",
+        "LINE_VERIFY_QUOTA_ERROR": "UrlFetch 呼叫遇到配額或服務使用限制。",
+        "LINE_VERIFY_CONNECTIVITY_ERROR": "UrlFetch 回報 DNS、連線、逾時或 SSL 問題。",
+        "LINE_VERIFY_REQUEST_ERROR": "UrlFetch 回報請求參數或方法簽章不符。",
+        "LINE_VERIFY_FETCH_ERROR": "UrlFetch 發生未能安全細分的例外；未輸出原始訊息。",
+        "LINE_VERIFY_HTTP_ERROR": "LINE verify 回傳非預期 HTTP 狀態，可能為限流或服務錯誤。",
+        "LINE_TOKEN_REJECTED": "LINE 拒絕此 token；未取得可確認的細分類原因。",
+        "LINE_AUDIENCE_MISMATCH": "LINE token 與設定的 LINE Login channel ID 不符；不可使用 LIFF ID 或其他 channel ID。",
+        "LINE_ISSUER_MISMATCH": "LINE token issuer 不符。",
+        "LINE_TOKEN_EXPIRED": "LINE token 已過期，請重新登入。",
+        "LINE_SUB_MISSING": "LINE verify 成功回應缺少有效 sub。",
+        "LINE_VERIFY_MALFORMED_RESPONSE": "LINE verify 回應不是預期 JSON／claims 格式。",
+        "BACKEND_SCHEMA_ERROR": "後端資料表缺少或表頭不符。",
+        "BACKEND_IDENTITY_CONFLICT": "員工或 LINE 綁定資料衝突。",
+        "BACKEND_LOOKUP_ERROR": "後端讀取員工／綁定資料失敗，請確認 Spreadsheet 綁定與授權。",
+        "BACKEND_INTERNAL_ERROR": "後端新身分流程發生未預期錯誤。",
+        "GAS_NETWORK_ERROR": "瀏覽器未取得 GAS 回應，請確認網路、CORS 或部署存取設定。",
+        "GAS_HTTP_ERROR": "GAS 回傳非成功 HTTP 狀態，請確認部署存取設定。",
+        "GAS_NON_JSON_RESPONSE": "GAS 回應無法解析為 JSON，可能為登入／錯誤頁或部署問題。",
+        "GAS_RESPONSE_INVALID": "GAS JSON 不符合新身分 API 回應格式，請確認部署版本。",
+        FORBIDDEN: '沒有管理員讀取權限，需在職 OWNER／ADMIN。',
         CONFIG_ERROR: '設定尚未完成，請聯絡管理員確認 LINE channel 與 GAS 部署。',
         LIFF_INIT_ERROR: 'LIFF 初始化失敗，請從 LINE 重新開啟。',
         LOGIN_REQUIRED: '尚未登入，請按「使用 LINE 登入」。',
@@ -65,9 +100,65 @@
         put('code', safe); put('message', errors[safe]);
         if (safe === 'AUTH_ERROR') put('state', 'AUTH_ERROR（驗證失敗）');
       }
-      let busy = false, initialized = false;
+      function safeError(code) {
+        const error = new Error('只讀測試未完成');
+        error.code = Object.hasOwn(errors, code) ? code : 'OPERATION_ERROR';
+        return error;
+      }
+      async function request(action) {
+        // Explicit read-only allowlist. No payload supplied by callers.
+        if (!['identityBootstrap', 'employeeApplicationAdminList'].includes(action)) throw safeError('OPERATION_ERROR');
+        const idToken = liff.getIDToken();
+        if (!idToken) throw safeError('TOKEN_UNAVAILABLE');
+        let response, result;
+        try {
+          response = await fetch(GAS_URL, {
+            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow',
+            body: JSON.stringify({ action, idToken })
+          });
+        } catch (_) { throw safeError('GAS_NETWORK_ERROR'); }
+        if (!response.ok) throw safeError('GAS_HTTP_ERROR');
+        try { result = await response.json(); } catch (_) { throw safeError('GAS_NON_JSON_RESPONSE'); }
+        if (!result || Array.isArray(result) || typeof result.success !== 'boolean') throw safeError('GAS_RESPONSE_INVALID');
+        if (!result.success) {
+          const error = safeError(Object.hasOwn(errors, result.diagnosticCode) ? result.diagnosticCode : result.code);
+          if (result.code === 'AUTH_ERROR') { error.diagnosticCode = error.code; error.code = 'AUTH_ERROR'; }
+          throw error;
+        }
+        return result;
+      }
+      let busy = false, initialized = false, adminBusy = false;
+      function adminReset() {
+        put('adminStatus', '尚未檢查'); put('adminCount', '—'); put('adminCode', '—');
+        put('adminMessage', '請按按鈕執行只讀測試。'); byId('adminApplications').replaceChildren();
+      }
+      async function checkAdmin() {
+        if (busy || adminBusy || !initialized) return;
+        adminBusy = true; byId('adminCheck').disabled = true; byId('retry').disabled = true;
+        adminReset(); put('adminStatus', '檢查中'); put('adminMessage', '正在驗證授權並讀取待審申請…');
+        try {
+          const result = await request('employeeApplicationAdminList');
+          if (!Array.isArray(result.applications) || !result.applications.every(a => a &&
+              a.status === '待審核' && typeof a.name === 'string' && typeof a.createdAt === 'string')) {
+            throw safeError('GAS_RESPONSE_INVALID');
+          }
+          put('adminStatus', '授權通過／讀取成功'); put('adminCount', String(result.applications.length));
+          put('adminMessage', result.applications.length ? '只顯示姓名、申請狀態與申請時間。' : '目前沒有待審申請；授權與讀取已成功。');
+          result.applications.forEach(a => {
+            const item = document.createElement('li');
+            item.textContent = [a.name || '姓名未提供', a.status, a.createdAt || '時間未提供'].join(' · ');
+            byId('adminApplications').append(item);
+          });
+        } catch (error) {
+          const candidate = error?.diagnosticCode || error?.code;
+          const code = Object.hasOwn(errors, candidate) ? candidate : 'OPERATION_ERROR';
+          put('adminStatus', code === 'FORBIDDEN' ? '授權未通過' : '未完成／無法確認');
+          put('adminCode', code); put('adminMessage', errors[code]);
+        } finally { adminBusy = false; byId('adminCheck').disabled = false; byId('retry').disabled = false; }
+      }
       async function check() {
-        if (busy) return;
+        if (busy || adminBusy) return;
+        adminReset(); byId('adminCheck').disabled = true;
         busy = true; byId('retry').disabled = true; byId('login').hidden = true;
         ['employeeId', 'employeeName', 'code'].forEach(id => put(id, '—'));
         put('state', '尚未呼叫'); put('token', '尚未確認（不顯示內容）');
@@ -98,7 +189,7 @@
           put('token', available ? '是（不顯示內容）' : '否');
           if (!available) { fail('TOKEN_UNAVAILABLE'); return; }
           put('state', '讀取中');
-          const result = await window.EmployeeIdentity.request('identityBootstrap');
+          const result = await request('identityBootstrap');
           if (!Object.hasOwn(states, result.state)) { put('state', '無法確認'); fail('RESPONSE_ERROR'); return; }
           if (result.state === 'ACTIVE_EMPLOYEE') {
             if (typeof result.employee?.employeeId !== 'string' || !result.employee.employeeId || typeof result.employee.name !== 'string') {
@@ -112,8 +203,9 @@
         } catch (error) {
           put('state', '無法確認'); fail(error?.diagnosticCode || (error && typeof error.code === 'string' ? error.code : 'REQUEST_FAILED'));
           if (error?.code === 'AUTH_ERROR') put('state', 'AUTH_ERROR（驗證失敗）');
-        } finally { busy = false; byId('retry').disabled = false; }
+        } finally { busy = false; byId('retry').disabled = false; byId('adminCheck').disabled = !initialized; }
       }
+      byId('adminCheck').addEventListener('click', checkAdmin);
       byId('retry').addEventListener('click', check);
       byId('login').addEventListener('click', () => {
         try { liff.login({ redirectUri: location.origin + location.pathname }); }
