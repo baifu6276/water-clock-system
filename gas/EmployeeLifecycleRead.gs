@@ -29,7 +29,7 @@ function employeeLifecyclePeriod_(row) {
     salaryAmount: employeeLifecycleScalar_(row.salaryAmount), systemRole: employeeLifecycleScalar_(row.permission),
     status: employeeLifecycleScalar_(row.status), disabledAt: employeeLifecycleScalar_(row.disabledAt),
     baselineDate: employeeLifecycleDate_(row.baselineDate), createdAt: employeeLifecycleScalar_(row.createdAt),
-    terminatedAt: employeeLifecycleScalar_(row.terminatedAt) };
+    terminatedAt: employeeLifecycleScalar_(row.terminatedAt), version: employeeLifecycleScalar_(row.version) };
 }
 function employeeLifecycleBindingActive_(row, now) {
   var start = new Date(row.validFrom).getTime(), end = row.validTo ? new Date(row.validTo).getTime() : Infinity;
@@ -40,6 +40,8 @@ function employeeLifecycleBusinessValues_(json) {
   var value;
   try { value = JSON.parse(json || 'null'); } catch (_) { return null; }
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  if (value.format === 2 && value.master) return { employeeStatus: employeeLifecycleScalar_(value.master.employeeStatus),
+    terminationDate: employeeLifecycleDate_(value.master.terminationDate) };
   if (value.format === 1 && Array.isArray(value.employee) && value.employee.length === 12) {
     var master = employeeLifecycleMaster_(value.employee, false);
     delete master.employeeId;

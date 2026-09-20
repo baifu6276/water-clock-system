@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
-const files = ['Code', 'EmployeeIdentity', 'EmployeeLifecycleStore', 'EmployeeApplication', 'EmployeeApplicationAdmin', 'EmployeeLifecycleRead'];
+const files = ['Code', 'EmployeeIdentity', 'EmployeeLifecycleStore', 'EmployeeApplication', 'EmployeeApplicationAdmin', 'EmployeeLifecycleRead', 'EmployeeLifecycleMutation'];
 let checks = 0;
 function test(name, work) { work(); checks++; console.log('PASS', name); }
 function env(allowEmployeeWrites = false) {
@@ -24,7 +24,9 @@ function env(allowEmployeeWrites = false) {
           if (fail) failTable = null;
           if (fail && !failPersisted) throw Error('simulated storage failure');
           writes++;
-          values.forEach((row, i) => { rows[r-1+i] = row.map(v => typeof v === 'string' && v.startsWith("'") ? v.slice(1) : v); });
+          values.forEach((row, i) => { rows[r-1+i] ||= []; row.forEach((v,j) => {
+            rows[r-1+i][c-1+j] = typeof v === 'string' && v.startsWith("'") ? v.slice(1) : v;
+          }); });
           if (onWrite) { const hook=onWrite; onWrite=null; hook(); }
           if (fail) throw Error('simulated uncertain storage acknowledgement');
         }
@@ -503,5 +505,138 @@ test('lifecycle dates remain unknown when invalid; effective bindings and duplic
   const list=e.call('employeeLifecycleAdminList',{},'owner');
   assert(list.employees[1].warnings.some(w=>w.code==='DUPLICATE_EMPLOYEE_ID'));
   assert(list.employees[1].warnings.some(w=>w.code==='DUPLICATE_MASTER_LINE_BINDING'));assert.equal(e.writes,0);
+});
+function mutationEnv(status='在職', role='EMPLOYEE', actor='OWNER') {
+  const e=env(true);
+  e.tables['員工資料表'].rows[1][6]=actor;
+  e.tables['員工資料表'].rows.push(['EMP009','target','測試員工','師傅','日薪',2000,role,'2020-01-01','',''+status,'0900000000','保留']);
+  seed(e,'employments',{employmentId:'JOB-9',employeeId:'EMP009',sequence:1,startDate:'2020-01-01',status,
+    grade:'師傅',salaryType:'日薪',salaryAmount:2000,permission:role,version:3});
+  seed(e,'bindings',{bindingId:'BIND-9',employeeId:'EMP009',lineSub:'target',channelId:'test-channel',status:'有效',validFrom:'2020-01-01T00:00:00Z',version:1});
+  function source(name,width) { const rows=[Array(width).fill('header')];e.tables[name]={rows,getLastRow:()=>rows.length,
+    getLastColumn:()=>width,getDataRange:()=>({getValues:()=>rows.map(r=>[...r])}),
+    getRange:(r,c,n,m)=>({getValues:()=>Array.from({length:n},(_,i)=>Array.from({length:m},(_,j)=>rows[r-1+i]?.[c-1+j]??'')),
+      setValues:()=>assert.fail('unrelated production table write')})}; }
+  source('工地資料表',12);source('工作區段',26);
+  return e;
+}
+const mutationPayload={employeeId:'EMP009',requestId:'lifecycle-request-0001',expectedVersion:3,reason:'測試狀態異動',effectiveDate:'2026-01-01'};
+const mutate=(e,action='Suspend',p=mutationPayload,sub='owner')=>e.call('employeeLifecycle'+action,p,sub);
+function masterTarget(e){return e.tables['員工資料表'].rows[2];}
+function addSite(e,id='EMP009',status='施工中') {const row=Array(12).fill('');row[0]='SITE-TEST';row[1]='測試工地';row[5]=100;row[6]=id;row[11]=status;e.tables['工地資料表'].rows.push(row);}
+function addOpen(e,id='EMP009',closed=false) {const row=Array(26).fill('');row[0]='SEG-TEST';row[2]=id;row[9]='2026-01-01T00:00:00Z';if(closed)row[10]='2026-01-01T08:00:00Z';e.tables['工作區段'].rows.push(row);}
+test('Phase 2 authority matrix, active actor and server role rechecked under lock',()=>{
+  for(const actor of ['OWNER','ADMIN','SITE_MANAGER','EMPLOYEE']) for(const target of ['OWNER','ADMIN','SITE_MANAGER','EMPLOYEE']) {
+    const e=mutationEnv('在職',target,actor),r=mutate(e,'Suspend',{...mutationPayload,role:'OWNER',systemRole:'OWNER'});
+    const allowed=actor==='OWNER'||actor==='ADMIN'&&target!=='OWNER';
+    assert.equal(r.success,allowed,`${actor}->${target}: ${JSON.stringify(r)}`);if(!allowed){assert.equal(r.code,'FORBIDDEN');assert.equal(e.writes,0);}
+  }
+  for(const s of ['停職','留停','離職']) {const e=mutationEnv();e.tables['員工資料表'].rows[1][9]=s;assert.equal(mutate(e).code,'FORBIDDEN');assert.equal(e.writes,0);}
+  const e=mutationEnv();e.beforeLock(()=>e.tables['員工資料表'].rows[1][6]='EMPLOYEE');assert.equal(mutate(e).code,'FORBIDDEN');assert.equal(e.writes,0);
+});
+test('Phase 2 all 16 transitions; preserve master fields, period identity and bindings',()=>{
+  const allowed={Suspend:['在職'],Leave:['在職'],Resume:['停職','留停'],Terminate:['在職','停職','留停']};
+  const next={Suspend:'停職',Leave:'留停',Resume:'在職',Terminate:'離職'};
+  for(const action of Object.keys(allowed)) for(const status of ['在職','停職','留停','離職']) {
+    const e=mutationEnv(status),before=[...masterTarget(e)],binding=JSON.stringify(e.tables['員工LINE綁定紀錄']);
+    const r=mutate(e,action);
+    if(!allowed[action].includes(status)){assert.equal(r.code,'INVALID_STATUS_TRANSITION');assert.equal(e.writes,0);continue;}
+    assert.equal(r.success,true,JSON.stringify(r));assert.equal(r.employeeStatus,next[action]);assert.equal(r.version,4);
+    const period=rows(e,'employments')[0];assert.equal(period.employmentId,'JOB-9');assert.equal(rows(e,'employments').length,1);
+    assert.equal(period.status,next[action]);assert.equal(period.endDate,action==='Terminate'?'2026-01-01':'');
+    assert.equal(masterTarget(e)[8],action==='Terminate'?'2026-01-01':'');
+    for(let i=0;i<12;i++)if(i!==9&&!(i===8&&action==='Terminate'))assert.equal(masterTarget(e)[i],before[i]);
+    assert.equal(JSON.stringify(e.tables['員工LINE綁定紀錄']),binding);
+    assert.equal(e.call('identityBootstrap',{},'target').state,{Suspend:'SUSPENDED',Leave:'LEAVE',Resume:'ACTIVE_EMPLOYEE',Terminate:'TERMINATED'}[action]);
+    const writes=e.writes;assert.deepEqual(mutate(e,action),r);assert.equal(e.writes,writes);
+    assert.equal(rows(e,'audit').length,2);assert.equal(e.logs.length,0);
+    assert(!/token:|target|lineSub|requestHash|beforeJson|afterJson/.test(JSON.stringify(r)));
+  }
+});
+test('Phase 2 last usable OWNER, pending/invalid owners excluded, current master role wins',()=>{
+  for(const action of ['Suspend','Leave','Terminate']) {
+    const e=mutationEnv('在職','OWNER');e.tables['員工資料表'].rows[1][9]='停職';
+    // Target is the only usable OWNER, and is the authenticated actor.
+    assert.equal(mutate(e,action,mutationPayload,'target').code,'LAST_OWNER_REQUIRED');assert.equal(e.writes,0);
+    e.tables['員工資料表'].rows[1][9]='在職';e.tables['員工資料表'].rows[1][1]='';
+    assert.equal(mutate(e,action,mutationPayload,'target').code,'LAST_OWNER_REQUIRED');assert.equal(e.writes,0);
+    e.tables['員工資料表'].rows[1][1]='owner';assert.equal(mutate(e,action).success,true);
+  }
+  const e=mutationEnv('在職','OWNER');seed(e,'audit',{employeeId:'E-owner',operatorSub:'other',requestId:'unfinished-owner-1',phase:'STARTED'});
+  assert.equal(mutate(e).code,'LAST_OWNER_REQUIRED');
+  const a=mutationEnv('在職','EMPLOYEE','ADMIN');a.beforeLock(()=>masterTarget(a)[6]='OWNER');assert.equal(mutate(a).code,'FORBIDDEN');assert.equal(a.writes,0);
+});
+test('Phase 2 actual primary assignment blocks any role; inactive/non-responsible sites do not',()=>{
+  for(const role of ['OWNER','ADMIN','SITE_MANAGER','EMPLOYEE'])for(const action of ['Suspend','Leave','Terminate']){
+    const e=mutationEnv('在職',role);addSite(e);const before=JSON.stringify(e.tables);
+    assert.equal(mutate(e,action).code,'SITE_HANDOFF_REQUIRED');assert.equal(JSON.stringify(e.tables),before);assert.equal(e.writes,0);
+  }
+  for(const [id,status] of [['EMP009','已完工'],['OTHER','施工中']]){const e=mutationEnv();addSite(e,id,status);assert.equal(mutate(e).success,true);}
+  const e=mutationEnv('停職');addSite(e);const before=JSON.stringify(e.tables['工地資料表']);assert.equal(mutate(e,'Resume').success,true);assert.equal(JSON.stringify(e.tables['工地資料表']),before);
+});
+test('Phase 2 production open-segment helper blocks all access-removing actions; no attendance writes',()=>{
+  for(const action of ['Suspend','Leave','Terminate']){const e=mutationEnv();addOpen(e);const before=JSON.stringify(e.tables);assert.equal(mutate(e,action).code,'OPEN_ATTENDANCE_REQUIRED');assert.equal(e.writes,0);assert.equal(JSON.stringify(e.tables),before);}
+  for(const [id,closed] of [['OTHER',false],['EMP009',true]]){const e=mutationEnv();addOpen(e,id,closed);assert.equal(mutate(e).success,true);}
+  const e=mutationEnv('留停');addOpen(e);const before=JSON.stringify(e.tables['工作區段']);assert.equal(mutate(e,'Resume').success,true);assert.equal(JSON.stringify(e.tables['工作區段']),before);
+});
+test('Phase 2 missing baseline, duplicate/mismatched periods and ambiguous bindings fail without writes',()=>{
+  for(const table of ['員工任職紀錄','員工LINE綁定紀錄']){const e=mutationEnv();e.tables[table].rows.length=1;const before=JSON.stringify(e.tables);assert.equal(mutate(e).code,'BASELINE_REQUIRED');assert.equal(JSON.stringify(e.tables),before);}
+  const e=mutationEnv();e.tables['員工任職紀錄'].rows.push([...e.tables['員工任職紀錄'].rows[1]]);assert.equal(mutate(e).code,'EMPLOYMENT_CONFLICT');assert.equal(e.writes,0);
+  for(const change of [e=>e.tables['員工任職紀錄'].rows[1][5]='停職',e=>masterTarget(e)[8]='2025-12-31']){const e=mutationEnv();change(e);assert.equal(mutate(e).code,'EMPLOYMENT_CONFLICT');assert.equal(e.writes,0);}
+  for(const change of [e=>e.tables['員工LINE綁定紀錄'].rows[1][4]='失效',e=>e.tables['員工LINE綁定紀錄'].rows[1][3]='wrong-channel',e=>e.tables['員工LINE綁定紀錄'].rows.push([...e.tables['員工LINE綁定紀錄'].rows[1]]),e=>masterTarget(e)[1]='changed']){
+    const e=mutationEnv('停職');change(e);assert.equal(mutate(e,'Resume').code,'BINDING_RECOVERY_REQUIRED');assert.equal(e.writes,0);
+  }
+});
+test('Phase 2 strict inputs, Taipei boundary, version and immutable request payload',()=>{
+  for(const patch of [{employeeId:''},{reason:''},{reason:[]},{expectedVersion:0},{expectedVersion:'3'},{effectiveDate:''},{effectiveDate:'2026-02-30'},{effectiveDate:'2026-1-01'},{effectiveDate:'2026-01-01T00:00:00Z'}]){
+    const e=mutationEnv();assert.equal(mutate(e,'Suspend',{...mutationPayload,...patch}).code,'VALIDATION_ERROR');assert.equal(e.writes,0);
+  }
+  const e=mutationEnv();assert.equal(mutate(e,'Suspend',{...mutationPayload,expectedVersion:2}).code,'VERSION_CONFLICT');assert.equal(e.writes,0);
+  assert.equal(mutate(e).success,true);assert.equal(mutate(e,'Suspend',{...mutationPayload,reason:'不同'}).code,'REQUEST_CONFLICT');
+  assert.equal(mutate(e,'Leave').code,'REQUEST_CONFLICT');
+  for(const [now,day,expected] of [['2026-09-19T15:59:59Z','2026-09-20','FUTURE_EFFECTIVE_DATE_UNSUPPORTED'],['2026-09-19T16:00:00Z','2026-09-20',true]]){
+    const f=mutationEnv();vm.runInContext(`{const RealDate=Date;Date=class extends RealDate {constructor(...a){super(...(a.length?a:[${JSON.stringify(now)}]));}static now(){return new RealDate(${JSON.stringify(now)}).getTime();}}}`,f.ctx);
+    const r=mutate(f,'Suspend',{...mutationPayload,effectiveDate:day});assert.equal(r.code||r.success,expected);
+  }
+});
+test('Phase 2 failure injection at STARTED/master/period/COMPLETED checkpoints, both acknowledged states',()=>{
+  for(const action of ['Suspend','Leave','Resume','Terminate'])for(const [table,after] of [['員工異動紀錄',0],['員工資料表',0],['員工任職紀錄',0],['員工異動紀錄',1]])for(const persisted of [false,true]){
+    const e=mutationEnv(action==='Resume'?'停職':'在職');e.fail(table,after,persisted);
+    const failed=mutate(e,action);assert.equal(failed.code,'OPERATION_ERROR',`${action} ${table} ${persisted}`);
+    assert(!JSON.stringify(failed).includes('simulated'));assert.equal(e.locked,false);
+    const r=mutate(e,action);assert.equal(r.success,true,JSON.stringify(r));assert.equal(r.version,4);
+    const writes=e.writes;assert.deepEqual(mutate(e,action),r);assert.equal(e.writes,writes);
+    assert.equal(rows(e,'audit').length,2);assert.equal(rows(e,'employments').length,1);assert.equal(rows(e,'bindings').length,1);
+    assert(!JSON.stringify(e.tables).includes('token:'));assert.equal(e.logs.length,0);
+  }
+});
+test('Phase 2 incomplete intent blocks competing mutations; ambiguous drift never overwritten',()=>{
+  const e=mutationEnv();e.fail('員工任職紀錄');assert.equal(mutate(e).code,'OPERATION_ERROR');
+  assert.equal(masterTarget(e)[9],'停職');assert.equal(e.call('identityBootstrap',{},'target').state,'SUSPENDED');
+  assert.equal(mutate(e,'Resume',{...mutationPayload,requestId:'lifecycle-request-0002'}).code,'RECOVERY_REQUIRED');
+  e.tables['員工任職紀錄'].rows[1][5]='留停';const before=JSON.stringify(e.tables);assert.equal(mutate(e).code,'RECOVERY_REQUIRED');assert.equal(JSON.stringify(e.tables),before);
+  const f=mutationEnv('停職');f.fail('員工資料表');assert.equal(mutate(f,'Resume').code,'OPERATION_ERROR');assert.equal(f.call('identityBootstrap',{},'target').state,'SUSPENDED');
+  masterTarget(f)[3]='changed';assert.equal(mutate(f,'Resume').code,'RECOVERY_REQUIRED');
+  const g=mutationEnv();g.fail('員工異動紀錄',1);assert.equal(mutate(g).code,'OPERATION_ERROR');masterTarget(g)[9]='在職';
+  const snapshot=JSON.stringify(g.tables);assert.equal(mutate(g).code,'RECOVERY_REQUIRED');assert.equal(JSON.stringify(g.tables),snapshot);
+});
+test('Phase 2 guards rerun on retry; read APIs expose version and safe status audit only',()=>{
+  const e=mutationEnv();e.fail('員工資料表');assert.equal(mutate(e).code,'OPERATION_ERROR');addOpen(e);assert.equal(mutate(e).code,'OPEN_ATTENDANCE_REQUIRED');
+  e.tables['工作區段'].rows.length=1;assert.equal(mutate(e).success,true);
+  const detail=e.call('employeeLifecycleAdminDetail',{employeeId:'EMP009'},'owner');assert.equal(detail.lifecycle.currentEmployment.version,4);
+  assert.equal(detail.changes[0].before.employeeStatus,'在職');assert.equal(detail.changes[0].after.employeeStatus,'停職');
+  assert(!/token:|target|lineSub|requestHash|beforeJson|afterJson/.test(JSON.stringify(detail)));
+  assert.equal(e.logs.length,0);
+});
+test('Phase 2 recovery handles Sheets calendar cells without duplicate transition',()=>{
+  const e=mutationEnv();e.fail('員工異動紀錄',1);assert.equal(mutate(e,'Terminate').code,'OPERATION_ERROR');
+  const date=vm.runInContext("new Date('2025-12-31T16:00:00Z')",e.ctx);
+  masterTarget(e)[8]=date;e.tables['員工任職紀錄'].rows[1][4]=date;
+  assert.equal(mutate(e,'Terminate').success,true);assert.equal(rows(e,'employments')[0].version,4);assert.equal(rows(e,'audit').length,2);
+});
+test('Phase 2 self-disable cannot bypass active actor requirement after lost acknowledgement',()=>{
+  const e=mutationEnv('在職','OWNER');e.fail('員工任職紀錄');assert.equal(mutate(e,'Suspend',mutationPayload,'target').code,'OPERATION_ERROR');
+  const before=JSON.stringify(e.tables);assert.equal(mutate(e,'Suspend',mutationPayload,'target').code,'FORBIDDEN');assert.equal(JSON.stringify(e.tables),before);
+  assert.equal(mutate(e,'Resume',{...mutationPayload,requestId:'lifecycle-request-0002'}).code,'RECOVERY_REQUIRED');
 });
 console.log(`${checks} test groups passed; no network or production writes.`);

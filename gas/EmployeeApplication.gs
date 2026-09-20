@@ -1,6 +1,7 @@
 var EMPLOYEE_ACTIONS_ = ['identityBootstrap', 'employeeApplicationSubmit', 'employeeApplicationListOwn',
   'employeeApplicationCancel', 'employeeLifecycleBaselineDryRun', 'employeeApplicationAdminList',
-  'employeeApplicationApprove', 'employeeApplicationReject', 'employeeLifecycleAdminList', 'employeeLifecycleAdminDetail'];
+  'employeeApplicationApprove', 'employeeApplicationReject', 'employeeLifecycleAdminList', 'employeeLifecycleAdminDetail',
+  'employeeLifecycleSuspend', 'employeeLifecycleLeave', 'employeeLifecycleResume', 'employeeLifecycleTerminate'];
 
 // Malformed/legacy requests retain the original doPost error and lock behavior.
 function employeeFoundationRequest_(e) {
@@ -25,6 +26,7 @@ function handleEmployeeFoundation_(data) {
     else result = employeeWithLock_(function() {
       // Re-read employee state under the write lock, without re-sending token to LINE.
       context = employeeContext_(context);
+      if (Object.prototype.hasOwnProperty.call(EMPLOYEE_LIFECYCLE_TRANSITIONS_, action)) return employeeLifecycleMutate_(context, data);
       if (action === 'employeeApplicationApprove' || action === 'employeeApplicationReject') {
         return employeeApplicationReview_(context, data, action === 'employeeApplicationApprove');
       }

@@ -1,5 +1,43 @@
 # 人員身分與加入申請基礎層（第一批）
 
+## 生命週期 Phase 2：狀態異動後端（未部署）
+
+新增 `EmployeeLifecycleMutation.gs`，並更新 `EmployeeApplication.gs` 分流、`EmployeeLifecycleRead.gs` 安全投影。此批不提供前端，不改 Code.gs 舊 action／鎖、LINE verify、manifest 或既有薪資算法。
+
+| action | 允許原狀態 | 新狀態 |
+|---|---|---|
+| `employeeLifecycleSuspend` | 在職 | 停職 |
+| `employeeLifecycleLeave` | 在職 | 留停 |
+| `employeeLifecycleResume` | 停職、留停 | 在職 |
+| `employeeLifecycleTerminate` | 在職、停職、留停 | 離職 |
+
+共用請求：`action, idToken, employeeId, requestId, expectedVersion, reason, effectiveDate`。employeeId 是永久主鍵；requestId 沿用 16–100 位英數／底線／連字號；expectedVersion 是正整數，取 Phase 1 `lifecycle.currentEmployment.version`，即「員工任職紀錄」U 欄，不是主檔或申請版本。reason 必填、最多 1000 字；日期嚴格使用 YYYY-MM-DD，依 Asia/Taipei 判定今天，只接受今天或過去，未來回 `FUTURE_EFFECTIVE_DATE_UNSUPPORTED`。日期不得早於已知任職開始日或本任職已完成的狀態異動；未知歷史日期保持空白，不猜測。
+
+成功回應僅含 `success, employeeId, previousStatus, employeeStatus, effectiveDate, version, recoveryStatus:"COMPLETED"`。API 不回傳 LINE UID/sub、token、request hash、原始 audit、例外或 LINE 回應。既有 POST text/plain;charset=utf-8 與 redirect follow 不變。
+
+### 權限與資料前置檢查
+
+- 每次先在鎖外驗證真實 ID token，再於 ScriptLock 內重新解析在職 OWNER／ADMIN。OWNER 可管理四種角色；ADMIN 絕不可異動 OWNER。目標角色只讀主檔 G 欄，不採用 payload 的權限宣稱。
+- 停職／留停／離職 OWNER 前，鎖內必須確認另有可經目前登入綁定解析的在職 OWNER；未完成生命週期操作的候選人不算可用。否則 `LAST_OWNER_REQUIRED`。
+- 停職／留停／離職前，沿用 `getActiveSites_()`：工地資料表 L=施工中、G=主要領班員工 ID。任何角色的實際負責人都須先交接，否則 `SITE_HANDOFF_REQUIRED`；不清除／改派工地。
+- 同上三操作沿用 `findOpenWorkSegment_()`：工作區段 C=員工 ID、J 有上班時間、K 無下班時間即阻擋，回 `OPEN_ATTENDANCE_REQUIRED`。不自動下班、補登或修改歷史。復職不改工地／出勤。
+- 缺任職或 LINE 綁定基線回 `BASELINE_REQUIRED`。多個開放期間、重複任職 ID、主檔與期間狀態不一致回 `EMPLOYMENT_CONFLICT`。不建立期間、員工、日期或綁定；舊員工須等另行授權的受控 baseline 工具，現有 dry-run 保持只讀。
+- 必須有唯一、目前有效且與主檔及驗證 channel 一致的綁定；不明確則 `BINDING_RECOVERY_REQUIRED`。綁定表本批完全不寫，主檔 J 的非在職狀態透過既有 identity／授權模型阻擋使用。復職只恢復同一任職期間，不恢復失效綁定、不提供回任／重綁。
+
+### 最小寫入、版本與恢復
+
+只有員工主檔 J（離職時 I:J）、原任職紀錄及 append-only 異動紀錄會寫入。主檔 A:H、K:L 不變；任職 ID／序號不變；停職／留停不關閉期間，復職清除本期停權時間，離職填 endDate、terminationReason、terminatedBy、terminatedAt。停權生效時間記實際操作時間，effectiveDate 記申報業務日期。每次成功邏輯異動任職版本只加一，不刷新出勤／薪資／報表／進度，已結算薪資不重新計算。
+
+順序：先 append STARTED（format:2，安全主檔業務快照＋任職前後像＋原成功結果），停權類先改主檔再改任職；復職先改任職再啟用主檔；逐階段 flush，讀回一致後 append COMPLETED。業務快照不複製 LINE 綁定；audit 操作人 LINE 身分仍依已批准 schema 保存，token 永不持久化／hash／log。
+
+同操作人、同 requestId／內容回原結果，或只補可證明缺少的 checkpoint；相同 requestId 改內容為 `REQUEST_CONFLICT`。新請求過期版本為 `VERSION_CONFLICT`；不允許的轉換為 `INVALID_STATUS_TRANSITION`。同員工未完成操作阻擋其他請求；快照有不明差異或重複列為 `RECOVERY_REQUIRED`。Sheets 日曆 Date／ISO 僅在日期比較時正規化，不覆寫未知歷史。重試仍重新檢查操作人及目標權限、綁定與未完成步驟的交接／出勤條件。
+
+**中斷限制：**Sheets 並非跨表交易，失敗可能已部分生效。保留原 requestId、完整業務欄位與 expectedVersion，由原在職管理員取得新 token 後明確重試。若管理員對自己停職／留停／離職，主檔停權後便失去重試資格；或其他原因失權，也不提供認證例外。此時保留 STARTED，需授權管理員人工核對，不能清除 audit、換 requestId 或自動接管。本批未實作強制修復工具。這是已知需操作介面提示的限制。
+
+另行部署時，在原 GAS 專案新增 `EmployeeLifecycleMutation.gs`，替換 `EmployeeApplication.gs`、`EmployeeLifecycleRead.gs`，其餘檔案保留。由使用者更新原 Web App 新版本，URL／scope／executeAs／access 不變。本輪沒有部署、操作正式 Sheet 或 migration。舊 API 仍有原本 userId 信任限制；本批不宣稱已完成全站強驗證或歷史薪資取值改造。
+
+離線檢查：`node tests/employee-foundation.test.cjs`（47 組；Phase 2 包含矩陣及 32 個寫入前／後失敗案例）、三支既有瀏覽器 mock 回歸測試。正式小量寫入驗收尚待另行授權；legacy 員工缺基線時預期拒絕，不能拿正式資料臨時製造基線。
+
 ## 身分基礎層驗收與操作備忘
 
 使用者已回報原 Web App 原址更新至版本 40 後，真實 LIFF 初始化、LINE 環境、ID token 取得與在職員工的 identityBootstrap 均成功，結果為 ACTIVE_EMPLOYEE；本輪未重新呼叫正式 API。先前 editor probe 的權限錯誤，在明列 scopes 並由部署帳號重新授權後，變為 HTTP_RESPONSE_RECEIVED／400，確認該次問題是 UrlFetch 授權。此紀錄不保存員工姓名、ID、LINE sub 或 token。
