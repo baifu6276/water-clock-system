@@ -14,6 +14,8 @@
     button { padding: 12px; margin: 8px 0; width: 100%; font: inherit; min-height: 48px; }
     #adminTest { margin-top: 28px; border-top: 2px solid #dce2e8; padding-top: 16px; }
     #adminTest li, #adminMessage { overflow-wrap: anywhere; }
+    #adminApplications { list-style: none; padding: 0; }
+    #adminApplications li { border: 1px solid #dce2e8; border-radius: 8px; padding: 12px; margin: 12px 0; }
     #message { overflow-wrap: anywhere; } [hidden] { display: none !important; }
   </style>
 </head>
@@ -35,8 +37,8 @@
     <button id="retry" type="button" disabled>重新檢查身分</button>
     <button id="login" type="button" hidden>使用 LINE 登入</button>
     <p>驗證失敗不代表尚未註冊。若後端尚未部署新 action，請聯絡管理員。</p>
-    <section id="adminTest" aria-labelledby="adminTitle">
-      <h2 id="adminTitle">管理員待審申請測試</h2>
+    <section id="adminTest" aria-labelledby="adminTitle" hidden>
+      <h2 id="adminTitle">人員管理 UI 測試</h2>
       <p>僅讀取待審申請，由後端驗證在職 OWNER／ADMIN 權限，不變更任何資料。</p>
       <button id="adminCheck" type="button" disabled>檢查待審申請</button>
       <dl>
@@ -106,6 +108,7 @@
         return error;
       }
       async function request(action) {
+        // Explicit read-only allowlist. No payload supplied by callers.
         if (!['identityBootstrap', 'employeeApplicationAdminList'].includes(action)) throw safeError('OPERATION_ERROR');
         const idToken = liff.getIDToken();
         if (!idToken) throw safeError('TOKEN_UNAVAILABLE');
@@ -126,26 +129,33 @@
         }
         return result;
       }
-      let busy = false, initialized = false, adminBusy = false;
+      let busy = false, initialized = false, adminBusy = false, adminAllowed = false;
       function adminReset() {
         put('adminStatus', '尚未檢查'); put('adminCount', '—'); put('adminCode', '—');
         put('adminMessage', '請按按鈕執行只讀測試。'); byId('adminApplications').replaceChildren();
       }
       async function checkAdmin() {
-        if (busy || adminBusy || !initialized) return;
+        if (busy || adminBusy || !initialized || !adminAllowed) return;
         adminBusy = true; byId('adminCheck').disabled = true; byId('retry').disabled = true;
         adminReset(); put('adminStatus', '檢查中'); put('adminMessage', '正在驗證授權並讀取待審申請…');
         try {
           const result = await request('employeeApplicationAdminList');
           if (!Array.isArray(result.applications) || !result.applications.every(a => a &&
-              a.status === '待審核' && typeof a.name === 'string' && typeof a.createdAt === 'string')) {
+              a.status === '待審核' && typeof a.name === 'string' && typeof a.phone === 'string' &&
+              typeof a.note === 'string' && Number.isInteger(a.version) && a.version > 0)) {
             throw safeError('GAS_RESPONSE_INVALID');
           }
           put('adminStatus', '授權通過／讀取成功'); put('adminCount', String(result.applications.length));
-          put('adminMessage', result.applications.length ? '只顯示姓名、申請狀態與申請時間。' : '目前沒有待審申請；授權與讀取已成功。');
+          put('adminMessage', result.applications.length ? '以下僅供查看，不提供審核或資料變更操作。' : '目前沒有待審申請');
           result.applications.forEach(a => {
             const item = document.createElement('li');
-            item.textContent = [a.name || '姓名未提供', a.status, a.createdAt || '時間未提供'].join(' · ');
+            const details = document.createElement('dl');
+            [['姓名', a.name || '姓名未提供'], ['電話', a.phone || '未提供'],
+              ['申請說明', a.note || '未填寫'], ['申請狀態', a.status], ['資料版本（version）', String(a.version)]].forEach(([label, value]) => {
+              const term = document.createElement('dt'), description = document.createElement('dd');
+              term.textContent = label; description.textContent = value; details.append(term, description);
+            });
+            item.append(details);
             byId('adminApplications').append(item);
           });
         } catch (error) {
@@ -153,10 +163,14 @@
           const code = Object.hasOwn(errors, candidate) ? candidate : 'OPERATION_ERROR';
           put('adminStatus', code === 'FORBIDDEN' ? '授權未通過' : '未完成／無法確認');
           put('adminCode', code); put('adminMessage', errors[code]);
-        } finally { adminBusy = false; byId('adminCheck').disabled = false; byId('retry').disabled = false; }
+          if (error?.code === 'AUTH_ERROR' || code === 'FORBIDDEN') {
+            adminAllowed = false; byId('adminTest').hidden = true; fail(code);
+          }
+        } finally { adminBusy = false; byId('adminCheck').disabled = !adminAllowed; byId('retry').disabled = false; }
       }
       async function check() {
         if (busy || adminBusy) return;
+        adminAllowed = false; byId('adminTest').hidden = true;
         adminReset(); byId('adminCheck').disabled = true;
         busy = true; byId('retry').disabled = true; byId('login').hidden = true;
         ['employeeId', 'employeeName', 'code'].forEach(id => put(id, '—'));
@@ -165,6 +179,8 @@
         try {
           if (!initialized) {
             put('init', '初始化中');
+            // config.js has a production load listener. Read only the two string constants;
+            // do not execute/eval it or load any production workflow modules.
             let config;
             try {
               const response = await fetch('../js/config.js', { cache: 'no-store' });
@@ -182,7 +198,7 @@
           }
           put('inLine', liff.isInClient() ? '是' : '否（外部瀏覽器）');
           if (!liff.isLoggedIn()) { put('token', '否'); byId('login').hidden = false; fail('LOGIN_REQUIRED'); return; }
-          const available = !!liff.getIDToken();
+          const available = Boolean(liff.getIDToken());
           put('token', available ? '是（不顯示內容）' : '否');
           if (!available) { fail('TOKEN_UNAVAILABLE'); return; }
           put('state', '讀取中');
@@ -192,13 +208,17 @@
             if (typeof result.employee?.employeeId !== 'string' || !result.employee.employeeId || typeof result.employee.name !== 'string') {
               put('state', '無法確認'); fail('RESPONSE_ERROR'); return;
             }
-            put('employeeId', result.employee.employeeId); put('employeeName', result.employee.name);
+            put('employeeId', result.employee.employeeId); put('employeeName', result.employee.name || '名稱未設定');
+            adminAllowed = ['OWNER', 'ADMIN'].includes(result.employee.permission);
+            byId('adminTest').hidden = !adminAllowed;
           }
-          put('state', `${result.state}（${states[result.state]}）`); put('message', '身分狀態讀取完成；未執行任何業務寫入。');
+          put('state', result.state + '（' + states[result.state] + '）');
+          if (result.state === 'AUTH_ERROR') fail('AUTH_ERROR');
+          else put('message', '身分狀態讀取完成；未執行任何業務寫入。');
         } catch (error) {
           put('state', '無法確認'); fail(error?.diagnosticCode || (error && typeof error.code === 'string' ? error.code : 'REQUEST_FAILED'));
           if (error?.code === 'AUTH_ERROR') put('state', 'AUTH_ERROR（驗證失敗）');
-        } finally { busy = false; byId('retry').disabled = false; byId('adminCheck').disabled = !initialized; }
+        } finally { busy = false; byId('retry').disabled = false; byId('adminCheck').disabled = !adminAllowed; }
       }
       byId('adminCheck').addEventListener('click', checkAdmin);
       byId('retry').addEventListener('click', check);
