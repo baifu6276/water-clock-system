@@ -59,7 +59,30 @@ Google Sheets 沒有跨表原子交易。本實作逐階段 flush；同一 reque
 
 離線測試：`node tests/employee-foundation.test.cjs`（28 組，含每個 checkpoint 寫入前／後失敗注入、角色矩陣、鎖競爭、原 action 契約與強驗證），以及既有兩支模擬瀏覽器測試。mock 不能證明 Google 真實跨表 I/O、日期欄格式與部署權限，需後續小量實機確認。
 
-## 正式來源（V3.4.3）
+## 生命週期管理 Phase 1：唯讀清單／詳細狀態（未部署）
+
+新增 `EmployeeLifecycleRead.gs`，`EmployeeApplication.gs` 僅追加兩個 action 分流。仍使用 server-side LINE ID token verify，再解析在職員工，僅 OWNER／ADMIN 可用。ADMIN 可檢視 OWNER；這不授予修改 OWNER 的權限。沒有新 scope、寫入、Sheet 建立、migration、baseline 建立或既有 API 契約變更。
+
+| action | 請求欄位 | 成功回應 |
+|---|---|---|
+| `employeeLifecycleAdminList` | `action, idToken` | `{success:true, employees:[{employee,lifecycle,warnings}]}` |
+| `employeeLifecycleAdminDetail` | `action, idToken, employeeId`（必填非空字串） | `{success:true, employee,lifecycle,warnings,employments,lineBindings,changes}` |
+
+保持 POST `text/plain;charset=utf-8`、JSON 與 `redirect:"follow"`。以 employeeId 精確匹配，不以姓名／手機匹配。找不到目標回 `EMPLOYEE_NOT_FOUND`；重複主檔 ID 的 detail 回 `IDENTITY_CONFLICT`；缺少／錯誤輸入回 `VALIDATION_ERROR`；表頭或缺表回 `SCHEMA_ERROR`；讀取階段非預期例外轉為固定 `STORAGE_ERROR`。身分驗證流程既有的 AUTH_ERROR／安全 diagnostic 不变，不回原始例外。
+
+- `employee`：employeeId、name、grade、salaryType、salaryAmount、systemRole、hireDate、terminationDate、employeeStatus、phone；detail 另有 note。主檔 A:L 映射沿用正式來源，跳過 B 欄 LINE UID。沒有改主檔 helper 或表頭。
+- `lifecycle`：baselineStatus、openEmploymentCount、currentEmployment、activeBindingCount、hasActiveLineBinding、bindingStatus。currentEmployment 僅於恰有一筆可確認未結束任職時提供；無綁定紀錄時 hasActiveLineBinding 為 null、bindingStatus 為 UNKNOWN，不以主檔 UID 假造基線。
+- `employments`：employmentId、sequence、startDate、endDate、grade、salaryType、salaryAmount、systemRole、status、disabledAt、baselineDate、createdAt、terminatedAt。使用 `EMPLOYEE_TABLES_` 現有欄名映射，不另猜索引。
+- `lineBindings`：僅 status、active、validFrom、validTo、sourceType、reason。不回 bindingId、Channel ID、LINE UID/sub。active 表示該綁定列依「有效」與起迄時間在讀取當下有效，不代表完整登入授權；仍須檢查 warnings 與強驗證結果。
+- `changes`：changeType、effectiveDate、effectiveAt、before、after、operatorEmployeeId、operatorName、timestamp、reason、phase。只解析已存在的申請快照及核准 bundle v1，抽取白名單業務值；不回 raw JSON、requestId/hash、operatorSub、token、綁定或申請識別。未知快照格式只回空業務物件，壞 JSON 另附 AUDIT_VALUES_UNAVAILABLE。operatorName 為目前主檔唯一匹配姓名，並非歷史姓名快照。STARTED／COMPLETED 保留階段，不假裝未完成操作已成功。
+
+**基線與一致性：** 無任職／綁定／員工異動紀錄的既有員工標示 LEGACY_NOT_BASELINED，未知日期保持空白，不因此判定損壞。已有部分紀錄但缺其他資料會回缺漏警告，可能是未完成基線或操作，必須人工確認。只有結束日期空白且狀態為在職／停職／留停的任職列計入未結束任職；停止／恢復狀態的寫入尚未實作。另檢查多筆未結束任職、在職無未結束任職、離職仍有未結束任職、主檔／任職狀態不符、多個有效綁定、跨員工重複 LINE、主檔／綁定不符、無法辨識狀態／日期及未完成 audit。warnings 只有固定 code/message，不附原始資料；不自動修復。
+
+唯讀操作不取得 ScriptLock。讀取多表可能與另一個合法寫入交錯，警告是當次觀察，不是交易快照或修改許可；遇到暫時不一致先重新讀取。未來狀態、回任、薪資異動必須在寫入鎖內重新驗證角色、最後 OWNER、唯一任職／綁定與版本；不得拿此回應直接當作寫入授權。本批不提供這些 write-policy／mutation action，也不重算薪資。
+
+人工測試前，於原 GAS 專案新增 `EmployeeLifecycleRead.gs` 並替換 `EmployeeApplication.gs`，保留其他來源及 manifest。使用者另行更新原 deployment 才能呼叫新 action；本輪沒有部署或操作 Sheets。六個 `.gs` 須同處原專案。管理回應含薪資與手機，僅供授權管理員使用，不應放公開 log／公開頁面。
+
+## 正式來源說明
 
 `Code.gs` 搬入自使用者提供的正式 `Code_v3_4_3_progress_percent_override.txt`。
 原始檔 SHA-256：`8afc109fb41c98682f1bc3d0a7ab7406587d03d3d4df597d8f5eecd934399e73`。
@@ -70,7 +93,7 @@ Google Sheets 沒有跨表原子交易。本實作逐階段 flush；同一 reque
 1. 在原 Apps Script 專案 Script Properties 設定 `LINE_LOGIN_CHANNEL_ID`，值為目前 LIFF 所屬 LINE Login channel 的 ID，不能填 LIFF ID。這不是 secret。本方案不需要 channel secret。
 2. 確認目前 LIFF 已啟用 `openid` scope，可取得 `liff.getIDToken()`。不改現有 LIFF ID 或 GAS Web App URL。
 3. 由管理員在原 Spreadsheet 準備四張空表，第一列依 `EmployeeLifecycleStore.gs` 的 `EMPLOYEE_TABLES_` headers，完整且同序：員工加入申請 A:Q、員工任職紀錄 A:U、員工LINE綁定紀錄 A:N、員工異動紀錄 A:R。程式只驗證、不自動建立表；不改員工資料表 A:L。不要加入額外非空欄位。
-4. 五個 `.gs` 檔須同時置入同一個原有、綁定 Spreadsheet 的 GAS 專案，使用 V8 runtime；更新既有 Web App deployment。保留原部署設定，不新增另一個 endpoint。
+4. 六個 `.gs` 檔須同時置入同一個原有、綁定 Spreadsheet 的 GAS 專案，使用 V8 runtime；更新既有 Web App deployment。保留原部署設定，不新增另一個 endpoint。
 5. 先確認 GAS 設定／部署，再發布 frontend；新 frontend 的登入需要 `identityBootstrap`，後端未部署會阻止登入，不以舊信任模式繞過失敗。必須實機驗證既有員工登入，再驗證新人申請。
 
 LINE token 僅放本次請求記憶體，不寫 Sheet、audit、sessionStorage 或 log。使用 LINE 官方驗證端點及 `client_id`，檢查 issuer、audience、sub、expiry；不能用前端 decoded profile 代替。

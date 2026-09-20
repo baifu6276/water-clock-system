@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
-const files = ['Code', 'EmployeeIdentity', 'EmployeeLifecycleStore', 'EmployeeApplication', 'EmployeeApplicationAdmin'];
+const files = ['Code', 'EmployeeIdentity', 'EmployeeLifecycleStore', 'EmployeeApplication', 'EmployeeApplicationAdmin', 'EmployeeLifecycleRead'];
 let checks = 0;
 function test(name, work) { work(); checks++; console.log('PASS', name); }
 function env(allowEmployeeWrites = false) {
@@ -406,5 +406,102 @@ test('overlapping review is locked out and cannot duplicate after lock release',
     catch(error){concurrent=error.employeeCode;}});
   consistent(e,approve(e,p));assert.equal(concurrent,'BUSY');
   assert.equal(approve(e,{...p,requestId:'request-second-review'}).code,'APPLICATION_NOT_PENDING');
+});
+function lifecycleEnv(role='OWNER') {
+  const e=env();e.tables['員工資料表'].rows[1][6]=role;
+  e.tables['員工資料表'].rows.push(['EMP009','private-line-sentinel','相同姓名','師傅','日薪',2300,'OWNER','','','在職','0900000000','管理備註']);
+  e.ctx.LockService.getScriptLock=()=>{throw Error('read must not lock')};
+  e.ctx.SpreadsheetApp.flush=()=>{throw Error('read must not flush')};
+  e.ctx.employeeWriteRow_=()=>{throw Error('read must not write')};
+  e.ctx.Utilities.computeDigest=()=>{throw Error('read must not hash')};
+  return e;
+}
+function lifeDetail(e,id='EMP009'){return e.call('employeeLifecycleAdminDetail',{employeeId:id},'owner');}
+test('lifecycle role matrix: strong active OWNER/ADMIN only; read ADMIN may view OWNER',()=>{
+  for(const role of ['OWNER','ADMIN','SITE_MANAGER','EMPLOYEE']){
+    const e=lifecycleEnv(role),before=JSON.stringify(e.tables);
+    const list=e.call('employeeLifecycleAdminList',{},'owner'),detail=lifeDetail(e);
+    if(['OWNER','ADMIN'].includes(role)){assert.equal(list.success,true);assert.equal(detail.employee.systemRole,'OWNER');}
+    else {assert.equal(list.code,'FORBIDDEN');assert.equal(detail.code,'FORBIDDEN');}
+    assert.equal(JSON.stringify(e.tables),before);assert.equal(e.writes,0);assert.equal(e.logs.length,0);
+  }
+  for(const state of ['停職','留停','離職']){const e=lifecycleEnv();e.tables['員工資料表'].rows[1][9]=state;assert.equal(lifeDetail(e).code,'FORBIDDEN');}
+  const e=lifecycleEnv();assert.equal(e.call('employeeLifecycleAdminList',{role:'OWNER'}).code,'FORBIDDEN');
+  assert.equal(e.call('employeeLifecycleAdminList',{idToken:''},'owner').code,'AUTH_ERROR');
+});
+test('lifecycle detail uses permanent employeeId, validates input and distinguishes missing target',()=>{
+  const e=lifecycleEnv();
+  for(const id of [undefined,'',{},42])assert.equal(lifeDetail(e,id===undefined?null:id).code,'VALIDATION_ERROR');
+  for(const id of ['相同姓名','0900000000','missing'])assert.equal(lifeDetail(e,id).code,'EMPLOYEE_NOT_FOUND');
+  assert.equal(e.call('employeeLifecycleAdminDetail',{name:'相同姓名'},'owner').code,'VALIDATION_ERROR');
+  e.tables['員工資料表'].rows.push(['EMP010','different-private-line','相同姓名','','',0,'EMPLOYEE','','','離職','0900000000','']);
+  assert.equal(lifeDetail(e).employee.salaryAmount,2300);assert.equal(lifeDetail(e,'EMP010').employee.employeeStatus,'離職');
+});
+test('legacy missing baseline is unknown, never invented or repaired; privacy and A:L mapping',()=>{
+  const e=lifecycleEnv(),before=JSON.stringify(e.tables),r=lifeDetail(e);
+  assert.equal(r.employee.hireDate,'');assert.equal(r.employee.phone,'0900000000');assert.equal(r.employee.note,'管理備註');
+  assert.deepEqual(r.warnings.map(w=>w.code),['LEGACY_NOT_BASELINED']);
+  assert.equal(r.lifecycle.baselineStatus,'LEGACY_NOT_BASELINED');assert.equal(r.lifecycle.hasActiveLineBinding,null);
+  assert.equal(r.employments.length,0);assert.equal(r.lineBindings.length,0);assert.equal(r.changes.length,0);
+  const list=e.call('employeeLifecycleAdminList',{},'owner');
+  for(const value of [r,list])for(const secret of ['private-line-sentinel','token:','lineSub','lineUid','requestHash','beforeJson','afterJson','operatorSub'])assert(!JSON.stringify(value).includes(secret));
+  assert.equal(JSON.stringify(e.tables),before);assert.equal(e.writes,0);
+});
+test('lifecycle detects duplicate open periods, master status and binding/identity conflicts',()=>{
+  const e=lifecycleEnv();
+  for(const n of [1,2]){
+    seed(e,'employments',{employmentId:'period-'+n,employeeId:'EMP009',sequence:n,startDate:'2026-09-01',status:'在職'});
+    seed(e,'bindings',{employeeId:'EMP009',lineSub:'private-line-sentinel',channelId:'test-channel',status:'有效',validFrom:'2020-01-01T00:00:00Z'});
+  }
+  seed(e,'bindings',{employeeId:'EMP010',lineSub:'private-line-sentinel',channelId:'test-channel',status:'有效',validFrom:'2020-01-01T00:00:00Z'});
+  const before=JSON.stringify(e.tables);let r=lifeDetail(e);
+  assert(r.warnings.some(w=>w.code==='MULTIPLE_OPEN_EMPLOYMENTS'));assert(r.warnings.some(w=>w.code==='MULTIPLE_ACTIVE_BINDINGS'));
+  assert(r.warnings.some(w=>w.code==='LINE_BOUND_TO_MULTIPLE_EMPLOYEES'));assert.equal(r.lifecycle.currentEmployment,null);
+  assert.equal(r.lifecycle.bindingStatus,'CONFLICT');assert.equal(JSON.stringify(e.tables),before);
+  e.tables['員工資料表'].rows[2][9]='離職';assert(lifeDetail(e).warnings.some(w=>w.code==='TERMINATED_WITH_OPEN_EMPLOYMENT'));
+  e.tables['員工任職紀錄'].rows.splice(2,1);e.tables['員工LINE綁定紀錄'].rows.splice(2,2);
+  e.tables['員工資料表'].rows[2][1]='different-private-line';r=lifeDetail(e);
+  assert(r.warnings.some(w=>w.code==='MASTER_BINDING_MISMATCH'));assert(r.warnings.some(w=>w.code==='EMPLOYMENT_STATUS_MISMATCH'));
+  e.tables['員工資料表'].rows[2][9]='在職';e.tables['員工任職紀錄'].rows[1][4]='2026-09-02';
+  assert(lifeDetail(e).warnings.some(w=>w.code==='ACTIVE_WITHOUT_OPEN_EMPLOYMENT'));assert.equal(e.writes,0);
+});
+test('safe detailed projections include dates/snapshots and omit raw audit/LINE/binding IDs',()=>{
+  const e=lifecycleEnv();seed(e,'employments',{employmentId:'period-1',employeeId:'EMP009',sequence:1,startDate:'2026-09-01',status:'在職',
+    grade:'師傅',salaryType:'日薪',salaryAmount:2300,permission:'OWNER',baselineDate:'2026-09-01',disabledAt:'',version:1});
+  seed(e,'bindings',{bindingId:'secret-binding-id',employeeId:'EMP009',lineSub:'private-line-sentinel',channelId:'private-channel',status:'有效',
+    validFrom:'2020-01-01T00:00:00Z',sourceType:'BASELINE',reason:'基線'});
+  seed(e,'audit',{employeeId:'EMP009',action:'APPLICATION_APPROVE',phase:'STARTED',operatorId:'E-owner',operatorSub:'private-line-sentinel',requestId:'secret-request',requestHash:'secret-hash',
+    beforeJson:JSON.stringify({applicationId:'secret-app-id',name:'相同姓名',phone:'0900000000',status:'待審核',lineSub:'private-line-sentinel',idToken:'secret-token'}),
+    afterJson:JSON.stringify({format:1,employee:['EMP009','private-line-sentinel','相同姓名','師傅','日薪',2300,'OWNER','2026-09-01','','在職','0900000000','note'],binding:{lineSub:'private-line-sentinel'}}),
+    effectiveDate:'2026-09-01',operatedAt:'2026-09-01T00:00:00Z',reason:'核准'});
+  const r=lifeDetail(e);assert.equal(r.employments[0].employmentId,'period-1');assert.equal(r.lifecycle.currentEmployment.sequence,1);
+  assert.equal(r.changes[0].operatorName,'測試管理員');assert.equal(r.changes[0].before.applicationStatus,'待審核');
+  assert.equal(r.changes[0].after.salaryAmount,2300);assert.equal(r.changes[0].after.systemRole,'OWNER');
+  assert(r.warnings.some(w=>w.code==='LIFECYCLE_OPERATION_PENDING'));assert(r.warnings.some(w=>w.code==='BINDING_IDENTITY_CONFLICT'));
+  for(const result of [r,e.call('employeeLifecycleAdminList',{},'owner')])for(const secret of ['private-line-sentinel','secret-token','secret-hash','secret-request','secret-app-id','secret-binding-id','private-channel','lineSub','beforeJson','afterJson'])assert(!JSON.stringify(result).includes(secret));
+  e.tables['員工異動紀錄'].rows[1][9]='invalid-secret-json';const broken=lifeDetail(e);
+  assert(broken.warnings.some(w=>w.code==='AUDIT_VALUES_UNAVAILABLE'));assert(!JSON.stringify(broken).includes('invalid-secret-json'));assert.equal(e.logs.length,0);
+});
+test('lifecycle missing/mismatched schema and storage failures are safe, no auto creation',()=>{
+  const e=lifecycleEnv();e.tables['員工任職紀錄'].rows[0][0]='wrong';assert.equal(lifeDetail(e).code,'SCHEMA_ERROR');
+  const missing=lifecycleEnv();delete missing.tables['員工任職紀錄'];assert.equal(lifeDetail(missing).code,'SCHEMA_ERROR');assert(!missing.tables['員工任職紀錄']);
+  const failed=lifecycleEnv();failed.tables['員工異動紀錄'].getLastRow=()=>{throw Error('private-line-sentinel secret-token')};
+  const r=lifeDetail(failed);assert.equal(r.code,'STORAGE_ERROR');assert(!JSON.stringify(r).includes('sentinel'));assert(!JSON.stringify(r).includes('secret-token'));
+  assert.equal(e.writes+missing.writes+failed.writes,0);
+});
+test('lifecycle dates remain unknown when invalid; effective bindings and duplicate master are reported safely',()=>{
+  const e=lifecycleEnv();e.tables['員工資料表'].rows[2][7]='unknown';
+  seed(e,'bindings',{employeeId:'EMP009',lineSub:'private-line-sentinel',channelId:'test-channel',status:'有效',validFrom:'2999-01-01T00:00:00Z'});
+  let r=lifeDetail(e);assert.equal(r.employee.hireDate,'');assert.equal(r.lifecycle.hasActiveLineBinding,false);
+  assert(r.warnings.some(w=>w.code==='EMPLOYMENT_HISTORY_MISSING'));
+  e.tables['員工資料表'].rows[2][7]='2026-02-30';assert.equal(lifeDetail(e).employee.hireDate,'');
+  e.tables['員工資料表'].rows[2][7]=vm.runInContext("new Date('2026-09-14T16:00:00Z')",e.ctx);
+  assert.equal(lifeDetail(e).employee.hireDate,'2026-09-15');
+  e.tables['員工LINE綁定紀錄'].rows[1][5]='invalid';assert(lifeDetail(e).warnings.some(w=>w.code==='BINDING_DATES_INVALID'));
+  e.tables['員工資料表'].rows.push([...e.tables['員工資料表'].rows[2]]);
+  assert.equal(lifeDetail(e).code,'IDENTITY_CONFLICT');
+  const list=e.call('employeeLifecycleAdminList',{},'owner');
+  assert(list.employees[1].warnings.some(w=>w.code==='DUPLICATE_EMPLOYEE_ID'));
+  assert(list.employees[1].warnings.some(w=>w.code==='DUPLICATE_MASTER_LINE_BINDING'));assert.equal(e.writes,0);
 });
 console.log(`${checks} test groups passed; no network or production writes.`);
