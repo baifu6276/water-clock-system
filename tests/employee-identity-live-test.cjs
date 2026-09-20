@@ -12,8 +12,10 @@ assert.deepEqual([...html.matchAll(/await request\('([^']+)'\)/g)].map(m=>m[1]).
   const browser = await chromium.launch({headless:true, ...(process.env.CHROME_PATH ? {executablePath:process.env.CHROME_PATH} : {})});
   try {
     for (const scenario of ['ACTIVE_EMPLOYEE','UNREGISTERED','APPLICATION_PENDING','AUTH_ERROR','unsafe-error','no-token','logged-out','outside-line','init-error','network-error','http-error','non-json','invalid-json','diagnostic','fetch-permission',
-      'admin-empty','admin-items','admin-forbidden','admin-diagnostic','admin-unsafe','admin-network','admin-http','admin-malformed']) {
+      'role-EMPLOYEE','role-SITE_MANAGER','role-suspended','admin-owner','admin-empty','admin-items','admin-forbidden','admin-diagnostic','admin-unsafe','admin-network','admin-http','admin-malformed']) {
       const adminScenario=scenario.startsWith('admin-');
+      const roleScenario=scenario.startsWith('role-');
+      const identityState=adminScenario||roleScenario ? (scenario==='role-suspended'?'SUSPENDED':'ACTIVE_EMPLOYEE') : scenario==='outside-line'?'UNREGISTERED':scenario;
       const context = await browser.newContext({viewport:{width:360,height:800}});
       const page = await context.newPage(); const calls = [], logs = [], scripts = [];
       page.on('console', msg => logs.push(msg.text())); page.on('pageerror', e => logs.push(e.message));
@@ -39,9 +41,9 @@ assert.deepEqual([...html.matchAll(/await request\('([^']+)'\)/g)].map(m=>m[1]).
             if(scenario==='admin-unsafe')return route.fulfill({json:{success:false,code:'mock-secret-token',message:'mock-secret-token',stack:'secret'}});
             if(scenario==='admin-malformed')return route.fulfill({json:{success:true,applications:{lineSub:'mock-secret-token'}}});
             return route.fulfill({json:{success:true,applications:scenario==='admin-items'?[{
-              name:'<img src=x onerror=alert(1)>',status:'待審核',createdAt:'2026-09-16T00:00:00.000Z',
-              lineSub:'mock-secret-token',requestHash:'mock-secret-token',phone:'do-not-display',note:'do-not-display'
-            }]:[]}});
+              name:'<img src=x onerror=alert(1)>',status:'待審核',phone:'0900000000',note:'<script>unsafe</script>',version:3,
+              lineSub:'private-sub-sentinel',requestHash:'mock-secret-token',applicationId:'do-not-display'
+            }, {name:'第二位申請人',phone:'0911111111',note:'',status:'待審核',version:1,lineSub:'private-sub-sentinel'}]:[]}});
           }
           if (scenario==='network-error') return route.abort();
           if (scenario==='http-error') return route.fulfill({status:503,body:'mock-secret-token'});
@@ -51,7 +53,7 @@ assert.deepEqual([...html.matchAll(/await request\('([^']+)'\)/g)].map(m=>m[1]).
           if (scenario==='diagnostic') return route.fulfill({json:{success:false,code:'AUTH_ERROR',diagnosticCode:'LINE_AUDIENCE_MISMATCH',message:'mock-secret-token'}});
           const result = scenario==='unsafe-error' ? {success:false,code:'mock-secret-token',message:'mock-secret-token'} :
             scenario==='AUTH_ERROR' ? {success:false,code:'AUTH_ERROR',message:'mock-secret-token'} :
-            {success:true,state:adminScenario?'ACTIVE_EMPLOYEE':scenario==='outside-line'?'UNREGISTERED':scenario,employee:{employeeId:'TEST-EMPLOYEE',name:'<b>測試姓名</b>'}};
+            {success:true,state:identityState,employee:{employeeId:'TEST-EMPLOYEE',name:'<b>測試姓名</b>',permission:adminScenario?(scenario==='admin-owner'?'OWNER':'ADMIN'):scenario==='role-suspended'?'ADMIN':roleScenario?scenario.slice(5):undefined}};
           return route.fulfill({json:result});
         }
         assert.equal(url.hostname,'identity.test','Unexpected external request');
@@ -71,13 +73,18 @@ assert.deepEqual([...html.matchAll(/await request\('([^']+)'\)/g)].map(m=>m[1]).
       assert(!scripts.some(s=>/identity\.js|auth\.js|app\.js|daily-report|attendance|progress|payroll|employee-management/.test(s)));
       if (['no-token','logged-out','init-error'].includes(scenario)) assert.equal(calls.length,0);
       else {assert.equal(calls.length,1);assert.equal(await page.evaluate(()=>window.lastRedirect),'follow');}
-      if (scenario==='ACTIVE_EMPLOYEE' || adminScenario) {
+      if (identityState==='ACTIVE_EMPLOYEE') {
         assert.equal(await page.locator('#employeeId').innerText(),'TEST-EMPLOYEE');
         assert.equal(await page.locator('#employeeName b').count(),0);
       } else assert.equal(await page.locator('#employeeId').innerText(),'—');
       const expected = {'AUTH_ERROR':'AUTH_ERROR','unsafe-error':'OPERATION_ERROR','no-token':'TOKEN_UNAVAILABLE','logged-out':'LOGIN_REQUIRED','init-error':'LIFF_INIT_ERROR','network-error':'GAS_NETWORK_ERROR','http-error':'GAS_HTTP_ERROR','non-json':'GAS_NON_JSON_RESPONSE','invalid-json':'GAS_RESPONSE_INVALID','diagnostic':'LINE_AUDIENCE_MISMATCH','fetch-permission':'LINE_VERIFY_PERMISSION_ERROR'}[scenario];
       if(expected) assert.equal(await page.locator('#code').innerText(),expected);
-      else assert((await page.locator('#state').innerText()).includes(adminScenario?'ACTIVE_EMPLOYEE':scenario==='outside-line'?'UNREGISTERED':scenario));
+      else assert((await page.locator('#state').innerText()).includes(identityState));
+      assert.equal(await page.locator('#adminTest').isVisible(),adminScenario);
+      if(!adminScenario) {
+        await page.evaluate(()=>{const b=document.getElementById('adminCheck');b.disabled=false;b.click();});
+        assert.equal(calls.filter(c=>c.action==='employeeApplicationAdminList').length,0);
+      }
       if(scenario==='outside-line') assert((await page.locator('#inLine').innerText()).startsWith('否'));
       assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
       await page.getByRole('button',{name:'重新檢查身分'}).click();
@@ -86,14 +93,23 @@ assert.deepEqual([...html.matchAll(/await request\('([^']+)'\)/g)].map(m=>m[1]).
       if(adminScenario) {
         assert.equal(calls.filter(c=>c.action==='employeeApplicationAdminList').length,0,'never auto-load admin data');
         await page.evaluate(()=>{document.getElementById('adminCheck').click();document.getElementById('adminCheck').click();});
-        await page.waitForFunction(()=>!document.getElementById('adminCheck').disabled);
+        await page.waitForFunction(()=>!document.getElementById('retry').disabled);
         assert.equal(calls.filter(c=>c.action==='employeeApplicationAdminList').length,1,'double click guarded');
         assert.equal(await page.evaluate(()=>window.lastRedirect),'follow');
         const codes={'admin-forbidden':'FORBIDDEN','admin-diagnostic':'LINE_TOKEN_EXPIRED','admin-unsafe':'OPERATION_ERROR',
           'admin-network':'GAS_NETWORK_ERROR','admin-http':'GAS_HTTP_ERROR','admin-malformed':'GAS_RESPONSE_INVALID'};
         assert.equal(await page.locator('#adminCode').innerText(),codes[scenario]||'—');
-        assert.equal(await page.locator('#adminCount').innerText(),scenario==='admin-items'?'1':scenario==='admin-empty'?'0':'—');
-        assert.equal(await page.locator('#adminApplications img').count(),0);
+        assert.equal(await page.locator('#adminCount').innerText(),scenario==='admin-items'?'2':['admin-empty','admin-owner'].includes(scenario)?'0':'—');
+        assert.equal(await page.locator('#adminApplications img, #adminApplications script').count(),0);
+        if(scenario==='admin-items') {
+          assert.equal(await page.locator('#adminApplications li').count(),2);
+          const details=await page.locator('#adminApplications li').first().innerText();
+          for(const text of ['姓名','電話','申請說明','申請狀態','version','0900000000','<script>unsafe</script>','3'])assert(details.includes(text));
+        }
+        if(['admin-empty','admin-owner'].includes(scenario))assert.equal(await page.locator('#adminMessage').innerText(),'目前沒有待審申請');
+        assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+        assert(!(await page.locator('body').innerText()).includes('private-sub-sentinel'));
+        assert(!logs.join('\n').includes('private-sub-sentinel'));
         assert(!(await page.locator('body').innerText()).includes('mock-secret-token'));
         assert(!(await page.locator('body').innerText()).includes('do-not-display'));
         assert(!logs.join('\n').includes('mock-secret-token'));
