@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
-const files = ['Code', 'EmployeeIdentity', 'EmployeeLifecycleStore', 'EmployeeApplication', 'EmployeeApplicationAdmin', 'EmployeeLifecycleRead', 'EmployeeLifecycleMutation'];
+const files = ['Code', 'EmployeeIdentity', 'EmployeeLifecycleStore', 'EmployeeApplication', 'EmployeeApplicationAdmin', 'EmployeeLifecycleRead', 'EmployeeLifecycleMutation', 'EmployeeLifecycleBaseline'];
 let checks = 0;
 function test(name, work) { work(); checks++; console.log('PASS', name); }
 function env(allowEmployeeWrites = false) {
@@ -131,7 +131,7 @@ test('baseline is read-only, detects exceptions, restricted to active OWNER/ADMI
   e.tables['員工資料表'].rows.push(['dup','same','測試','','',0,'EMPLOYEE','','','unknown','',''],['dup','same','測試','','',0,'EMPLOYEE','','','在職','',''],['','','測試','','',0,'EMPLOYEE','','','在職','','']);
   const before=JSON.stringify(e.tables), result=e.call('employeeLifecycleBaselineDryRun',{},'owner');
   assert.equal(result.success,true); assert.deepEqual(result.duplicateEmployeeIds,['dup']);
-  assert.deepEqual(result.duplicateLineUids,['same']); assert.equal(result.blankEmployeeId,1); assert.equal(result.blankLineUid,1);
+  assert.equal(result.duplicateLineUidCount,1); assert(!JSON.stringify(result).includes('same')); assert(!('duplicateLineUids' in result)); assert.equal(result.blankEmployeeId,1); assert.equal(result.blankLineUid,1);
   assert.equal(result.unknownStatus,1); assert.equal(result.noOwner,false); assert.equal(result.eligibleEmploymentCount,1);
   assert.equal(result.eligibleBindingCount,1); assert.equal(JSON.stringify(e.tables),before); assert.equal(e.writes,0);
   assert.equal(e.call('employeeLifecycleBaselineDryRun',{role:'OWNER'}).code,'FORBIDDEN');
@@ -638,5 +638,56 @@ test('Phase 2 self-disable cannot bypass active actor requirement after lost ack
   const e=mutationEnv('在職','OWNER');e.fail('員工任職紀錄');assert.equal(mutate(e,'Suspend',mutationPayload,'target').code,'OPERATION_ERROR');
   const before=JSON.stringify(e.tables);assert.equal(mutate(e,'Suspend',mutationPayload,'target').code,'FORBIDDEN');assert.equal(JSON.stringify(e.tables),before);
   assert.equal(mutate(e,'Resume',{...mutationPayload,requestId:'lifecycle-request-0002'}).code,'RECOVERY_REQUIRED');
+});
+function baselineEnv(status='在職',role='EMPLOYEE',actor='OWNER') {
+  const e=mutationEnv(status,role,actor);e.tables['員工任職紀錄'].rows.length=1;e.tables['員工LINE綁定紀錄'].rows.length=1;return e;
+}
+const preview=e=>e.call('employeeLifecycleBaselineDryRun',{employeeId:'EMP009'},'owner');
+const baselineInput=e=>({employeeId:'EMP009',requestId:'baseline-request-0001',expectedSnapshotVersion:preview(e).snapshotVersion || '0'.repeat(64),reason:'受控基線測試',confirmed:true});
+const migrate=(e,p)=>e.call('employeeLifecycleBaselineMigrate',p,'owner');
+test('baseline authority, confirmation and ignored frontend claims',()=>{
+  for(const actor of ['OWNER','ADMIN','SITE_MANAGER','EMPLOYEE'])for(const role of ['OWNER','ADMIN','SITE_MANAGER','EMPLOYEE']){
+    const e=baselineEnv('在職',role,actor),r=migrate(e,{...baselineInput(e),role:'OWNER',lineUid:'injected',hireDate:'1900-01-01',salaryAmount:99999});
+    const allow=actor==='OWNER'||actor==='ADMIN'&&role!=='OWNER';assert.equal(r.success,allow,JSON.stringify(r));
+    if(!allow){assert.equal(r.code,'FORBIDDEN');assert.equal(e.writes,0);}else{assert.equal(rows(e,'bindings')[0].lineSub,'target');assert.equal(rows(e,'employments')[0].salaryAmount,2000);}
+  }
+  for(const status of ['停職','留停','離職']){const e=baselineEnv(),p=baselineInput(e);e.tables['員工資料表'].rows[1][9]=status;assert.equal(migrate(e,p).code,'FORBIDDEN');assert.equal(e.writes,0);}
+  for(const patch of [{confirmed:false},{confirmed:'true'},{reason:''},{employeeId:''},{expectedSnapshotVersion:''}]){const e=baselineEnv();assert.equal(migrate(e,{...baselineInput(e),...patch}).code,'VALIDATION_ERROR');assert.equal(e.writes,0);}
+  const e=baselineEnv(),p=baselineInput(e);e.beforeLock(()=>e.tables['員工資料表'].rows[1][6]='EMPLOYEE');assert.equal(migrate(e,p).code,'FORBIDDEN');
+});
+test('baseline eligibility, safe preview, inherited dates and unchanged master',()=>{
+  for(const status of ['停職','留停','離職']){const e=baselineEnv(status);assert.equal(preview(e).eligible,false);assert.equal(migrate(e,baselineInput(e)).code,'BASELINE_MANUAL_REVIEW_REQUIRED');assert.equal(e.writes,0);}
+  for(const change of [e=>masterTarget(e)[1]='',e=>e.tables['員工資料表'].rows.push(['EMP010','target','其他','','',0,'EMPLOYEE','','','在職','',''])]){const e=baselineEnv();change(e);assert.equal(migrate(e,baselineInput(e)).code,'BASELINE_LINE_IDENTITY_REQUIRED');assert.equal(e.writes,0);}
+  const d=baselineEnv();d.tables['員工資料表'].rows.push([...masterTarget(d)]);assert.equal(preview(d).code,'IDENTITY_CONFLICT');assert.equal(d.writes,0);
+  for(const invalid of ['2026-02-30','2026-02-30T00:00:00Z','09/01/2020']){const bad=baselineEnv();masterTarget(bad)[7]=invalid;assert.equal(migrate(bad,baselineInput(bad)).code,'BASELINE_MANUAL_REVIEW_REQUIRED');assert.equal(bad.writes,0);}
+  for(const date of ['', '2020-01-01']){
+    const e=baselineEnv();masterTarget(e)[7]=date;const before=JSON.stringify(e.tables['員工資料表']),v=preview(e);assert.equal(e.writes,0);assert.equal(v.eligible,true);assert.match(v.snapshotVersion,/^[a-f0-9]{64}$/);assert(!/target|lineSub|lineUid|requestHash|token:/.test(JSON.stringify(v)));
+    assert.equal(migrate(e,baselineInput(e)).success,true);const job=rows(e,'employments')[0],bind=rows(e,'bindings')[0];assert.equal(job.startDate,date);assert.equal(job.sequence,1);assert.equal(job.version,1);assert.equal(bind.version,1);assert.equal(job.sourceType,'LEGACY_BASELINE');assert.equal(bind.sourceType,'LEGACY_BASELINE');assert.equal(bind.validFrom,job.createdAt);assert.notEqual(bind.validFrom,date);assert.equal(JSON.stringify(e.tables['員工資料表']),before);
+  }
+});
+test('baseline snapshot detects master, identity, employment, binding, audit and channel drift',()=>{
+  for(const change of [e=>masterTarget(e)[5]++,e=>masterTarget(e)[1]='changed',e=>seed(e,'employments',{employeeId:'EMP009'}),e=>seed(e,'bindings',{employeeId:'OTHER',lineSub:'target'}),e=>seed(e,'audit',{employeeId:'EMP009',phase:'STARTED',requestId:'other-operation'}),e=>e.tables['員工資料表'].rows.push(['EMP010','target'])]){
+    const e=baselineEnv(),p=baselineInput(e);change(e);assert.equal(migrate(e,p).code,'VERSION_CONFLICT');assert.equal(e.writes,0);
+  }
+  const e=baselineEnv(),p=baselineInput(e);assert.notEqual(e.ctx.employeeBaselinePreview_({sub:'owner',channelId:'different',employee:e.ctx.employeeLegacyRows_()[0]},'EMP009').snapshotVersion,p.expectedSnapshotVersion);
+});
+test('baseline existing no-op, request conflict and partial rows without intent',()=>{
+  const e=baselineEnv(),p=baselineInput(e),r=migrate(e,p);assert.equal(r.success,true);const w=e.writes;assert.deepEqual(migrate(e,p),r);assert.equal(e.writes,w);assert.equal(migrate(e,{...p,reason:'changed'}).code,'REQUEST_CONFLICT');assert.equal(preview(e).baselineState,'ALREADY_BASELINED');
+  assert.equal(migrate(e,{...baselineInput(e),requestId:'baseline-request-0002'}).baselineState,'ALREADY_BASELINED');assert.equal(e.writes,w);
+  for(const table of ['employments','bindings']){const f=baselineEnv();seed(f,table,{employeeId:'EMP009'});assert.equal(migrate(f,baselineInput(f)).code,'RECOVERY_REQUIRED');assert.equal(f.writes,0);}
+  e.tables['員工任職紀錄'].rows[1][5]='停職';assert.equal(migrate(e,{...baselineInput(e),requestId:'baseline-request-0003'}).code,'RECOVERY_REQUIRED');assert.equal(e.writes,w);
+});
+test('baseline eight checkpoint failures recover without duplication/master writes/token storage',()=>{
+  for(const [table,n] of [['員工異動紀錄',0],['員工任職紀錄',0],['員工LINE綁定紀錄',0],['員工異動紀錄',1]])for(const persisted of [false,true]){
+    const e=baselineEnv(),p=baselineInput(e),master=JSON.stringify(e.tables['員工資料表']);e.fail(table,n,persisted);assert.equal(migrate(e,p).code,'OPERATION_ERROR');assert.equal(e.locked,false);assert.equal(migrate(e,p).success,true,`${table} ${persisted}`);const w=e.writes;assert.equal(migrate(e,p).success,true);assert.equal(e.writes,w);assert.equal(rows(e,'employments').length,1);assert.equal(rows(e,'bindings').length,1);assert.equal(rows(e,'audit').length,2);assert.equal(JSON.stringify(e.tables['員工資料表']),master);assert.equal(e.logs.length,0);assert(!JSON.stringify(e.tables).includes('token:'));
+  }
+});
+test('baseline ambiguous drift fails closed; lifecycle read and Phase 2 compatibility',()=>{
+  const e=baselineEnv(),p=baselineInput(e);e.fail('員工LINE綁定紀錄');assert.equal(migrate(e,p).code,'OPERATION_ERROR');assert.equal(migrate(e,{...baselineInput(e),requestId:'baseline-request-0002'}).code,'RECOVERY_REQUIRED');e.tables['員工任職紀錄'].rows[1][7]='changed';const before=JSON.stringify(e.tables);assert.equal(migrate(e,p).code,'RECOVERY_REQUIRED');assert.equal(JSON.stringify(e.tables),before);
+  const f=baselineEnv();assert.equal(migrate(f,baselineInput(f)).success,true);const detail=f.call('employeeLifecycleAdminDetail',{employeeId:'EMP009'},'owner');assert.equal(detail.lifecycle.baselineStatus,'RECORDED');assert.equal(detail.lifecycle.openEmploymentCount,1);assert.equal(detail.lifecycle.currentEmployment.version,1);assert.equal(detail.lifecycle.bindingStatus,'ACTIVE');assert(!detail.warnings.some(w=>w.code==='LEGACY_NOT_BASELINED'));assert(!/token:|target|lineSub|lineUid|requestHash|afterJson|beforeJson/.test(JSON.stringify(detail)));assert.equal(f.call('identityBootstrap',{},'target').state,'ACTIVE_EMPLOYEE');assert.equal(mutate(f,'Suspend',{...mutationPayload,expectedVersion:1}).success,true);
+});
+test('baseline self-migration and Sheet calendar round-trip recovery',()=>{
+  const e=baselineEnv('在職','OWNER'),p=baselineInput(e),call=()=>e.call('employeeLifecycleBaselineMigrate',p,'target');e.fail('員工異動紀錄',1);assert.equal(call().code,'OPERATION_ERROR');assert.equal(call().success,true);assert.equal(e.call('identityBootstrap',{},'target').state,'ACTIVE_EMPLOYEE');
+  const f=baselineEnv(),q=baselineInput(f);f.fail('員工異動紀錄',1);assert.equal(migrate(f,q).code,'OPERATION_ERROR');f.tables['員工任職紀錄'].rows[1][3]=vm.runInContext("new Date('2019-12-31T16:00:00Z')",f.ctx);assert.equal(migrate(f,q).success,true);
 });
 console.log(`${checks} test groups passed; no network or production writes.`);

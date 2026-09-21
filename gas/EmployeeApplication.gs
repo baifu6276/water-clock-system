@@ -1,7 +1,7 @@
 var EMPLOYEE_ACTIONS_ = ['identityBootstrap', 'employeeApplicationSubmit', 'employeeApplicationListOwn',
   'employeeApplicationCancel', 'employeeLifecycleBaselineDryRun', 'employeeApplicationAdminList',
   'employeeApplicationApprove', 'employeeApplicationReject', 'employeeLifecycleAdminList', 'employeeLifecycleAdminDetail',
-  'employeeLifecycleSuspend', 'employeeLifecycleLeave', 'employeeLifecycleResume', 'employeeLifecycleTerminate'];
+  'employeeLifecycleSuspend', 'employeeLifecycleLeave', 'employeeLifecycleResume', 'employeeLifecycleTerminate', 'employeeLifecycleBaselineMigrate'];
 
 // Malformed/legacy requests retain the original doPost error and lock behavior.
 function employeeFoundationRequest_(e) {
@@ -20,12 +20,13 @@ function handleEmployeeFoundation_(data) {
     var action = data.action.trim(), result;
     if (action === 'identityBootstrap') result = employeeBootstrap_(context);
     else if (action === 'employeeApplicationListOwn') result = { success: true, applications: employeeOwnApplications_(context).map(employeePublicApplication_) };
-    else if (action === 'employeeLifecycleBaselineDryRun') result = employeeLifecycleBaselineDryRun_(context);
+    else if (action === 'employeeLifecycleBaselineDryRun') result = employeeLifecycleBaselineDryRun_(context, data);
     else if (action === 'employeeApplicationAdminList') result = employeeApplicationAdminList_(context, data);
     else if (action === 'employeeLifecycleAdminList' || action === 'employeeLifecycleAdminDetail') result = employeeLifecycleRead_(context, data);
     else result = employeeWithLock_(function() {
       // Re-read employee state under the write lock, without re-sending token to LINE.
       context = employeeContext_(context);
+      if (action === 'employeeLifecycleBaselineMigrate') return employeeBaselineMigrate_(context, data);
       if (Object.prototype.hasOwnProperty.call(EMPLOYEE_LIFECYCLE_TRANSITIONS_, action)) return employeeLifecycleMutate_(context, data);
       if (action === 'employeeApplicationApprove' || action === 'employeeApplicationReject') {
         return employeeApplicationReview_(context, data, action === 'employeeApplicationApprove');

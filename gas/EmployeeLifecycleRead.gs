@@ -40,6 +40,7 @@ function employeeLifecycleBusinessValues_(json) {
   var value;
   try { value = JSON.parse(json || 'null'); } catch (_) { return null; }
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  if (value.format === 3) return { baselineState: value.employment ? 'RECORDED' : 'LEGACY_NOT_BASELINED' };
   if (value.format === 2 && value.master) return { employeeStatus: employeeLifecycleScalar_(value.master.employeeStatus),
     terminationDate: employeeLifecycleDate_(value.master.terminationDate) };
   if (value.format === 1 && Array.isArray(value.employee) && value.employee.length === 12) {

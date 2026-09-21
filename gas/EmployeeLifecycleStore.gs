@@ -144,10 +144,11 @@ function employeeMutateApplication_(context, requestId, hash, action, before, af
   return employeeFinishIntent_(intent);
 }
 
-function employeeLifecycleBaselineDryRun_(context) {
+function employeeLifecycleBaselineDryRun_(context, data) {
   if (employeeIdentityState_(context) !== 'ACTIVE_EMPLOYEE' || ['OWNER', 'ADMIN'].indexOf(context.employee.permission) < 0) {
     employeeFailure_('FORBIDDEN', '僅 OWNER／ADMIN 可執行基線檢查。');
   }
+  if (data && data.employeeId != null) return employeeBaselinePreview_(context, data.employeeId);
   var employees = employeeLegacyRows_(), exceptions = [];
   var duplicateEmployeeIds = [], duplicateLineUids = [];
   var counts = { employeeId: Object.create(null), lineUid: Object.create(null) };
@@ -171,7 +172,7 @@ function employeeLifecycleBaselineDryRun_(context) {
     if (!employeeText_(e.startDate)) reasons.push('到職日未知，基線保持空白');
     if (reasons.length) exceptions.push({ row: e.row, employeeId: e.employeeId, reasons: reasons });
   });
-  return { success: true, dryRun: true, duplicateEmployeeIds: duplicateEmployeeIds, duplicateLineUids: duplicateLineUids,
+  return { success: true, dryRun: true, duplicateEmployeeIds: duplicateEmployeeIds, duplicateLineUidCount: duplicateLineUids.length,
     blankEmployeeId: blankEmployeeId, blankLineUid: blankLineUid, unknownStatus: unknownStatus,
     noOwner: !employees.some(function(e) { return e.permission === 'OWNER' && e.status === '在職'; }),
     eligibleEmploymentCount: employmentCount, eligibleBindingCount: bindingCount, exceptions: exceptions };

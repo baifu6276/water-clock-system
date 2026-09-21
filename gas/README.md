@@ -1,5 +1,26 @@
 # 人員身分與加入申請基礎層（第一批）
 
+## Legacy Baseline V1：單人受控基線（未部署）
+
+只處理目前「在職」、主檔識別及 LINE UID 唯一、沒有既有任職／綁定或衝突操作的 legacy 員工。沒有批次遷移、前端、員工建立、重綁或主檔修改。停職／留停／離職、日期格式不明、薪資資料不足等回 `BASELINE_MANUAL_REVIEW_REQUIRED`，交人工核對。
+
+1. 以真實 ID token 呼叫 `employeeLifecycleBaselineDryRun`，加入 `employeeId` 取得單人預覽：安全員工欄位、bindingSource（PRESENT／MISSING／DUPLICATE／CONFLICT）、baselineState、eligible、warnings、snapshotVersion。不回傳 UID／sub。未指定 employeeId 保留廣域診斷，但原 duplicateLineUids 改為 duplicateLineUidCount；廣域候選數只是舊盤點估計，不構成遷移授權。
+2. 管理員看過單人預覽後，明確呼叫 `employeeLifecycleBaselineMigrate`：`idToken, employeeId, requestId, expectedSnapshotVersion, reason, confirmed:true`。confirmed 必須是布林 true，原因必填。其他前端宣稱的 UID、姓名、到職日、薪資、角色、狀態不會被採用。
+3. 強驗證於鎖外完成；取鎖後重新解析在職 OWNER／ADMIN。OWNER 可遷移四種角色，ADMIN 不可遷移 OWNER。snapshotVersion 是主檔、同 UID 關聯主檔、任職、相關綁定、相關 audit 及 channel 的排序後 SHA-256；不回傳底層資料，也不 hash token。確認後相關資料變更回 `VERSION_CONFLICT`，需重新預覽。
+4. append STARTED（action `LEGACY_BASELINE`、format:3），固定任職ID、綁定ID及時間；依序新增任職、綁定，逐階段 flush，再讀回驗證後 append COMPLETED。完全不寫員工主檔及其他業務表。
+
+任職序號／版本為 1，序號只代表生命週期系統第一筆紀錄，不代表歷史首次入職。有效已知到職日直接承接；空白保持空白；不從打卡、薪資或今日推估。快照基準日是遷移當日，不是到職日。Google Sheets 原生日曆 Date 可由既有 master helper 正規化；不明字串日期拒絕。級職、薪資制／金額、權限僅複製目前主檔。
+
+任職與綁定 sourceType 均為 `LEGACY_BASELINE`。LINE UID 只從後端主檔承接；channel 使用本次強驗證採用的設定值。**只有操作管理員 token 被驗證，目標員工 token 未在遷移時驗證。**綁定 validFrom／操作時間為本次建立時間，不倒填歷史；實際登入仍須 LINE server-side verify。
+
+同 requestId／相同內容重試使用固定 intent，只補可證明不存在的 checkpoint；相同內容成功收據回原安全結果。改內容為 `REQUEST_CONFLICT`。與完成收據及原快照一致的完整基線回 `ALREADY_BASELINED`，不再寫入或增版。缺少 intent 的部分基線、資料漂移、綁定衝突或順序不可能的 checkpoint 回 `RECOVERY_REQUIRED`，不覆寫。新增確認請求仍須最新 snapshotVersion；中斷重試須保留原請求所有欄位及 requestId，只更新過期 token。
+
+成功回應為 `success, employeeId, baselineState, version:1, recoveryStatus:COMPLETED`。後續 Phase 1 詳細頁顯示 RECORDED／一個開放期間／有效綁定；Phase 2 可使用 expectedVersion=1，既有交接／出勤／OWNER 保護不變。audit 保留恢復所需的內部綁定資料，只讀 API 不暴露原始 JSON、UID、hash 或 token。
+
+人工部署時新增 `EmployeeLifecycleBaseline.gs`，同步替換 `EmployeeApplication.gs`、`EmployeeLifecycleStore.gs`、`EmployeeLifecycleRead.gs`，其餘保持。由使用者另行更新原 deployment 新版本；不改 scope、URL、access 或 executeAs。本輪沒有部署或正式遷移。正式首次操作須先確認主檔 LINE UID 的人工維護正確性；本功能不替代目標身分驗證或既有資料清理。
+
+離線：`node tests/employee-foundation.test.cjs` 包含權限、預覽版本、日期、零主檔寫入、8 個 baseline checkpoint 前後故障、重試、隱私及 Phase 2 相容性，並執行既有三支瀏覽器 mock 回歸。
+
 ## 生命週期 Phase 2：狀態異動後端（未部署）
 
 新增 `EmployeeLifecycleMutation.gs`，並更新 `EmployeeApplication.gs` 分流、`EmployeeLifecycleRead.gs` 安全投影。此批不提供前端，不改 Code.gs 舊 action／鎖、LINE verify、manifest 或既有薪資算法。
