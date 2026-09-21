@@ -56,6 +56,7 @@
       <p id="baselineMessage" role="status" aria-live="polite">尚未檢查。</p>
       <dl id="baselineDetails"></dl>
     </section>
+    <dl id="httpDiagnostics" aria-live="polite" hidden></dl>
   </main>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script>
@@ -118,10 +119,30 @@
         error.code = Object.hasOwn(errors, code) ? code : 'OPERATION_ERROR';
         return error;
       }
+      function resetHttpDiagnostics() {
+        byId('httpDiagnostics').replaceChildren(); byId('httpDiagnostics').hidden = true;
+      }
+      function showHttpDiagnostics(response) {
+        // Never retain the response URL, path, query, headers or body.
+        let hostCategory = 'UNKNOWN';
+        try {
+          const hostname = new URL(response.url).hostname;
+          hostCategory = !hostname ? 'UNKNOWN' : ['script.google.com', 'script.googleusercontent.com'].includes(hostname) ? hostname : 'OTHER';
+        } catch (_) { /* Empty or malformed URL remains UNKNOWN. */ }
+        const status = Number.isInteger(response.status) && response.status >= 0 && response.status <= 599 ? String(response.status) : 'UNKNOWN';
+        const type = ['basic', 'cors', 'default', 'error', 'opaque', 'opaqueredirect'].includes(response.type) ? response.type : 'UNKNOWN';
+        const redirected = response.redirected === true ? '是' : response.redirected === false ? '否' : 'UNKNOWN';
+        [['HTTP Status', status], ['Redirected', redirected], ['Response Type', type], ['Response Host', hostCategory]].forEach(([label, value]) => {
+          const term = document.createElement('dt'), description = document.createElement('dd');
+          term.textContent = label; description.textContent = value; byId('httpDiagnostics').append(term, description);
+        });
+        byId('httpDiagnostics').hidden = false;
+      }
       async function request(action) {
         // Explicit read-only allowlist. No payload supplied by callers.
         if (!['identityBootstrap', 'employeeApplicationAdminList', 'employeeLifecycleBaselineDryRun'].includes(action)) throw safeError('OPERATION_ERROR');
         if (action !== 'identityBootstrap' && !adminAllowed) throw safeError('FORBIDDEN');
+        resetHttpDiagnostics();
         const idToken = liff.getIDToken();
         if (!idToken) throw safeError('TOKEN_UNAVAILABLE');
         let response, result;
@@ -131,7 +152,7 @@
             body: JSON.stringify(action === 'employeeLifecycleBaselineDryRun' ? { action, employeeId: 'EMP001', idToken } : { action, idToken })
           });
         } catch (_) { throw safeError('GAS_NETWORK_ERROR'); }
-        if (!response.ok) throw safeError('GAS_HTTP_ERROR');
+        if (!response.ok) { showHttpDiagnostics(response); throw safeError('GAS_HTTP_ERROR'); }
         try { result = await response.json(); } catch (_) { throw safeError('GAS_NON_JSON_RESPONSE'); }
         if (!result || Array.isArray(result) || typeof result.success !== 'boolean') throw safeError('GAS_RESPONSE_INVALID');
         if (!result.success) {
@@ -217,6 +238,7 @@
       }
       async function check() {
         if (busy || adminBusy) return;
+        resetHttpDiagnostics();
         adminAllowed = false; byId('adminTest').hidden = true; byId('baselineTest').hidden = true;
         baselineReset(); byId('baselineCheck').disabled = true;
         adminReset(); byId('adminCheck').disabled = true;

@@ -16,6 +16,14 @@ const salaryCases = {
   'baseline-salary-object': { secret: 'private-audit' },
   'baseline-salary-array': ['private-audit']
 };
+const httpCases = {
+  'baseline-http-401': {status:401,redirected:false,type:'cors',url:'https://script.google.com/private-path?secret=private-query',host:'script.google.com'},
+  'baseline-http-403': {status:403,redirected:true,type:'cors',url:'https://script.googleusercontent.com/private-path?secret=private-query',host:'script.googleusercontent.com'},
+  'baseline-http-404': {status:404,redirected:true,type:'basic',url:'https://private-host.example/private-path?secret=private-query',host:'OTHER'},
+  'baseline-http-500': {status:500,redirected:false,type:'default',url:'malformed private-query',host:'UNKNOWN'},
+  'baseline-http-empty': {status:500,redirected:false,type:'cors',url:'',host:'UNKNOWN'},
+  'baseline-http-unsafe-type': {status:403,redirected:true,type:'private-type',url:'https://script.google.com.private-host.example/private-path?secret=private-query',host:'OTHER'}
+};
 assert.deepEqual([...html.matchAll(/await request\('([^']+)'\)/g)].map(m=>m[1]).sort(), allowed);
 assert(html.includes("if (!['identityBootstrap', 'employeeApplicationAdminList', 'employeeLifecycleBaselineDryRun'].includes(action)) throw"));
 (async () => {
@@ -23,7 +31,7 @@ assert(html.includes("if (!['identityBootstrap', 'employeeApplicationAdminList',
   try {
     for (const scenario of ['ACTIVE_EMPLOYEE','UNREGISTERED','APPLICATION_PENDING','AUTH_ERROR','unsafe-error','no-token','logged-out','outside-line','init-error','network-error','http-error','non-json','invalid-json','diagnostic','fetch-permission',
       'role-EMPLOYEE','role-SITE_MANAGER','role-suspended','LEAVE','TERMINATED','admin-owner','admin-empty','admin-items','admin-forbidden','admin-diagnostic','admin-unsafe','admin-network','admin-http','admin-malformed',
-      'baseline-owner','baseline-admin','baseline-ineligible','baseline-forbidden','baseline-unsafe','baseline-malformed','baseline-network', ...Object.keys(salaryCases)]) {
+      'baseline-owner','baseline-admin','baseline-ineligible','baseline-forbidden','baseline-unsafe','baseline-malformed','baseline-network', ...Object.keys(salaryCases), ...Object.keys(httpCases)]) {
       const adminScenario=scenario.startsWith('admin-');
       const baselineScenario=scenario.startsWith('baseline-');
       const roleScenario=scenario.startsWith('role-');
@@ -46,6 +54,7 @@ assert(html.includes("if (!['identityBootstrap', 'employeeApplicationAdminList',
           assert.equal(route.request().method(),'POST');
           if(body.action==='employeeLifecycleBaselineDryRun') {
             assert(baselineScenario);assert.equal(body.employeeId,'EMP001');
+            if(httpCases[scenario])return route.fulfill({status:httpCases[scenario].status,body:'private-body mock-secret-token private-sub-sentinel',headers:{'x-private':'private-header'}});
             if(scenario==='baseline-network')return route.abort();
             if(scenario==='baseline-forbidden')return route.fulfill({json:{success:false,code:'FORBIDDEN',message:'mock-secret-token'}});
             if(scenario==='baseline-unsafe')return route.fulfill({json:{success:false,code:'private-sub-sentinel',message:'mock-secret-token',stack:'private-audit'}});
@@ -81,10 +90,21 @@ assert(html.includes("if (!['identityBootstrap', 'employeeApplicationAdminList',
         return route.fulfill({contentType:file.endsWith('.html')?'text/html;charset=utf-8':'text/javascript;charset=utf-8',body:fs.readFileSync(path.join(root,file),'utf8')});
       });
       // Inspect Fetch options without changing production identity code.
-      await page.addInitScript(() => {
+      await page.addInitScript(meta => {
         const original=window.fetch;
-        window.fetch=(input,options)=>{if(options?.method==='POST') window.lastRedirect=options.redirect;return original(input,options);};
-      });
+        window.httpBodyReads=0;window.httpHeaderReads=0;
+        window.fetch=async(input,options)=>{
+          if(options?.method==='POST') window.lastRedirect=options.redirect;
+          const response=await original(input,options);
+          if(meta&&options?.method==='POST'&&JSON.parse(options.body).action==='employeeLifecycleBaselineDryRun') {
+            return {ok:response.ok,status:response.status,redirected:meta.redirected,type:meta.type,url:meta.url,
+              get headers(){window.httpHeaderReads++;throw new Error('private-header');},
+              json:()=>{window.httpBodyReads++;throw new Error('private-body');},
+              text:()=>{window.httpBodyReads++;throw new Error('private-body');}};
+          }
+          return response;
+        };
+      },httpCases[scenario]||null);
       await page.goto('https://identity.test/employee-identity-live-test/index.html');
       await page.waitForFunction(()=>!document.getElementById('retry').disabled);
       assert(!(await page.locator('body').innerText()).includes('mock-secret-token'));
@@ -112,6 +132,7 @@ assert(html.includes("if (!['identityBootstrap', 'employeeApplicationAdminList',
       await page.getByRole('button',{name:'重新檢查身分'}).click();
       await page.waitForFunction(()=>!document.getElementById('retry').disabled);
       assert.equal(calls.length,['no-token','logged-out','init-error'].includes(scenario)?0:2);
+      if(scenario!=='http-error')assert.equal(await page.locator('#httpDiagnostics').isVisible(),false);
       if(baselineScenario) {
         assert.equal(calls.filter(c=>c.action==='employeeLifecycleBaselineDryRun').length,0);
         await page.evaluate(()=>{document.getElementById('baselineCheck').click();document.getElementById('baselineCheck').click();});
@@ -119,7 +140,7 @@ assert(html.includes("if (!['identityBootstrap', 'employeeApplicationAdminList',
         assert.equal(calls.filter(c=>c.action==='employeeLifecycleBaselineDryRun').length,1);
         assert.equal(calls.filter(c=>c.action==='employeeApplicationAdminList').length,0);
         assert.equal(await page.evaluate(()=>window.lastRedirect),'follow');
-        const expected={'baseline-forbidden':'FORBIDDEN','baseline-unsafe':'OPERATION_ERROR','baseline-malformed':'GAS_RESPONSE_INVALID','baseline-network':'GAS_NETWORK_ERROR','baseline-salary-object':'GAS_RESPONSE_INVALID','baseline-salary-array':'GAS_RESPONSE_INVALID'}[scenario];
+        const expected=httpCases[scenario]?'GAS_HTTP_ERROR':{'baseline-forbidden':'FORBIDDEN','baseline-unsafe':'OPERATION_ERROR','baseline-malformed':'GAS_RESPONSE_INVALID','baseline-network':'GAS_NETWORK_ERROR','baseline-salary-object':'GAS_RESPONSE_INVALID','baseline-salary-array':'GAS_RESPONSE_INVALID'}[scenario];
         if(expected){assert((await page.locator('body').innerText()).includes(expected));assert.equal(await page.locator('#baselineDetails').innerText(),'');}
         else {
           assert.equal(await page.locator('#baselineMessage').innerText(),['baseline-ineligible','baseline-salary-string','baseline-salary-empty','baseline-salary-text'].includes(scenario)?'目前不可自動建立 Legacy Baseline':'此員工可進行 Legacy Baseline');
@@ -129,10 +150,19 @@ assert(html.includes("if (!['identityBootstrap', 'employeeApplicationAdminList',
           assert.equal(await page.locator('#baselineDetails dd').nth(5).textContent(),salary===''?'未提供':String(salary));
           assert.equal(await page.locator('#baselineDetails img, #baselineDetails script, #baselineDetails b').count(),0);
         }
-        for(const secret of ['mock-secret-token','private-sub-sentinel','private-uid','private-hash','private-audit']){assert(!(await page.content()).includes(secret));assert(!logs.join('\n').includes(secret));}
+        if(httpCases[scenario]) {
+          const meta=httpCases[scenario];
+          assert.equal(await page.locator('#httpDiagnostics').isVisible(),true);
+          assert.deepEqual(await page.locator('#httpDiagnostics dd').allTextContents(),[String(meta.status),meta.redirected?'是':'否',meta.type==='private-type'?'UNKNOWN':meta.type,meta.host]);
+          assert((await page.locator('#baselineMessage').innerText()).includes('GAS 回傳非成功 HTTP 狀態'));
+          assert.equal(await page.evaluate(()=>window.httpBodyReads+window.httpHeaderReads),0);
+        } else assert.equal(await page.locator('#httpDiagnostics').isVisible(),false);
+        for(const secret of ['mock-secret-token','private-sub-sentinel','private-uid','private-hash','private-audit','private-body','private-header','private-type','private-path','private-query','private-host.example']){assert(!(await page.content()).includes(secret));assert(!logs.join('\n').includes(secret));}
         assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
         await page.getByRole('button',{name:'重新檢查身分'}).click();await page.waitForFunction(()=>!document.getElementById('retry').disabled);
         assert.equal(await page.locator('#baselineDetails').innerText(),'');
+        assert.equal(await page.locator('#httpDiagnostics').isVisible(),false);
+        assert.equal(await page.locator('#httpDiagnostics').innerText(),'');
       }
       if(adminScenario) {
         assert.equal(calls.filter(c=>c.action==='employeeApplicationAdminList').length,0,'never auto-load admin data');
