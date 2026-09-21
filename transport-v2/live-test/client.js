@@ -62,6 +62,13 @@
       set('init', '成功'); set('inLine', liff.isInClient() ? '是' : '否');
       if (!liff.isLoggedIn()) { document.getElementById('login').hidden = false; return; }
       ready = true; set('token', liff.getIDToken() ? '是' : '否'); button.disabled = false;
-    } catch { set('init', '失敗'); set('error', 'LIFF_INIT_ERROR'); }
+    } catch (error) {
+      // Only fixed LIFF codes may cross into the UI; never inspect error details.
+      const initCodes = new Set(['INIT_FAILED', 'INVALID_ARGUMENT', 'INVALID_CONFIG',
+        'UNAUTHORIZED', 'FORBIDDEN', 'INVALID_ID_TOKEN', 'UNKNOWN']);
+      const code = error?.code;
+      set('init', '失敗');
+      set('error', initCodes.has(code) ? code : 'LIFF_INIT_ERROR');
+    }
   })();
 })();
