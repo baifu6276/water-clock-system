@@ -87,7 +87,7 @@
         "GAS_NETWORK_ERROR": "瀏覽器未取得 GAS 回應，請確認網路、CORS 或部署存取設定。",
         "GAS_HTTP_ERROR": "GAS 回傳非成功 HTTP 狀態，請確認部署存取設定。",
         "GAS_NON_JSON_RESPONSE": "GAS 回應無法解析為 JSON，可能為登入／錯誤頁或部署問題。",
-        "GAS_RESPONSE_INVALID": "GAS JSON 不符合新身分 API 回應格式，請確認部署版本。",
+        "GAS_RESPONSE_INVALID": "回應欄位或型別不符合測試頁預期，無法安全顯示；請核對前後端契約。",
         FORBIDDEN: '沒有管理員讀取權限，需在職 OWNER／ADMIN。',
         EMPLOYEE_NOT_FOUND: '找不到指定員工。',
         RECOVERY_REQUIRED: '基線資料需由管理員人工核對。',
@@ -155,7 +155,7 @@
             ['grade', '級職'], ['salaryType', '薪資制'], ['salaryAmount', '薪資金額'], ['systemRole', '系統權限'],
             ['hireDate', '到職日'], ['bindingSource', '綁定來源狀態'], ['baselineState', '基線狀態']];
           if (result.employeeId !== 'EMP001' || typeof result.eligible !== 'boolean' ||
-              !fields.every(([key]) => key === 'salaryAmount' ? (typeof result[key] === 'number' && Number.isFinite(result[key])) || result[key] === '' : typeof result[key] === 'string') ||
+              !fields.every(([key]) => key === 'salaryAmount' ? typeof result[key] === 'string' || (typeof result[key] === 'number' && Number.isFinite(result[key])) : typeof result[key] === 'string') ||
               !Array.isArray(result.warnings) || !result.warnings.every(w => typeof w === 'string') ||
               typeof result.snapshotVersion !== 'string' || !/^[a-f0-9]{64}$/.test(result.snapshotVersion)) throw safeError('GAS_RESPONSE_INVALID');
           const warnings = { HIRE_DATE_UNKNOWN: '到職日未知，基線將保持空白。',

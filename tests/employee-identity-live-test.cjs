@@ -8,6 +8,14 @@ for (const m of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)) new vm.Sc
 assert(!/employeeApplication(?:Approve|Reject|Submit|Cancel)|employeeLifecycle(?:BaselineMigrate|Suspend|Leave|Resume|Terminate)|employeeCreation|localStorage|sessionStorage|console\./.test(html));
 assert(!html.includes('../js/identity.js'));
 const allowed=['employeeApplicationAdminList','employeeLifecycleBaselineDryRun','identityBootstrap'];
+const salaryCases = {
+  'baseline-salary-number': 2200,
+  'baseline-salary-string': '2200',
+  'baseline-salary-empty': '',
+  'baseline-salary-text': '<b>待人工確認薪資</b>',
+  'baseline-salary-object': { secret: 'private-audit' },
+  'baseline-salary-array': ['private-audit']
+};
 assert.deepEqual([...html.matchAll(/await request\('([^']+)'\)/g)].map(m=>m[1]).sort(), allowed);
 assert(html.includes("if (!['identityBootstrap', 'employeeApplicationAdminList', 'employeeLifecycleBaselineDryRun'].includes(action)) throw"));
 (async () => {
@@ -15,7 +23,7 @@ assert(html.includes("if (!['identityBootstrap', 'employeeApplicationAdminList',
   try {
     for (const scenario of ['ACTIVE_EMPLOYEE','UNREGISTERED','APPLICATION_PENDING','AUTH_ERROR','unsafe-error','no-token','logged-out','outside-line','init-error','network-error','http-error','non-json','invalid-json','diagnostic','fetch-permission',
       'role-EMPLOYEE','role-SITE_MANAGER','role-suspended','LEAVE','TERMINATED','admin-owner','admin-empty','admin-items','admin-forbidden','admin-diagnostic','admin-unsafe','admin-network','admin-http','admin-malformed',
-      'baseline-owner','baseline-admin','baseline-ineligible','baseline-forbidden','baseline-unsafe','baseline-malformed','baseline-network']) {
+      'baseline-owner','baseline-admin','baseline-ineligible','baseline-forbidden','baseline-unsafe','baseline-malformed','baseline-network', ...Object.keys(salaryCases)]) {
       const adminScenario=scenario.startsWith('admin-');
       const baselineScenario=scenario.startsWith('baseline-');
       const roleScenario=scenario.startsWith('role-');
@@ -41,7 +49,7 @@ assert(html.includes("if (!['identityBootstrap', 'employeeApplicationAdminList',
             if(scenario==='baseline-network')return route.abort();
             if(scenario==='baseline-forbidden')return route.fulfill({json:{success:false,code:'FORBIDDEN',message:'mock-secret-token'}});
             if(scenario==='baseline-unsafe')return route.fulfill({json:{success:false,code:'private-sub-sentinel',message:'mock-secret-token',stack:'private-audit'}});
-            return route.fulfill({json:{success:true,employeeId:scenario==='baseline-malformed'?'OTHER':'EMP001',name:'<img src=x onerror=alert(1)>',employeeStatus:'在職',grade:'師傅',salaryType:'日薪',salaryAmount:2000,systemRole:'ADMIN',hireDate:'',bindingSource:'PRESENT',baselineState:'LEGACY_NOT_BASELINED',eligible:scenario!=='baseline-ineligible',warnings:['HIRE_DATE_UNKNOWN','<script>private-sub-sentinel</script>'],snapshotVersion:'a'.repeat(64),lineUid:'private-uid',sub:'private-sub-sentinel',idToken:'mock-secret-token',requestHash:'private-hash',beforeJson:'private-audit',afterJson:'private-audit'}});
+            return route.fulfill({json:{success:true,employeeId:scenario==='baseline-malformed'?'OTHER':'EMP001',name:'<img src=x onerror=alert(1)>',employeeStatus:'在職',grade:'師傅',salaryType:'日薪',salaryAmount:Object.hasOwn(salaryCases,scenario)?salaryCases[scenario]:2000,systemRole:'ADMIN',hireDate:'',bindingSource:'PRESENT',baselineState:'LEGACY_NOT_BASELINED',eligible:!['baseline-ineligible','baseline-salary-string','baseline-salary-empty','baseline-salary-text'].includes(scenario),warnings:['HIRE_DATE_UNKNOWN','BASELINE_MANUAL_REVIEW_REQUIRED','<script>private-sub-sentinel</script>'],snapshotVersion:'a'.repeat(64),lineUid:'private-uid',sub:'private-sub-sentinel',idToken:'mock-secret-token',requestHash:'private-hash',beforeJson:'private-audit',afterJson:'private-audit'}});
           }
           if(body.action==='employeeApplicationAdminList') {
             assert(adminScenario);
@@ -111,13 +119,15 @@ assert(html.includes("if (!['identityBootstrap', 'employeeApplicationAdminList',
         assert.equal(calls.filter(c=>c.action==='employeeLifecycleBaselineDryRun').length,1);
         assert.equal(calls.filter(c=>c.action==='employeeApplicationAdminList').length,0);
         assert.equal(await page.evaluate(()=>window.lastRedirect),'follow');
-        const expected={'baseline-forbidden':'FORBIDDEN','baseline-unsafe':'OPERATION_ERROR','baseline-malformed':'GAS_RESPONSE_INVALID','baseline-network':'GAS_NETWORK_ERROR'}[scenario];
-        if(expected)assert((await page.locator('body').innerText()).includes(expected));
+        const expected={'baseline-forbidden':'FORBIDDEN','baseline-unsafe':'OPERATION_ERROR','baseline-malformed':'GAS_RESPONSE_INVALID','baseline-network':'GAS_NETWORK_ERROR','baseline-salary-object':'GAS_RESPONSE_INVALID','baseline-salary-array':'GAS_RESPONSE_INVALID'}[scenario];
+        if(expected){assert((await page.locator('body').innerText()).includes(expected));assert.equal(await page.locator('#baselineDetails').innerText(),'');}
         else {
-          assert.equal(await page.locator('#baselineMessage').innerText(),scenario==='baseline-ineligible'?'目前不可自動建立 Legacy Baseline':'此員工可進行 Legacy Baseline');
+          assert.equal(await page.locator('#baselineMessage').innerText(),['baseline-ineligible','baseline-salary-string','baseline-salary-empty','baseline-salary-text'].includes(scenario)?'目前不可自動建立 Legacy Baseline':'此員工可進行 Legacy Baseline');
           const text=await page.locator('#baselineDetails').innerText();
-          for(const field of ['employeeId','name','employeeStatus','grade','salaryType','salaryAmount','systemRole','hireDate','bindingSource','baselineState','eligible','warnings','snapshotVersion','EMP001','<img src=x onerror=alert(1)>','2000','HIRE_DATE_UNKNOWN','a'.repeat(64)])assert(text.includes(field));
-          assert.equal(await page.locator('#baselineDetails img, #baselineDetails script').count(),0);
+          for(const field of ['employeeId','name','employeeStatus','grade','salaryType','salaryAmount','systemRole','hireDate','bindingSource','baselineState','eligible','warnings','snapshotVersion','EMP001','<img src=x onerror=alert(1)>','HIRE_DATE_UNKNOWN','BASELINE_MANUAL_REVIEW_REQUIRED','a'.repeat(64)])assert(text.includes(field));
+          const salary=Object.hasOwn(salaryCases,scenario)?salaryCases[scenario]:2000;
+          assert.equal(await page.locator('#baselineDetails dd').nth(5).textContent(),salary===''?'未提供':String(salary));
+          assert.equal(await page.locator('#baselineDetails img, #baselineDetails script, #baselineDetails b').count(),0);
         }
         for(const secret of ['mock-secret-token','private-sub-sentinel','private-uid','private-hash','private-audit']){assert(!(await page.content()).includes(secret));assert(!logs.join('\n').includes(secret));}
         assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
