@@ -12,7 +12,7 @@
     dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 14px; }
     dt { font-weight: bold; } dd { margin: 0; overflow-wrap: anywhere; }
     button { padding: 12px; margin: 8px 0; width: 100%; font: inherit; min-height: 48px; }
-    #adminTest { margin-top: 28px; border-top: 2px solid #dce2e8; padding-top: 16px; }
+    #adminTest, #baselineTest { margin-top: 28px; border-top: 2px solid #dce2e8; padding-top: 16px; }
     #adminTest li, #adminMessage { overflow-wrap: anywhere; }
     #adminApplications { list-style: none; padding: 0; }
     #adminApplications li { border: 1px solid #dce2e8; border-radius: 8px; padding: 12px; margin: 12px 0; }
@@ -23,7 +23,7 @@
   <main>
     <p class="badge">獨立測試頁 · 非正式操作介面</p>
     <h1>員工 LINE 身分驗證</h1>
-    <p>只讀取身分狀態與管理員待審清單。此頁沒有申請送出、打卡、薪資或工程進度寫入功能。</p>
+    <p>只讀取身分狀態、管理員待審清單與單人基線預覽。此頁沒有資料寫入功能。</p>
     <dl>
       <dt>LIFF 初始化</dt><dd id="init">尚未開始</dd>
       <dt>是否在 LINE 內</dt><dd id="inLine">尚未確認</dd>
@@ -48,6 +48,13 @@
       </dl>
       <p id="adminMessage" role="status" aria-live="polite">請按按鈕執行只讀測試。</p>
       <ul id="adminApplications"></ul>
+    </section>
+    <section id="baselineTest" aria-labelledby="baselineTitle" hidden>
+      <h2 id="baselineTitle">Legacy Baseline 唯讀預覽測試</h2>
+      <p>僅檢查 EMP001，不建立基線、不變更資料。後端仍會驗證管理權限。</p>
+      <button id="baselineCheck" type="button" disabled>檢查 EMP001 基線</button>
+      <p id="baselineMessage" role="status" aria-live="polite">尚未檢查。</p>
+      <dl id="baselineDetails"></dl>
     </section>
   </main>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -82,6 +89,10 @@
         "GAS_NON_JSON_RESPONSE": "GAS 回應無法解析為 JSON，可能為登入／錯誤頁或部署問題。",
         "GAS_RESPONSE_INVALID": "GAS JSON 不符合新身分 API 回應格式，請確認部署版本。",
         FORBIDDEN: '沒有管理員讀取權限，需在職 OWNER／ADMIN。',
+        EMPLOYEE_NOT_FOUND: '找不到指定員工。',
+        RECOVERY_REQUIRED: '基線資料需由管理員人工核對。',
+        BASELINE_MANUAL_REVIEW_REQUIRED: '此員工需人工核對後再處理。',
+        BASELINE_LINE_IDENTITY_REQUIRED: '既有登入綁定資料缺少或重複。',
         CONFIG_ERROR: '設定尚未完成，請聯絡管理員確認 LINE channel 與 GAS 部署。',
         LIFF_INIT_ERROR: 'LIFF 初始化失敗，請從 LINE 重新開啟。',
         LOGIN_REQUIRED: '尚未登入，請按「使用 LINE 登入」。',
@@ -109,14 +120,15 @@
       }
       async function request(action) {
         // Explicit read-only allowlist. No payload supplied by callers.
-        if (!['identityBootstrap', 'employeeApplicationAdminList'].includes(action)) throw safeError('OPERATION_ERROR');
+        if (!['identityBootstrap', 'employeeApplicationAdminList', 'employeeLifecycleBaselineDryRun'].includes(action)) throw safeError('OPERATION_ERROR');
+        if (action !== 'identityBootstrap' && !adminAllowed) throw safeError('FORBIDDEN');
         const idToken = liff.getIDToken();
         if (!idToken) throw safeError('TOKEN_UNAVAILABLE');
         let response, result;
         try {
           response = await fetch(GAS_URL, {
             method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow',
-            body: JSON.stringify({ action, idToken })
+            body: JSON.stringify(action === 'employeeLifecycleBaselineDryRun' ? { action, employeeId: 'EMP001', idToken } : { action, idToken })
           });
         } catch (_) { throw safeError('GAS_NETWORK_ERROR'); }
         if (!response.ok) throw safeError('GAS_HTTP_ERROR');
@@ -130,6 +142,41 @@
         return result;
       }
       let busy = false, initialized = false, adminBusy = false, adminAllowed = false;
+      function baselineReset() {
+        put('baselineMessage', '尚未檢查。'); byId('baselineDetails').replaceChildren();
+      }
+      async function checkBaseline() {
+        if (busy || adminBusy || !initialized || !adminAllowed) return;
+        adminBusy = true; byId('baselineCheck').disabled = true; byId('adminCheck').disabled = true; byId('retry').disabled = true;
+        baselineReset(); put('baselineMessage', '正在讀取 EMP001 基線預覽…');
+        try {
+          const result = await request('employeeLifecycleBaselineDryRun');
+          const fields = [['employeeId', '員工編號'], ['name', '姓名'], ['employeeStatus', '員工狀態'],
+            ['grade', '級職'], ['salaryType', '薪資制'], ['salaryAmount', '薪資金額'], ['systemRole', '系統權限'],
+            ['hireDate', '到職日'], ['bindingSource', '綁定來源狀態'], ['baselineState', '基線狀態']];
+          if (result.employeeId !== 'EMP001' || typeof result.eligible !== 'boolean' ||
+              !fields.every(([key]) => key === 'salaryAmount' ? (typeof result[key] === 'number' && Number.isFinite(result[key])) || result[key] === '' : typeof result[key] === 'string') ||
+              !Array.isArray(result.warnings) || !result.warnings.every(w => typeof w === 'string') ||
+              typeof result.snapshotVersion !== 'string' || !/^[a-f0-9]{64}$/.test(result.snapshotVersion)) throw safeError('GAS_RESPONSE_INVALID');
+          const warnings = { HIRE_DATE_UNKNOWN: '到職日未知，基線將保持空白。',
+            RECOVERY_REQUIRED: '基線資料需人工核對。', BASELINE_MANUAL_REVIEW_REQUIRED: '目前需人工處理。',
+            BASELINE_LINE_IDENTITY_REQUIRED: '既有登入綁定資料缺少或重複。' };
+          const values = fields.map(([key, label]) => [label + '（' + key + '）', String(result[key] === '' ? '未提供' : result[key])]);
+          values.push(['eligible', String(result.eligible)], ['warnings', result.warnings.length ? result.warnings.map(w => Object.hasOwn(warnings, w) ? w + '：' + warnings[w] : '未識別警告，請管理員核對。').join('；') : '無'], ['snapshotVersion', result.snapshotVersion]);
+          values.forEach(([label, value]) => {
+            const term = document.createElement('dt'), description = document.createElement('dd');
+            term.textContent = label; description.textContent = value; byId('baselineDetails').append(term, description);
+          });
+          put('baselineMessage', result.eligible ? '此員工可進行 Legacy Baseline' : '目前不可自動建立 Legacy Baseline');
+        } catch (error) {
+          const candidate = error?.diagnosticCode || error?.code;
+          const code = Object.hasOwn(errors, candidate) ? candidate : 'OPERATION_ERROR';
+          put('baselineMessage', code + '：' + errors[code]);
+          if (error?.code === 'AUTH_ERROR' || code === 'FORBIDDEN') {
+            adminAllowed = false; byId('adminTest').hidden = true; byId('baselineTest').hidden = true; adminReset(); fail(code);
+          }
+        } finally { adminBusy = false; byId('baselineCheck').disabled = !adminAllowed; byId('adminCheck').disabled = !adminAllowed; byId('retry').disabled = false; }
+      }
       function adminReset() {
         put('adminStatus', '尚未檢查'); put('adminCount', '—'); put('adminCode', '—');
         put('adminMessage', '請按按鈕執行只讀測試。'); byId('adminApplications').replaceChildren();
@@ -164,13 +211,14 @@
           put('adminStatus', code === 'FORBIDDEN' ? '授權未通過' : '未完成／無法確認');
           put('adminCode', code); put('adminMessage', errors[code]);
           if (error?.code === 'AUTH_ERROR' || code === 'FORBIDDEN') {
-            adminAllowed = false; byId('adminTest').hidden = true; fail(code);
+            adminAllowed = false; byId('adminTest').hidden = true; byId('baselineTest').hidden = true; baselineReset(); fail(code);
           }
         } finally { adminBusy = false; byId('adminCheck').disabled = !adminAllowed; byId('retry').disabled = false; }
       }
       async function check() {
         if (busy || adminBusy) return;
-        adminAllowed = false; byId('adminTest').hidden = true;
+        adminAllowed = false; byId('adminTest').hidden = true; byId('baselineTest').hidden = true;
+        baselineReset(); byId('baselineCheck').disabled = true;
         adminReset(); byId('adminCheck').disabled = true;
         busy = true; byId('retry').disabled = true; byId('login').hidden = true;
         ['employeeId', 'employeeName', 'code'].forEach(id => put(id, '—'));
@@ -211,6 +259,7 @@
             put('employeeId', result.employee.employeeId); put('employeeName', result.employee.name || '名稱未設定');
             adminAllowed = ['OWNER', 'ADMIN'].includes(result.employee.permission);
             byId('adminTest').hidden = !adminAllowed;
+            byId('baselineTest').hidden = !adminAllowed; byId('baselineCheck').disabled = !adminAllowed;
           }
           put('state', result.state + '（' + states[result.state] + '）');
           if (result.state === 'AUTH_ERROR') fail('AUTH_ERROR');
@@ -221,6 +270,7 @@
         } finally { busy = false; byId('retry').disabled = false; byId('adminCheck').disabled = !adminAllowed; }
       }
       byId('adminCheck').addEventListener('click', checkAdmin);
+      byId('baselineCheck').addEventListener('click', checkBaseline);
       byId('retry').addEventListener('click', check);
       byId('login').addEventListener('click', () => {
         try { liff.login({ redirectUri: location.origin + location.pathname }); }
