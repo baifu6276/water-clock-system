@@ -5,8 +5,8 @@ const env = { GAS_UPSTREAM: 'https://script.google.com/macros/s/OFFLINE/exec', A
 const token = 'PRIVATE_TOKEN_SENTINEL';
 const good = { success: true, state: 'ACTIVE_EMPLOYEE', employee: { employeeId: 'EMP001', name: '測試' } };
 const input = { action: 'identityBootstrap', idToken: token };
-function request(body = input, options = {}) {
-  return new Request('https://relay.example/identity', { method: 'POST',
+function request(body = input, options = {}, route = '/identity') {
+  return new Request('https://relay.example' + route, { method: 'POST',
     headers: { origin: 'https://baifu6276.github.io', 'content-type': 'text/plain;charset=utf-8' },
     body: typeof body === 'string' ? body : JSON.stringify(body), ...options });
 }
@@ -146,5 +146,81 @@ test('no logging/storage APIs in relay source or client', async () => {
   for (const path of ['../worker/relay.mjs', '../live-test/client.js']) {
     const source = await readFile(new URL(path, import.meta.url), 'utf8');
     assert(!/console\.|localStorage|sessionStorage|caches\.|\.put\(/.test(source));
+  }
+});
+const baseline = { action: 'employeeLifecycleBaselineDryRun', idToken: token, employeeId: 'EMP001' };
+test('T3 exact request forwards to fixed GAS, business rejection preserved', async () => {
+  for (const result of [{ success: true, dryRun: true }, { success: false, code: 'FORBIDDEN' }]) {
+    const r = await run(request(baseline, {}, '/employee-read'), [json(result)]);
+    assert.deepEqual(r.body, result); assert.equal(r.calls.length, 1);
+    assert.equal(r.calls[0][0], env.GAS_UPSTREAM);
+    assert.deepEqual(JSON.parse(r.calls[0][1].body), baseline);
+    assert.equal(r.calls[0][1].headers['Content-Type'], 'text/plain;charset=utf-8');
+  }
+});
+for (const action of ['identityBootstrap', 'employeeLifecycleBaselineMigrate', 'employeeLifecycleSuspend',
+  'employeeLifecycleLeave', 'employeeLifecycleResume', 'employeeLifecycleTerminate', 'employeeApplicationApprove',
+  'employeeApplicationReject', 'employeeApplicationSubmit', 'employeeApplicationCancel', 'clockIn',
+  'adminPayrollRefresh', 'dailyReportSubmit', 'adminProgressUpsert', 'unknown']) {
+  test('T3 rejects action ' + action, async () => {
+    const r = await run(request({ ...baseline, action }, {}, '/employee-read'), []);
+    assert.equal(r.body.transportError, 'ACTION_DENIED'); assert.equal(r.calls.length, 0);
+  });
+}
+for (const employeeId of [undefined, null, 1, {}, [], '', 'EMP002', ' EMP001']) test('T3 target rejects ' + JSON.stringify(employeeId), async () => {
+  const r = await run(request({ ...baseline, employeeId }, {}, '/employee-read'), []);
+  assert.equal(r.body.transportError, 'REQUEST_INVALID'); assert.equal(r.calls.length, 0);
+});
+for (const key of ['userId', 'lineUid', 'sub', 'role', 'permission', 'authorized', 'requestId', 'snapshotVersion', 'upstream']) {
+  test('T3 rejects extra ' + key, async () => {
+    const r = await run(request({ ...baseline, [key]: 'PRIVATE' }, {}, '/employee-read'), []);
+    assert.equal(r.body.transportError, 'REQUEST_INVALID'); assert.equal(r.calls.length, 0);
+  });
+}
+test('T3 uses unchanged redirect/timeout/size/no-retry guards', async () => {
+  const req = () => request(baseline, {}, '/employee-read');
+  const ok = await run(req(), [new Response(null, { status: 303, headers: { location: 'https://script.googleusercontent.com/echo' } }), json()]);
+  assert.equal(ok.calls.length, 2); assert.equal(ok.calls[1][1].method, 'GET'); assert.equal(ok.calls[1][1].body, undefined);
+  const bad = await run(req(), [new Response(null, { status: 302, headers: { location: 'https://evil.example/' } })]);
+  assert.equal(bad.body.transportError, 'UPSTREAM_REDIRECT_DENIED'); assert.equal(bad.calls.length, 1);
+  const timeout = await run(req(), [() => new Promise(() => {})], env, 5);
+  assert.equal(timeout.body.transportError, 'UPSTREAM_TIMEOUT'); assert.equal(timeout.calls.length, 1);
+  const large = await run(req(), [new Response('x'.repeat(65537))]);
+  assert.equal(large.body.transportError, 'UPSTREAM_RESPONSE_TOO_LARGE'); assert.equal(large.calls.length, 1);
+});
+test('real GAS dry-run dispatcher with existing mocks: every Sheet mutation throws', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { createRequire } = await import('node:module');
+  const { fileURLToPath } = await import('node:url');
+  const vm = await import('node:vm');
+  const fixtureURL = new URL('../../tests/employee-foundation.test.cjs', import.meta.url);
+  const fixture = await readFile(fixtureURL, 'utf8');
+  // Reuse only the existing mock factory, before any foundation test executes.
+  const boundary = fixture.indexOf('\nconst payload ='); assert(boundary > 0);
+  const sandbox = { require: createRequire(fixtureURL), __dirname: fileURLToPath(new URL('.', fixtureURL)) };
+  vm.runInNewContext(fixture.slice(0, boundary) + '\nglobalThis.makeEnv = env;', sandbox);
+  for (const role of ['OWNER', 'ADMIN', 'SITE_MANAGER', 'EMPLOYEE']) {
+    const e = sandbox.makeEnv();
+    const master = e.tables['員工資料表'].rows;
+    master[1] = ['EMP001', 'owner', '測試', '師傅', '日薪', 2200, role, '', '', '在職', '', ''];
+    let attemptedWrites = 0;
+    const deny = () => { attemptedWrites++; throw Error('Sheet writes forbidden'); };
+    const readonly = object => new Proxy(object, { get(target, key) {
+      return Object.hasOwn(target, key) ? target[key] : deny;
+    } });
+    const spreadsheet = readonly({ getSheetByName: name => {
+      const sheet = e.tables[name];
+      if (!sheet) return null;
+      return readonly({ getLastRow: sheet.getLastRow, getLastColumn: sheet.getLastColumn,
+        getDataRange: () => readonly({ getValues: () => sheet.rows.map(r => [...r]) }),
+        getRange: (...args) => readonly({ getValues: sheet.getRange(...args).getValues }) });
+    } });
+    e.ctx.SpreadsheetApp = readonly({ getActiveSpreadsheet: () => spreadsheet });
+    const before = JSON.stringify(e.tables);
+    const result = e.call('employeeLifecycleBaselineDryRun', { employeeId: 'EMP001' }, 'owner');
+    assert.equal(result.success, ['OWNER', 'ADMIN'].includes(role));
+    if (result.success) { assert.equal(result.dryRun, true); assert.equal(result.employeeId, 'EMP001'); }
+    else assert.equal(result.code, 'FORBIDDEN');
+    assert.equal(attemptedWrites, 0); assert.equal(e.writes, 0); assert.equal(JSON.stringify(e.tables), before);
   }
 });

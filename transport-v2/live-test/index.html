@@ -4,15 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <title>Transport V2 T1 隔離測試</title>
+  <title>Transport V2 T1／T3 隔離測試</title>
   <style>body{font-family:system-ui;margin:20px auto;padding:0 16px;max-width:600px;line-height:1.6}button{padding:12px;font:inherit}dd{margin:0 0 12px;overflow-wrap:anywhere}dt{font-weight:bold}</style>
   <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script defer src="config.js"></script>
   <script defer src="client.js"></script>
 </head>
 <body>
-  <h1>Transport V2 T1 隔離測試</h1>
-  <p>只讀身分測試，不提供任何業務寫入。Relay 尚未部署前無法進行真機驗證。</p>
+  <h1>Transport V2 T1／T3 隔離測試</h1>
+  <p>僅供身分與基線唯讀預覽，不提供業務寫入。T3 需搭配另行部署的相容 Relay。</p>
   <dl>
     <dt>LIFF 初始化</dt><dd id="init">尚未開始</dd>
     <dt>在 LINE 內</dt><dd id="inLine">未確認</dd>
@@ -26,5 +26,11 @@
   </dl>
   <button id="login" hidden>登入 LINE</button>
   <button id="check" disabled>檢查身分（唯讀）</button>
+  <section id="baselineSection" hidden>
+    <h2>Legacy Baseline 唯讀預覽</h2>
+    <button id="baselineCheck" disabled>檢查 EMP001 Legacy Baseline（唯讀）</button>
+    <p id="baselineStatus" role="status">尚未執行</p>
+    <dl id="baselineFields"></dl>
+  </section>
 </body>
 </html>

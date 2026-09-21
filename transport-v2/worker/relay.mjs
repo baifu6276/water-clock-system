@@ -1,5 +1,9 @@
-// T1 transport only. No logging, storage, retries, or business authorization.
-export const VERSION = 't1-1';
+// Isolated T1/T3 reads only. No logging, storage, retries, or business authorization.
+export const VERSION = 't3-1';
+const routes = Object.freeze({
+  '/identity': { action: 'identityBootstrap', keys: ['action', 'idToken'] },
+  '/employee-read': { action: 'employeeLifecycleBaselineDryRun', keys: ['action', 'idToken', 'employeeId'] }
+});
 const fail = code => { throw new Error(code); };
 const errors = new Set(['CONFIG_ERROR', 'HTTPS_REQUIRED', 'PATH_DENIED', 'ORIGIN_DENIED',
   'METHOD_DENIED', 'CONTENT_TYPE_INVALID', 'REQUEST_INVALID', 'REQUEST_TOO_LARGE',
@@ -61,7 +65,8 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
     const config = configuration(env);
     const url = new URL(request.url);
     if (url.protocol !== 'https:') fail('HTTPS_REQUIRED');
-    if (url.pathname !== '/identity' || url.search) fail('PATH_DENIED');
+    if (!Object.hasOwn(routes, url.pathname) || url.search) fail('PATH_DENIED');
+    const route = routes[url.pathname];
     const candidate = request.headers.get('origin');
     if (!config.origins.includes(candidate)) fail('ORIGIN_DENIED');
     origin = candidate;
@@ -81,13 +86,16 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
       const text = await limitedText(request, 16384, 'REQUEST_TOO_LARGE');
       try { data = JSON.parse(text); } catch { fail('REQUEST_INVALID'); }
       if (!data || Array.isArray(data) || typeof data !== 'object') fail('REQUEST_INVALID');
-      if (data.action !== 'identityBootstrap') fail('ACTION_DENIED');
-      if (Object.keys(data).some(key => !['action', 'idToken'].includes(key))) fail('REQUEST_INVALID');
+      if (data.action !== route.action) fail('ACTION_DENIED');
+      if (Object.keys(data).some(key => !route.keys.includes(key))) fail('REQUEST_INVALID');
+      // Scope restriction only. GAS still verifies the actor and management authority.
+      if (url.pathname === '/employee-read' && data.employeeId !== 'EMP001') fail('REQUEST_INVALID');
       if (typeof data.idToken !== 'string' || !data.idToken.trim() || data.idToken.length > 12000) fail('TOKEN_REQUIRED');
       if (controller.signal.aborted) fail('UPSTREAM_TIMEOUT');
       let target = config.upstream;
       let options = { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'identityBootstrap', idToken: data.idToken }) };
+        body: JSON.stringify(url.pathname === '/identity' ? { action: route.action, idToken: data.idToken } :
+          { action: route.action, idToken: data.idToken, employeeId: 'EMP001' }) };
       for (let redirects = 0; ; redirects++) {
         if (controller.signal.aborted) fail('UPSTREAM_TIMEOUT');
         let response;

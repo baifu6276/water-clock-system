@@ -1,6 +1,6 @@
 # ADR-001：API Transport V2 T1 薄型 Relay
 
-狀態：僅批准原型原始碼／離線測試；未部署，未正式採用。日期：2026-09-21。
+狀態：T1 已有使用者真機驗收；T3 僅批准實作／離線測試，尚未部署。更新：2026-09-22。
 
 ## 證據與決策
 
@@ -11,7 +11,18 @@ identityBootstrap 也發生，非 Baseline 專屬。既有 TextOutput 回傳、�
 
 採候選 A：LIFF → thin relay → 現有 GAS /exec；讓 ContentService redirect 在伺服器端處理。
 T1 只容許 identityBootstrap。GAS 保留 LINE server-side verify、員工解析與業務權限；Relay 不是授權層。
-**T1 真機成功是採用前提**，不能把 mock 通過當作 LIFF 修復完成。
+使用者已回報 iPhone LINE WebView 經專用 T1 LIFF → Relay → GAS，transport t1-1、HTTP 200、
+ACTIVE_EMPLOYEE、EMP001，安全錯誤為無且 correlation ID 正常。這是使用者觀察到的驗收證據，
+只證明該唯讀傳輸情境；不證明寫入可靠性、不批准全面正式遷移，不推測底層 Google 404 原因。
+
+## T3 首次隔離管理唯讀擴充
+
+新增版本 t3-1：`POST /identity` 仍僅 identityBootstrap；`POST /employee-read` 僅 employeeLifecycleBaselineDryRun。
+路由＋action 配對錯誤一律拒絕；後者精確接受 action/idToken/employeeId，employeeId 必須 EMP001，其他欄位拒絕。
+EMP001 是 target 測試範圍，不是操作者，也不取代 GAS 在職 OWNER/ADMIN 授權。
+前端先驗證 identity，再手動點擊預覽；無自動讀取、無寫入入口、無 retry/fallback。
+snapshotVersion 雖為後端契約欄位，實際是 hash，只驗證格式，不顯示／記錄／持久化原值。
+T3 必須另行真機驗收，尚未部署；既有固定 upstream、CORS、redirect、deadline、大小限制與無 logging 政策不變。
 
 ## 未採方案
 
@@ -44,7 +55,7 @@ T5：其餘模組逐項遷移，先檢查 legacy 身分與冪等性、保留既�
 
 ## 尚待驗證
 
-Cloudflare runtime 和 GAS redirect 真實相容性、LIFF 真機、平台自動 logs 與流量濫用控制。
+T3 的 GAS preview 實機相容性、更多裝置／例外情境、平台自動 logs 與流量濫用控制。
 GAS 配額／延遲仍存在；不新增任何雲端資源、DNS、LIFF 或 GAS 設定。
 
 官方依據：
