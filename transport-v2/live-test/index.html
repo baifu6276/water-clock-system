@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Transport V2 T1 隔離測試</title>
+  <style>body{font-family:system-ui;margin:20px auto;padding:0 16px;max-width:600px;line-height:1.6}button{padding:12px;font:inherit}dd{margin:0 0 12px;overflow-wrap:anywhere}dt{font-weight:bold}</style>
+  <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script defer src="config.js"></script>
+  <script defer src="client.js"></script>
+</head>
+<body>
+  <h1>Transport V2 T1 隔離測試</h1>
+  <p>只讀身分測試，不提供任何業務寫入。Relay 尚未部署前無法進行真機驗證。</p>
+  <dl>
+    <dt>LIFF 初始化</dt><dd id="init">尚未開始</dd>
+    <dt>在 LINE 內</dt><dd id="inLine">未確認</dd>
+    <dt>ID token 可取得</dt><dd id="token">未確認</dd>
+    <dt>Transport 版本</dt><dd id="version">未確認</dd>
+    <dt>HTTP／結果</dt><dd id="http">未執行</dd>
+    <dt>身分狀態</dt><dd id="state">未確認</dd>
+    <dt>員工</dt><dd id="employee">—</dd>
+    <dt>安全錯誤碼</dt><dd id="error">無</dd>
+    <dt>Correlation ID</dt><dd id="correlation">—</dd>
+  </dl>
+  <button id="login" hidden>登入 LINE</button>
+  <button id="check" disabled>檢查身分（唯讀）</button>
+</body>
+</html>
