@@ -1,7 +1,7 @@
 var EMPLOYEE_ACTIONS_ = ['identityBootstrap', 'employeeApplicationSubmit', 'employeeApplicationListOwn',
   'employeeApplicationCancel', 'employeeLifecycleBaselineDryRun', 'employeeApplicationAdminList',
   'employeeApplicationApprove', 'employeeApplicationReject', 'employeeLifecycleAdminList', 'employeeLifecycleAdminDetail',
-  'employeeLifecycleSuspend', 'employeeLifecycleLeave', 'employeeLifecycleResume', 'employeeLifecycleTerminate', 'employeeLifecycleBaselineMigrate'];
+  'employeeLifecycleSuspend', 'employeeLifecycleLeave', 'employeeLifecycleResume', 'employeeLifecycleTerminate', 'employeeLifecycleBaselineMigrate', 'employeeLifecycleBaselineRequestStatus'];
 
 // Malformed/legacy requests retain the original doPost error and lock behavior.
 function employeeFoundationRequest_(e) {
@@ -19,6 +19,7 @@ function handleEmployeeFoundation_(data) {
     stage = 'ACTION';
     var action = data.action.trim(), result;
     if (action === 'identityBootstrap') result = employeeBootstrap_(context);
+    else if (action === 'employeeLifecycleBaselineRequestStatus') result = employeeBaselineRequestStatus_(context, data);
     else if (action === 'employeeApplicationListOwn') result = { success: true, applications: employeeOwnApplications_(context).map(employeePublicApplication_) };
     else if (action === 'employeeLifecycleBaselineDryRun') result = employeeLifecycleBaselineDryRun_(context, data);
     else if (action === 'employeeApplicationAdminList') result = employeeApplicationAdminList_(context, data);

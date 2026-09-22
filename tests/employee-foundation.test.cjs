@@ -691,3 +691,115 @@ test('baseline self-migration and Sheet calendar round-trip recovery',()=>{
   const f=baselineEnv(),q=baselineInput(f);f.fail('員工異動紀錄',1);assert.equal(migrate(f,q).code,'OPERATION_ERROR');f.tables['員工任職紀錄'].rows[1][3]=vm.runInContext("new Date('2019-12-31T16:00:00Z')",f.ctx);assert.equal(migrate(f,q).success,true);
 });
 console.log(`${checks} test groups passed; no network or production writes.`);
+
+// Status tests use real dispatcher with fully in-memory GAS services.
+function statusCall(e, p, actor='owner', extra={}) {
+  const before=JSON.stringify(e.tables), count=e.writes; let sideEffects=0;
+  const forbidden=()=>{sideEffects++;throw Error('PRIVATE_WRITE_FORBIDDEN');};
+  const names=['employeeWithLock_','employeeWriteRow_','employeeAuditAppend_','employeeBaselineMigrate_',
+    'employeeBaselineFinish_','employeeReplay_','employeeFinishIntent_','employeeLifecycleFinish_'];
+  const saved=names.map(k=>[k,e.ctx[k]]), flush=e.ctx.SpreadsheetApp.flush;
+  names.forEach(k=>e.ctx[k]=forbidden);e.ctx.SpreadsheetApp.flush=forbidden;
+  const ranges=[];
+  for(const table of Object.values(e.tables)) {
+    const get=table.getRange;ranges.push([table,get]);
+    table.getRange=(...args)=>{const range=get(...args);for(const k of ['setValue','setValues','clear','clearContent'])range[k]=forbidden;return range;};
+    for(const k of ['appendRow','insertRowAfter','insertRows','deleteRow','deleteRows','clear'])table[k]=forbidden;
+  }
+  let r;
+  try{r=e.call('employeeLifecycleBaselineRequestStatus',{employeeId:p.employeeId,requestId:p.requestId,...extra},actor);}
+  finally{saved.forEach(([k,v])=>e.ctx[k]=v);e.ctx.SpreadsheetApp.flush=flush;ranges.forEach(([t,g])=>t.getRange=g);}
+  assert.equal(sideEffects,0);assert.equal(e.writes,count);assert.equal(JSON.stringify(e.tables),before);assert.equal(e.logs.length,0);
+  if(r.success) {
+    assert.deepEqual(Object.keys(r).sort(),['success','employeeId','requestId','action','requestStatus','historicalCompletion','currentConsistency','recoveryAllowed','newRequestAllowed'].sort());
+    assert.equal(r.recoveryAllowed,false);assert.equal(r.newRequestAllowed,false);
+    assert.equal(r.action,'employeeLifecycleBaselineMigrate');
+  }
+  assert(!/PRIVATE_|token:|operatorSub|operatorId|lineSub|salary|snapshotVersion|requestHash|afterJson|beforeJson/.test(JSON.stringify(r)));
+  return r;
+}
+function statusFixture(checkpoint='complete') {
+  const e=baselineEnv(),p=baselineInput(e);
+  if(checkpoint==='none')return {e,p};
+  if(checkpoint==='start')e.fail('員工任職紀錄');
+  if(checkpoint==='employment')e.fail('員工LINE綁定紀錄');
+  if(checkpoint==='both')e.fail('員工異動紀錄',1);
+  migrate(e,p);return {e,p};
+}
+const statusStartCount=checks;
+for(const [checkpoint,status,consistency,historical] of [
+  ['none','NOT_OBSERVED','UNKNOWN',false],['start','STARTED','ABSENT',false],
+  ['employment','STARTED','PARTIAL',false],['both','STARTED','MATCHED',false],['complete','COMPLETED','MATCHED',true]]) {
+  test('status pure checkpoint '+checkpoint,()=>{const {e,p}=statusFixture(checkpoint),r=statusCall(e,p);
+    assert.equal(r.requestStatus,status);assert.equal(r.currentConsistency,consistency);assert.equal(r.historicalCompletion,historical);});
+}
+for(const [label,change] of [
+  ['binding only',e=>e.tables['員工任職紀錄'].rows.length=1],
+  ['changed business',e=>e.tables['員工任職紀錄'].rows[1][7]='changed'],
+  ['completed missing business',e=>e.tables['員工LINE綁定紀錄'].rows.length=1]]) {
+  test('status conservative '+label,()=>{const {e,p}=statusFixture(label==='binding only'?'both':'complete');change(e);
+    const r=statusCall(e,p);assert.equal(r.requestStatus,'RECOVERY_REQUIRED');assert.equal(r.historicalCompletion,label==='binding only'?false:true);});
+}
+for(const [label,change] of [
+  ['corrupt completed',e=>e.tables['員工異動紀錄'].rows[2][10]='PRIVATE_BROKEN'],
+  ['duplicate started',e=>e.tables['員工異動紀錄'].rows.push([...e.tables['員工異動紀錄'].rows[1]])],
+  ['duplicate completed',e=>e.tables['員工異動紀錄'].rows.push([...e.tables['員工異動紀錄'].rows[2]])],
+  ['hash mismatch',e=>e.tables['員工異動紀錄'].rows[2][2]='0'.repeat(64)],
+  ['wrong action',e=>e.tables['員工異動紀錄'].rows[1][6]='APPLICATION_APPROVE'],
+  ['wrong target',e=>e.tables['員工異動紀錄'].rows[1][3]='EMP010'],
+  ['invalid after image',e=>{for(const row of e.tables['員工異動紀錄'].rows.slice(1)){const b=JSON.parse(row[10]);b.employment.salaryAmount={};row[10]=JSON.stringify(b);}}]]) {
+  test('status rejects '+label,()=>{const {e,p}=statusFixture();change(e);const r=statusCall(e,p);
+    assert.equal(r.requestStatus,'RECOVERY_REQUIRED');assert.equal(r.historicalCompletion,null);});
+}
+test('status legitimate later mutation conservatively preserves historical receipt',()=>{
+  const {e,p}=statusFixture();assert.equal(mutate(e,'Suspend',{...mutationPayload,expectedVersion:1}).success,true);
+  const r=statusCall(e,p);assert.equal(r.requestStatus,'RECOVERY_REQUIRED');assert.equal(r.historicalCompletion,true);assert.equal(r.currentConsistency,'CONFLICT');
+});
+for(const value of [undefined,'short',{},'x'.repeat(101)])test('status malformed requestId '+String(value),()=>{
+  const {e,p}=statusFixture('none');assert.equal(statusCall(e,{...p,requestId:value}).code,'VALIDATION_ERROR');
+});
+test('status absent request and foreign request indistinguishable',()=>{
+  const {e,p}=statusFixture();e.tables['員工資料表'].rows.push(['OTHER','other','其他','','',0,'ADMIN','','','在職','','']);
+  const foreign=statusCall(e,p,'other'),absent=statusCall(e,{...p,requestId:'absent-request-0001'},'other');
+  assert.deepEqual({...foreign,requestId:''},{...absent,requestId:''});assert.equal(foreign.requestStatus,'NOT_OBSERVED');
+});
+test('status rebound same employee cannot adopt old request',()=>{
+  const {e,p}=statusFixture();e.tables['員工資料表'].rows[1][1]='rebound';assert.equal(statusCall(e,p,'rebound').requestStatus,'NOT_OBSERVED');
+});
+test('status same requestId across actors is never mixed',()=>{
+  const {e,p}=statusFixture();const copy=[...e.tables['員工異動紀錄'].rows[1]];copy[12]='other';copy[13]='OTHER';e.tables['員工異動紀錄'].rows.push(copy);
+  assert.equal(statusCall(e,p).requestStatus,'RECOVERY_REQUIRED');
+});
+for(const role of ['OWNER','ADMIN','SITE_MANAGER','EMPLOYEE'])test('status actor role '+role,()=>{
+  const {e,p}=statusFixture('none');e.tables['員工資料表'].rows[1][6]=role;const r=statusCall(e,p);
+  assert.equal(r.success,['OWNER','ADMIN'].includes(role));if(!r.success)assert.equal(r.code,'FORBIDDEN');
+});
+for(const status of ['停職','留停','離職'])test('status inactive actor '+status,()=>{
+  const {e,p}=statusFixture('none');e.tables['員工資料表'].rows[1][9]=status;assert.equal(statusCall(e,p).code,'FORBIDDEN');
+});
+test('status ADMIN cannot inspect OWNER',()=>{
+  const e=baselineEnv('在職','OWNER','ADMIN'),p=baselineInput(e);assert.equal(statusCall(e,p).code,'FORBIDDEN');
+});
+test('status lock busy is UNKNOWN without flush',()=>{
+  const {e,p}=statusFixture();e.ctx.LockService.getScriptLock=()=>({tryLock:ms=>{assert.equal(ms,1000);return false;},releaseLock:()=>assert.fail('not acquired')});
+  const r=statusCall(e,p);assert.equal(r.requestStatus,'UNKNOWN');assert.equal(r.historicalCompletion,null);
+});
+test('status reauthorizes inside lock',()=>{
+  const {e,p}=statusFixture();e.beforeLock(()=>e.tables['員工資料表'].rows[1][6]='EMPLOYEE');
+  // Simulated external change is intentionally outside status write assertions.
+  const old=e.ctx.employeeRequireReviewer_;let n=0;e.ctx.employeeRequireReviewer_=c=>{n++;return old(c);};
+  const r=e.call('employeeLifecycleBaselineRequestStatus',{employeeId:p.employeeId,requestId:p.requestId},'owner');
+  assert.equal(r.code,'FORBIDDEN');assert.equal(n,2);assert.equal(e.locked,false);
+});
+test('status cannot observe a running write through held lock',()=>{
+  const {e,p}=statusFixture('none');let seen;const verified=e.ctx.resolveEmployeeIdentity_('token:owner');
+  e.onWrite(()=>{const before=JSON.stringify(e.tables),w=e.writes;
+    seen=e.ctx.employeeBaselineRequestStatus_(verified,{action:'employeeLifecycleBaselineRequestStatus',employeeId:p.employeeId,requestId:p.requestId});
+    assert.equal(e.writes,w);assert.equal(JSON.stringify(e.tables),before);});migrate(e,p);
+  assert.equal(seen.requestStatus,'UNKNOWN');assert.equal(statusCall(e,p).requestStatus,'COMPLETED');
+});
+test('status unknown fields rejected, raw storage errors remain safe',()=>{
+  const {e,p}=statusFixture('none');assert.equal(statusCall(e,p,'owner',{role:'OWNER'}).code,'VALIDATION_ERROR');
+  e.ctx.employeeStoreRows_=()=>{throw Error('PRIVATE_STORAGE_STACK');};const r=statusCall(e,p);assert.equal(r.success,false);
+});
+console.log(`${checks-statusStartCount} status test groups; ${checks} total foundation groups passed.`);

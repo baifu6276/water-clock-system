@@ -131,3 +131,80 @@ function employeeBaselineMigrate_(context, data) {
   employeeAuditAppend_(intent);
   return employeeBaselineFinish_(context, intent);
 }
+
+// Pure status query: never use employeeWithLock_ (its finally flushes).
+function employeeBaselineStatusResult_(id, requestId, status, historical, consistency) {
+  return { success: true, employeeId: id, requestId: requestId, action: 'employeeLifecycleBaselineMigrate',
+    requestStatus: status, historicalCompletion: historical, currentConsistency: consistency,
+    recoveryAllowed: false, newRequestAllowed: false };
+}
+function employeeBaselineRequestStatus_(context, data) {
+  var keys = ['action', 'idToken', 'employeeId', 'requestId'];
+  if (Object.keys(data).some(function(k) { return keys.indexOf(k) < 0; })) employeeFailure_('VALIDATION_ERROR', '請檢查查詢欄位。');
+  var id = employeeBaselineId_(data.employeeId), requestId = employeeRequestId_(data.requestId);
+  employeeRequireReviewer_(context);
+  employeeLifecycleTarget_(context, id);
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) return employeeBaselineStatusResult_(id, requestId, 'UNKNOWN', null, 'UNKNOWN');
+  try {
+    context = employeeContext_(context);
+    employeeRequireReviewer_(context);
+    var master = employeeLifecycleTarget_(context, id), uid = employeeText_(master[1]);
+    var audit = employeeStoreRows_('audit');
+    var state = { channelId: context.channelId, master: master,
+      identityRows: employeeBaselineSort_(employeeReviewMasterRows_().filter(function(r) { return employeeText_(r[0]) === id || (uid && employeeText_(r[1]) === uid); })),
+      periods: employeeBaselineSort_(employeeStoreRows_('employments').filter(function(p) { return p.employeeId === id; })),
+      bindings: employeeBaselineSort_(employeeStoreRows_('bindings').filter(function(b) { return b.employeeId === id || (uid && b.lineSub === uid); })),
+      audit: employeeBaselineSort_(audit.filter(function(a) { return a.employeeId === id || (uid && a.operatorSub === uid); })) };
+    var matches = audit.filter(function(a) { return a.requestId === requestId; });
+    // Foreign/rebound identities get the same response as absence. Only a caller
+    // with its own receipt can see a generic conflict, never the other actor.
+    var own = matches.filter(function(a) { return a.operatorSub === context.sub && a.operatorId === context.employee.employeeId; });
+    if (!own.length) {
+      return employeeBaselineStatusResult_(id, requestId, 'NOT_OBSERVED', false, 'UNKNOWN');
+    }
+    if (own.length !== matches.length) return employeeBaselineStatusResult_(id, requestId, 'RECOVERY_REQUIRED', null, 'CONFLICT');
+    return employeeBaselineStatusEvidence_(context, id, requestId, state, matches);
+  } finally { lock.releaseLock(); }
+}
+function employeeBaselineStatusEvidence_(context, id, requestId, state, matches) {
+  var historical = null;
+  try {
+    var starts = matches.filter(function(a) { return a.phase === 'STARTED'; });
+    var ends = matches.filter(function(a) { return a.phase === 'COMPLETED'; });
+    if (starts.length !== 1 || ends.length > 1 || matches.length !== starts.length + ends.length) employeeReviewRecovery_();
+    var intent = starts[0], bundle = employeeBaselineDecode_(intent), p = bundle.employment, b = bundle.binding;
+    var validTime = function(v) { return typeof v === 'string' && Boolean(v) && Number.isFinite(new Date(v).getTime()); };
+    if (intent.action !== 'LEGACY_BASELINE' || intent.employeeId !== id || intent.applicationId !== '' ||
+        intent.beforeVersion !== 0 || intent.afterVersion !== 1 || !intent.auditId ||
+        typeof intent.reason !== 'string' || !intent.reason.trim() || intent.reason.length > 1000 ||
+        !validTime(intent.operatedAt) || !validTime(intent.effectiveAt) ||
+        intent.beforeJson !== JSON.stringify({ format: 3, baselineState: 'LEGACY_NOT_BASELINED' }) ||
+        !employeeReviewSame_(p, employeeReviewCanonical_('employments', p)) ||
+        !employeeReviewSame_(b, employeeReviewCanonical_('bindings', b)) ||
+        !p.employmentId || p.sequence !== 1 || p.status !== '在職' || p.endDate !== '' || p.disabledAt !== '' ||
+        (p.startDate !== '' && employeeLifecycleDate_(p.startDate) !== p.startDate) ||
+        ['日薪', '月薪'].indexOf(p.salaryType) < 0 || typeof p.salaryAmount !== 'number' || !Number.isFinite(p.salaryAmount) || p.salaryAmount < 0 ||
+        ['OWNER', 'ADMIN', 'SITE_MANAGER', 'EMPLOYEE'].indexOf(p.permission) < 0 ||
+        p.createdBy !== context.employee.employeeId || p.createdAt !== intent.effectiveAt ||
+        p.baselineDate !== intent.effectiveDate || p.baselineDate !== Utilities.formatDate(new Date(p.createdAt), 'Asia/Taipei', 'yyyy-MM-dd') ||
+        !b.lineSub || b.channelId !== context.channelId || b.status !== '有效' || b.validTo !== '' ||
+        b.validFrom !== p.createdAt || b.operatedAt !== p.createdAt || b.operatorId !== p.createdBy ||
+        intent.requestHash !== employeeHash_(['LEGACY_BASELINE', context.sub, context.channelId, id, bundle.snapshotVersion, intent.reason.trim(), true])) employeeReviewRecovery_();
+    if (ends.length) {
+      var done = ends[0];
+      if (!done.auditId || done.auditId === intent.auditId || !validTime(done.operatedAt) ||
+          new Date(done.operatedAt).getTime() < new Date(intent.operatedAt).getTime() ||
+          EMPLOYEE_TABLES_.audit.keys.some(function(k) { return ['auditId', 'phase', 'operatedAt'].indexOf(k) < 0 && done[k] !== intent[k]; })) employeeReviewRecovery_();
+      historical = true;
+    } else historical = false;
+    // Original snapshot verification deliberately rejects unexplained later changes.
+    // No CHANGED_WITH_AUDIT claim without a full subsequent-chain verifier.
+    var check = employeeBaselineInspect_(state, intent, bundle);
+    if (historical && (!check.employmentDone || !check.bindingDone)) employeeReviewRecovery_();
+    return employeeBaselineStatusResult_(id, requestId, historical ? 'COMPLETED' : 'STARTED', historical,
+      check.bindingDone ? 'MATCHED' : check.employmentDone ? 'PARTIAL' : 'ABSENT');
+  } catch (_) {
+    return employeeBaselineStatusResult_(id, requestId, 'RECOVERY_REQUIRED', historical, 'CONFLICT');
+  }
+}

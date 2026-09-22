@@ -2,7 +2,8 @@
 export const VERSION = 't3-1';
 const routes = Object.freeze({
   '/identity': { action: 'identityBootstrap', keys: ['action', 'idToken'] },
-  '/employee-read': { action: 'employeeLifecycleBaselineDryRun', keys: ['action', 'idToken', 'employeeId'] }
+  '/employee-read': { action: 'employeeLifecycleBaselineDryRun', keys: ['action', 'idToken', 'employeeId'] },
+  '/employee-operation-status': { action: 'employeeLifecycleBaselineRequestStatus', keys: ['action', 'idToken', 'employeeId', 'requestId'] }
 });
 const timeoutStages = new Set(['READ_REQUEST', 'POST_HEADERS', 'REDIRECT_GET_HEADERS', 'FINAL_BODY']);
 const fail = code => { throw new Error(code); };
@@ -92,13 +93,16 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
       if (data.action !== route.action) fail('ACTION_DENIED');
       if (Object.keys(data).some(key => !route.keys.includes(key))) fail('REQUEST_INVALID');
       // Scope restriction only. GAS still verifies the actor and management authority.
-      if (url.pathname === '/employee-read' && data.employeeId !== 'EMP001') fail('REQUEST_INVALID');
+      if (url.pathname !== '/identity' && data.employeeId !== 'EMP001') fail('REQUEST_INVALID');
+      if (url.pathname === '/employee-operation-status' &&
+          (typeof data.requestId !== 'string' || !/^[A-Za-z0-9_-]{16,100}$/.test(data.requestId))) fail('REQUEST_INVALID');
       if (typeof data.idToken !== 'string' || !data.idToken.trim() || data.idToken.length > 12000) fail('TOKEN_REQUIRED');
       if (controller.signal.aborted) fail('UPSTREAM_TIMEOUT');
       let target = config.upstream;
       let options = { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(url.pathname === '/identity' ? { action: route.action, idToken: data.idToken } :
-          { action: route.action, idToken: data.idToken, employeeId: 'EMP001' }) };
+          { action: route.action, idToken: data.idToken, employeeId: 'EMP001',
+            ...(url.pathname === '/employee-operation-status' ? { requestId: data.requestId } : {}) }) };
       for (let redirects = 0; ; redirects++) {
         if (controller.signal.aborted) fail('UPSTREAM_TIMEOUT');
         let response;

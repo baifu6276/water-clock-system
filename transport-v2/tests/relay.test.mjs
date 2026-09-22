@@ -219,14 +219,18 @@ test('real GAS dry-run dispatcher with existing mocks: every Sheet mutation thro
     } });
     e.ctx.SpreadsheetApp = readonly({ getActiveSpreadsheet: () => spreadsheet });
     const before = JSON.stringify(e.tables);
-    const result = e.call('employeeLifecycleBaselineDryRun', { employeeId: 'EMP001' }, 'owner');
+    for (const action of ['employeeLifecycleBaselineDryRun', 'employeeLifecycleBaselineRequestStatus']) {
+    const result = e.call(action, { employeeId: 'EMP001', ...(action === 'employeeLifecycleBaselineRequestStatus' ? { requestId: 'status-request-0001' } : {}) }, 'owner');
     assert.equal(result.success, ['OWNER', 'ADMIN'].includes(role));
-    if (result.success) { assert.equal(result.dryRun, true); assert.equal(result.employeeId, 'EMP001'); }
+    if (result.success) { if (action === 'employeeLifecycleBaselineDryRun') assert.equal(result.dryRun, true);
+      else assert.equal(result.requestStatus, 'NOT_OBSERVED'); assert.equal(result.employeeId, 'EMP001'); }
     else assert.equal(result.code, 'FORBIDDEN');
     assert.equal(attemptedWrites, 0); assert.equal(e.writes, 0); assert.equal(JSON.stringify(e.tables), before);
+    }
   }
 });
 
+const statusInput = { action: 'employeeLifecycleBaselineRequestStatus', idToken: token, employeeId: 'EMP001', requestId: 'status-request-0001' };
 const turn = () => new Promise(resolve => setImmediate(resolve));
 function assertTimeout(r, stage, count) {
   assert.equal(r.result.status, 504);
@@ -234,8 +238,8 @@ function assertTimeout(r, stage, count) {
   assert.equal(r.calls.length, count);
   assert(!JSON.stringify(r.body).includes(token));
 }
-for (const route of ['/identity', '/employee-read']) {
-  const req = () => request(route === '/identity' ? input : baseline, {}, route);
+for (const route of ['/identity', '/employee-read', '/employee-operation-status']) {
+  const req = () => request(route === '/identity' ? input : route === '/employee-read' ? baseline : statusInput, {}, route);
   const redirect = status => new Response(null, { status, headers: {
     location: 'https://script.googleusercontent.com/private?secret=PRIVATE_LOCATION' } });
   test(route + ' stalled inbound body', async () => {
@@ -284,3 +288,36 @@ for (const route of ['/identity', '/employee-read']) {
     assert(r.calls.every(([, options]) => options.signal === r.calls[0][1].signal && options.signal.aborted));
   });
 }
+
+test('status route forwards exact read-only request and safe result', async () => {
+  const receipt = { success: true, employeeId: 'EMP001', requestId: statusInput.requestId, action: 'employeeLifecycleBaselineMigrate',
+    requestStatus: 'NOT_OBSERVED', historicalCompletion: false, currentConsistency: 'UNKNOWN', recoveryAllowed: false, newRequestAllowed: false };
+  const r = await run(request(statusInput, {}, '/employee-operation-status'), [json(receipt)]);
+  assert.deepEqual(r.body, receipt); assert.deepEqual(JSON.parse(r.calls[0][1].body), statusInput); assert.equal(r.calls.length, 1);
+  assert.equal(r.calls[0][1].headers['Content-Type'], 'text/plain;charset=utf-8');
+});
+for (const [label, patch] of [['wrong employee', {employeeId:'EMP002'}], ['missing request', {requestId:undefined}],
+  ['short request', {requestId:'short'}], ['object request', {requestId:{}}], ['long request', {requestId:'a'.repeat(101)}],
+  ['extra role', {role:'OWNER'}], ['extra snapshot', {snapshotVersion:'private'}]]) {
+  test('status rejects '+label, async () => {
+    const r=await run(request({...statusInput,...patch},{},'/employee-operation-status'),[]);
+    assert.equal(r.body.transportError,'REQUEST_INVALID');assert.equal(r.calls.length,0);
+  });
+}
+for(const [route, action] of [
+  ['/identity',statusInput.action],['/employee-read',statusInput.action],
+  ['/employee-operation-status','identityBootstrap'],['/employee-operation-status','employeeLifecycleBaselineDryRun'],
+  ...['/identity','/employee-read','/employee-operation-status','/employee-write'].map(route=>[route,'employeeLifecycleBaselineMigrate'])]) {
+  test('status route/action fail closed '+route+' '+action,async()=>{
+    const r=await run(request({...statusInput,action},{},route),[]);
+    assert.equal(r.body.transportError,route==='/employee-write'?'PATH_DENIED':'ACTION_DENIED');assert.equal(r.calls.length,0);
+  });
+}
+test('status preserves redirect allowlist, size limits and safe failures without fallback',async()=>{
+  for(const [response,code] of [[new Response(null,{status:302,headers:{location:'https://evil.example/private'}}),'UPSTREAM_REDIRECT_DENIED'],
+    [new Response('PRIVATE_BODY',{status:500}),'UPSTREAM_HTTP_ERROR'],[new Response('x'.repeat(65537)),'UPSTREAM_RESPONSE_TOO_LARGE'],
+    [new Error('PRIVATE_EXCEPTION '+token),'UPSTREAM_NETWORK_ERROR']]) {
+    const r=await run(request(statusInput,{},'/employee-operation-status'),[response]);
+    assert.deepEqual(r.body,{success:false,transportError:code});assert.equal(r.calls.length,1);
+  }
+});
