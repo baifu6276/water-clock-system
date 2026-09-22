@@ -15,6 +15,7 @@
     'LINE_VERIFY_PERMISSION_ERROR', 'LINE_VERIFY_FETCH_ERROR', 'BACKEND_SCHEMA_ERROR',
     'BACKEND_IDENTITY_CONFLICT', 'BACKEND_LOOKUP_ERROR', 'BACKEND_INTERNAL_ERROR']);
   const states = new Set(['ACTIVE_EMPLOYEE', 'UNREGISTERED', 'APPLICATION_PENDING', 'SUSPENDED', 'LEAVE', 'TERMINATED', 'AUTH_ERROR']);
+  const timeoutStages = new Set(['READ_REQUEST', 'POST_HEADERS', 'REDIRECT_GET_HEADERS', 'FINAL_BODY']);
   let ready = false, busy = false, identity = null;
   const manager = () => identity?.state === 'ACTIVE_EMPLOYEE' && ['OWNER', 'ADMIN'].includes(identity.permission);
   function controls() {
@@ -23,6 +24,7 @@
     document.getElementById('baselineSection').hidden = !manager();
   }
   async function request(action) {
+    set('transportStage', '—');
     if (!['identityBootstrap', 'employeeLifecycleBaselineDryRun'].includes(action)) throw new Error('ACTION_DENIED');
     if (action === 'employeeLifecycleBaselineDryRun' && !manager()) throw new Error('FORBIDDEN');
     const controller = new AbortController(); let timer;
@@ -47,6 +49,9 @@
       const result = await response.json();
       if (!result || typeof result.success !== 'boolean') throw new Error('TRANSPORT_ERROR');
       if (!response.ok || !result.success) {
+        if (result.transportError === 'UPSTREAM_TIMEOUT') {
+          set('transportStage', timeoutStages.has(result.transportStage) ? result.transportStage : 'UNKNOWN');
+        }
         const code = result.transportError || result.diagnosticCode || result.code;
         throw new Error(codes.has(code) ? code : 'TRANSPORT_ERROR');
       }
