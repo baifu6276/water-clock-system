@@ -4,6 +4,7 @@ const routes = Object.freeze({
   '/identity': { action: 'identityBootstrap', keys: ['action', 'idToken'] },
   '/employee-read': { action: 'employeeLifecycleBaselineDryRun', keys: ['action', 'idToken', 'employeeId'] }
 });
+const timeoutStages = new Set(['READ_REQUEST', 'POST_HEADERS', 'REDIRECT_GET_HEADERS', 'FINAL_BODY']);
 const fail = code => { throw new Error(code); };
 const errors = new Set(['CONFIG_ERROR', 'HTTPS_REQUIRED', 'PATH_DENIED', 'ORIGIN_DENIED',
   'METHOD_DENIED', 'CONTENT_TYPE_INVALID', 'REQUEST_INVALID', 'REQUEST_TOO_LARGE',
@@ -61,6 +62,7 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
     return new Response(status === 204 ? null : JSON.stringify(body), { status, headers });
   }
   const controller = new AbortController(); let timer;
+  let stage = 'READ_REQUEST';
   try {
     const config = configuration(env);
     const url = new URL(request.url);
@@ -83,6 +85,7 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
     });
     const operation = async () => {
       let data;
+      stage = 'READ_REQUEST';
       const text = await limitedText(request, 16384, 'REQUEST_TOO_LARGE');
       try { data = JSON.parse(text); } catch { fail('REQUEST_INVALID'); }
       if (!data || Array.isArray(data) || typeof data !== 'object') fail('REQUEST_INVALID');
@@ -100,6 +103,7 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
         if (controller.signal.aborted) fail('UPSTREAM_TIMEOUT');
         let response;
         try {
+          stage = options.method === 'POST' ? 'POST_HEADERS' : 'REDIRECT_GET_HEADERS';
           response = await fetchImpl(target, { ...options, redirect: 'manual', credentials: 'omit',
             cache: 'no-store', signal: controller.signal });
         } catch { fail(controller.signal.aborted ? 'UPSTREAM_TIMEOUT' : 'UPSTREAM_NETWORK_ERROR'); }
@@ -117,6 +121,7 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
           continue;
         }
         if (!response.ok) { void response.body?.cancel().catch(() => {}); fail('UPSTREAM_HTTP_ERROR'); }
+        stage = 'FINAL_BODY';
         const body = await limitedText(response, 65536, 'UPSTREAM_RESPONSE_TOO_LARGE');
         let result;
         try { result = JSON.parse(body); } catch { fail('UPSTREAM_JSON_INVALID'); }
@@ -128,7 +133,9 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
     return await Promise.race([operation(), timeout]);
   } catch (error) {
     const code = errors.has(error.message) ? error.message : 'TRANSPORT_ERROR';
-    return reply({ success: false, transportError: code }, code === 'UPSTREAM_TIMEOUT' ? 504 :
+    const body = { success: false, transportError: code };
+    if (code === 'UPSTREAM_TIMEOUT' && timeoutStages.has(stage)) body.transportStage = stage;
+    return reply(body, code === 'UPSTREAM_TIMEOUT' ? 504 :
       code.startsWith('UPSTREAM_') ? 502 : code === 'CONFIG_ERROR' || code === 'TRANSPORT_ERROR' ? 500 : 400);
   } finally { clearTimeout(timer); }
 }

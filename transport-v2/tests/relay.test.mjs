@@ -19,7 +19,9 @@ async function run(req = request(), responses = [json()], config = env, timeoutM
     if (typeof response === 'function') return response(...args);
     assert(response, 'Unexpected retry'); return response;
   } });
-  return { result, calls, body: await result.json() };
+  const body = await result.json();
+  if (body.transportError !== 'UPSTREAM_TIMEOUT') assert.equal(Object.hasOwn(body, 'transportStage'), false);
+  return { result, calls, body };
 }
 test('success semantics, fixed upstream POST, no credentials/cache, UUID', async () => {
   const { result, calls, body } = await run();
@@ -224,3 +226,61 @@ test('real GAS dry-run dispatcher with existing mocks: every Sheet mutation thro
     assert.equal(attemptedWrites, 0); assert.equal(e.writes, 0); assert.equal(JSON.stringify(e.tables), before);
   }
 });
+
+const turn = () => new Promise(resolve => setImmediate(resolve));
+function assertTimeout(r, stage, count) {
+  assert.equal(r.result.status, 504);
+  assert.deepEqual(r.body, { success: false, transportError: 'UPSTREAM_TIMEOUT', transportStage: stage });
+  assert.equal(r.calls.length, count);
+  assert(!JSON.stringify(r.body).includes(token));
+}
+for (const route of ['/identity', '/employee-read']) {
+  const req = () => request(route === '/identity' ? input : baseline, {}, route);
+  const redirect = status => new Response(null, { status, headers: {
+    location: 'https://script.googleusercontent.com/private?secret=PRIVATE_LOCATION' } });
+  test(route + ' stalled inbound body', async () => {
+    const r = await run(request('', { body: new ReadableStream({ start() {} }), duplex: 'half' }, route), [], env, 5);
+    assertTimeout(r, 'READ_REQUEST', 0);
+  });
+  test(route + ' stalled initial POST', async () => {
+    assertTimeout(await run(req(), [() => new Promise(() => {})], env, 5), 'POST_HEADERS', 1);
+  });
+  for (const status of [302, 303]) test(route + ' quick ' + status + ' then GET headers stall', async () => {
+    const r = await run(req(), [redirect(status), () => new Promise(() => {})], env, 5);
+    assertTimeout(r, 'REDIRECT_GET_HEADERS', 2);
+    assert.equal(r.calls[1][1].method, 'GET'); assert.equal(r.calls[1][1].body, undefined);
+  });
+  for (const partial of [false, true]) test(route + ' GET body stalls, partial=' + partial, async () => {
+    const stream = new ReadableStream({ start(controller) {
+      if (partial) controller.enqueue(new TextEncoder().encode('{"private":"' + token));
+    } });
+    assertTimeout(await run(req(), [redirect(302), new Response(stream)], env, 5), 'FINAL_BODY', 2);
+  });
+  for (const cancel of ['pending', 'rejected']) test(route + ' redirect cancellation ' + cancel + ' is nonblocking', async () => {
+    const response = new Response(new ReadableStream({ cancel() {
+      return cancel === 'pending' ? new Promise(() => {}) : Promise.reject(new Error('PRIVATE_CANCEL_EXCEPTION'));
+    } }), { status: 302, headers: { location: 'https://script.googleusercontent.com/private' } });
+    const r = await run(req(), [response, json()]);
+    assert.deepEqual(r.body, good); assert.equal(r.calls.length, 2);
+  });
+  test(route + ' fetch ignoring abort resolves late: no further request', async () => {
+    let release;
+    const r = await run(req(), [() => new Promise(resolve => { release = resolve; })], env, 5);
+    assertTimeout(r, 'POST_HEADERS', 1);
+    release(redirect(302)); await turn(); await turn();
+    assert.equal(r.calls.length, 1);
+    assert.equal(r.calls[0][1].signal.aborted, true);
+  });
+  test(route + ' shared default 20s deadline across multiple redirects', async t => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    let first, second;
+    const pending = run(req(), [() => new Promise(resolve => { first = resolve; }),
+      () => new Promise(resolve => { second = resolve; }), () => new Promise(() => {})], env, 20000);
+    await turn(); t.mock.timers.tick(9000); first(redirect(302)); await turn();
+    t.mock.timers.tick(9000); second(redirect(303)); await turn();
+    t.mock.timers.tick(2000);
+    const r = await pending;
+    assertTimeout(r, 'REDIRECT_GET_HEADERS', 3);
+    assert(r.calls.every(([, options]) => options.signal === r.calls[0][1].signal && options.signal.aborted));
+  });
+}
