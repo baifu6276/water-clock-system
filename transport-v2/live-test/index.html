@@ -8,7 +8,7 @@
   <style>body{font-family:system-ui;margin:20px auto;padding:0 16px;max-width:600px;line-height:1.6}button{padding:12px;font:inherit}dd{margin:0 0 12px;overflow-wrap:anywhere}dt{font-weight:bold}</style>
   <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script defer src="config.js"></script>
-  <script defer src="client.js?v=t3-1-stage1"></script>
+  <script defer src="client.js?v=t4-status1"></script>
 </head>
 <body>
   <h1>Transport V2 T1／T3 隔離測試</h1>
@@ -32,6 +32,15 @@
     <button id="baselineCheck" disabled>檢查 EMP001 Legacy Baseline（唯讀）</button>
     <p id="baselineStatus" role="status">尚未執行</p>
     <dl id="baselineFields"></dl>
+  </section>
+  <section id="requestStatusSection" hidden>
+    <h2>T4 Request Status 唯讀查詢</h2>
+    <p>此功能只查詢既有 requestId 狀態，不會執行 Baseline。NOT_OBSERVED 不代表原操作失敗，不會因此允許重新送出寫入。</p>
+    <label for="requestId">Request ID</label>
+    <input id="requestId" type="text" maxlength="100" autocomplete="off" spellcheck="false">
+    <button id="requestStatusCheck" disabled>查詢 Baseline Request 狀態（唯讀）</button>
+    <p id="requestStatusMessage" role="status">尚未查詢</p>
+    <dl id="requestStatusFields"></dl>
   </section>
 </body>
 </html>

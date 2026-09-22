@@ -3,8 +3,8 @@ const fs = require('node:fs'), path = require('node:path'), assert = require('no
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '../live-test');
 const client = fs.readFileSync(path.join(root, 'client.js'), 'utf8');
-assert(!/console\.|innerHTML|localStorage|sessionStorage|employeeApplication|employeeLifecycle(?:BaselineMigrate|Suspend|Leave|Resume|Terminate)|callApi/.test(client));
-assert.deepEqual([...client.matchAll(/await request\('([^']+)'\)/g)].map(m => m[1]), ['identityBootstrap', 'employeeLifecycleBaselineDryRun']);
+assert(!/console\.|innerHTML|localStorage|sessionStorage|indexedDB|document\.cookie|employeeApplication|employeeLifecycle(?:Suspend|Leave|Resume|Terminate)|callApi/.test(client));
+assert.deepEqual([...client.matchAll(/await request\('([^']+)'/g)].map(m => m[1]), ['identityBootstrap', 'employeeLifecycleBaselineDryRun', 'employeeLifecycleBaselineRequestStatus']);
 (async () => {
   const browser = await chromium.launch({ headless: true, ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}) });
   const scenarios = ['active', 'unregistered', 'pending', 'inactive', 'malicious', 'backend-error', 'transport-error',
@@ -68,6 +68,7 @@ assert.deepEqual([...client.matchAll(/await request\('([^']+)'\)/g)].map(m => m[
     await runT3(browser);
     await runInitDiagnostics(browser);
     await runTimeoutStages(browser);
+    await runRequestStatus(browser);
   } finally { await browser.close(); }
 })().catch(() => { console.error('Isolated browser test failed'); process.exitCode = 1; });
 
@@ -87,7 +88,7 @@ async function runInitDiagnostics(browser) {
     await page.goto('https://test.example/index.html');
     await page.waitForFunction(() => document.getElementById('init').textContent === '失敗');
     assert.equal(await page.locator('#error').textContent(), codes.includes(code) ? code : 'LIFF_INIT_ERROR');
-    await page.evaluate(() => { for (const id of ['check', 'baselineCheck']) { const b = document.getElementById(id); b.disabled = false; b.click(); } });
+    await page.evaluate(() => { for (const id of ['check', 'baselineCheck', 'requestStatusCheck']) { const b = document.getElementById(id); b.disabled = false; b.click(); } });
     assert.equal(unexpected, 0); assert.equal(logs.length, 0);
     assert(!/PRIVATE_/.test(await page.locator('body').innerHTML()));
     await context.close();
@@ -209,7 +210,7 @@ async function runTimeoutStages(browser) {
         'window.liff={init:async()=>{},isLoggedIn:()=>true,isInClient:()=>true,getIDToken:()=>"PRIVATE_TOKEN",login:()=>{}};' });
       if (url.hostname === 'test.example') {
         const file = url.pathname.slice(1); assert(['index.html', 'client.js', 'config.js'].includes(file));
-        if (file === 'client.js') assert.equal(url.search, '?v=t3-1-stage1');
+        if (file === 'client.js') assert.equal(url.search, '?v=t4-status1');
         return route.fulfill({ contentType: file.endsWith('.js') ? 'text/javascript' : 'text/html', body: file === 'config.js' ?
           'window.TransportT1Config={liffId:"offline",relayEndpoint:"https://relay.example/identity"};' : fs.readFileSync(path.join(root, file), 'utf8') });
       }
@@ -250,4 +251,83 @@ async function runTimeoutStages(browser) {
     await context.close(); count++;
   }
   console.log('PASS: ' + count + ' timeout-stage browser scenarios');
+}
+
+async function runRequestStatus(browser) {
+  const id='status-request-0001';
+  const good={success:true,employeeId:'EMP001',requestId:id,action:'employeeLifecycleBaselineMigrate',requestStatus:'COMPLETED',historicalCompletion:true,currentConsistency:'MATCHED',recoveryAllowed:false,newRequestAllowed:false};
+  const cases={owner:{},admin:{},employee:{},manager:{},inactive:{},unregistered:{},outside:{},missingToken:{},lostToken:{},invalidInput:{},double:{},
+    STARTED:{requestStatus:'STARTED',historicalCompletion:false,currentConsistency:'PARTIAL'},
+    RECOVERY_REQUIRED:{requestStatus:'RECOVERY_REQUIRED',historicalCompletion:true,currentConsistency:'CONFLICT'},
+    NOT_OBSERVED:{requestStatus:'NOT_OBSERVED',historicalCompletion:false,currentConsistency:'UNKNOWN'},
+    UNKNOWN:{requestStatus:'UNKNOWN',historicalCompletion:null,currentConsistency:'UNKNOWN'},
+    wrongId:{requestId:'different-request-0001'},wrongEmployee:{employeeId:'EMP002'},wrongAction:{action:'other'},
+    recovery:{recoveryAllowed:true},newRequest:{newRequestAllowed:true},unknownStatus:{requestStatus:'PRIVATE_STATUS'},
+    unknownConsistency:{currentConsistency:'PRIVATE_CONSISTENCY'},badHistory:{historicalCompletion:'false'},missingHistory:{historicalCompletion:undefined},
+    missingPermission:{recoveryAllowed:undefined},objectStatus:{requestStatus:{}},nullResponse:{},timeout:{},backendError:{}};
+  const denied=new Set(['employee','manager','inactive','unregistered','outside','missingToken','lostToken']);
+  const invalid=new Set(['wrongId','wrongEmployee','wrongAction','recovery','newRequest','unknownStatus','unknownConsistency','badHistory','missingHistory','missingPermission','objectStatus','nullResponse']);
+  for(const [name,patch] of Object.entries(cases)) {
+    const context=await browser.newContext({viewport:{width:360,height:800}}),page=await context.newPage(),calls=[],logs=[];
+    page.on('console',m=>logs.push(m.text()));page.on('pageerror',e=>logs.push(e.message));
+    await context.route('**/*',async route=>{
+      const url=new URL(route.request().url());
+      if(url.hostname==='static.line-scdn.net')return route.fulfill({contentType:'text/javascript',body:
+        `window.liff={init:async()=>{},isLoggedIn:()=>true,isInClient:()=>${name!=='outside'},getIDToken:()=>${name==='missingToken'?'null':'"PRIVATE_TOKEN"'},login:()=>{}};`});
+      if(url.hostname==='test.example') {
+        const file=url.pathname.slice(1);assert(['index.html','client.js','config.js'].includes(file));
+        return route.fulfill({contentType:file.endsWith('.js')?'text/javascript':'text/html',body:file==='config.js'?
+          'window.TransportT1Config={liffId:"offline",relayEndpoint:"https://relay.example/identity"};':fs.readFileSync(path.join(root,file),'utf8')});
+      }
+      assert.equal(url.hostname,'relay.example');const data=route.request().postDataJSON();calls.push(data);
+      assert.equal(route.request().method(),'POST');assert.equal(route.request().headers()['content-type'],'text/plain;charset=utf-8');
+      if(url.pathname==='/identity') {
+        assert.deepEqual(data,{action:'identityBootstrap',idToken:'PRIVATE_TOKEN'});
+        return route.fulfill({json:{success:true,state:name==='inactive'?'TERMINATED':name==='unregistered'?'UNREGISTERED':'ACTIVE_EMPLOYEE',
+          employee:{employeeId:'EMP001',name:'操作員',permission:name==='owner'?'OWNER':name==='employee'?'EMPLOYEE':name==='manager'?'SITE_MANAGER':'ADMIN'}},headers:{'access-control-allow-origin':'https://test.example'}});
+      }
+      assert.equal(url.pathname,'/employee-operation-status');
+      assert.deepEqual(data,{action:'employeeLifecycleBaselineRequestStatus',idToken:'PRIVATE_TOKEN',employeeId:'EMP001',requestId:id});
+      await new Promise(r=>setTimeout(r,80));
+      const result=name==='nullResponse'?null:name==='timeout'?{success:false,transportError:'UPSTREAM_TIMEOUT',transportStage:'FINAL_BODY'}:
+        name==='backendError'?{success:false,code:'FORBIDDEN',message:'PRIVATE_EXCEPTION'}:{...good,...patch,operatorSub:'PRIVATE_SUB',operatorId:'PRIVATE_OPERATOR',salary:'PRIVATE_SALARY',snapshotVersion:'PRIVATE_SNAPSHOT',requestHash:'PRIVATE_HASH',afterJson:'PRIVATE_AUDIT',idToken:'PRIVATE_TOKEN',stack:'PRIVATE_STACK',url:'https://private.example/'};
+      return route.fulfill({status:name==='timeout'?504:200,json:result,headers:{'access-control-allow-origin':'https://test.example'}});
+    });
+    await page.goto('https://test.example/index.html');await page.waitForFunction(()=>!document.getElementById('check').disabled);
+    assert.equal(await page.locator('#requestStatusSection').count(),1);assert(await page.locator('#requestStatusCheck').isDisabled());
+    const force=()=>page.evaluate(()=>{const b=document.getElementById('requestStatusCheck');b.disabled=false;b.click();});
+    await force();assert.equal(calls.length,0);await page.click('#check');await page.waitForFunction(()=>!document.getElementById('check').disabled);
+    if(name==='lostToken')await page.evaluate(()=>{liff.getIDToken=()=>null;});
+    if(denied.has(name)) {
+      if(name!=='lostToken')assert(await page.locator('#requestStatusCheck').isDisabled());
+      const count=calls.length;await force();await page.waitForTimeout(100);assert.equal(calls.length,count);
+    } else {
+      assert(await page.locator('#requestStatusCheck').isEnabled());assert.equal(calls.length,1,'no automatic status');
+      await page.fill('#requestId',name==='invalidInput'?'bad':`  ${id}  `);await page.click('#requestStatusCheck');
+      if(name==='double')await force();
+      await page.waitForFunction(()=>!document.getElementById('check').disabled);
+      const fields=await page.locator('#requestStatusFields').textContent(),message=await page.locator('#requestStatusMessage').textContent();
+      if(name==='invalidInput'){assert.equal(calls.length,1);assert(message.includes('16–100'));}
+      else {
+        assert.equal(calls.length,2);
+        if(invalid.has(name)||['timeout','backendError'].includes(name)) {
+          assert.equal(fields,'');assert.equal(await page.locator('#error').textContent(),name==='timeout'?'UPSTREAM_TIMEOUT':name==='backendError'?'FORBIDDEN':'TRANSPORT_ERROR');
+          if(name==='timeout')assert.equal(await page.locator('#transportStage').textContent(),'FINAL_BODY');
+        } else {
+          assert(fields.includes(id));assert.equal(await page.locator('#requestStatusFields dd').count(),6);
+          assert.equal(await page.locator('#requestStatusFields dd').nth(2).textContent(),patch.historicalCompletion===null?'無法判定':patch.historicalCompletion===false?'未觀察到完成證據':'有');
+          assert.equal(await page.locator('#requestStatusFields dd').nth(4).textContent(),'否');
+          assert.equal(await page.locator('#requestStatusFields dd').nth(5).textContent(),'否');
+          const expected={STARTED:'已觀察到開始證據；請勿重新送出 Baseline。',RECOVERY_REQUIRED:'資料需要人工核對；請勿重新送出 Baseline。',NOT_OBSERVED:'未觀察到此 Request 的操作證據；不代表原操作失敗，也不代表可以重新送出。',UNKNOWN:'目前無法安全判定，請稍後以同一 Request ID 再次唯讀查詢。'};
+          assert.equal(message,expected[name]||'已觀察到完成證據。');
+        }
+      }
+      const count=calls.length;await page.waitForTimeout(150);assert.equal(calls.length,count,'no polling/retry/fallback');
+    }
+    assert(!/PRIVATE_|private\.example/.test(await page.content()+logs.join('')));
+    assert.deepEqual(await page.evaluate(()=>[localStorage.length,sessionStorage.length]),[0,0]);
+    assert(calls.every(c=>['identityBootstrap','employeeLifecycleBaselineRequestStatus'].includes(c.action)));
+    await context.close();
+  }
+  console.log('PASS: '+Object.keys(cases).length+' T4 status browser scenarios');
 }

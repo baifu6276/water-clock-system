@@ -4,6 +4,9 @@
   const button = document.getElementById('check');
   const baselineButton = document.getElementById('baselineCheck');
   const baselineFields = document.getElementById('baselineFields');
+  const statusButton = document.getElementById('requestStatusCheck');
+  const statusFields = document.getElementById('requestStatusFields');
+  const requestIdInput = document.getElementById('requestId');
   const codes = new Set(['CONFIG_ERROR', 'HTTPS_REQUIRED', 'PATH_DENIED', 'ORIGIN_DENIED',
     'METHOD_DENIED', 'CONTENT_TYPE_INVALID', 'REQUEST_INVALID', 'REQUEST_TOO_LARGE', 'TOKEN_REQUIRED',
     'ACTION_DENIED', 'UPSTREAM_TIMEOUT', 'UPSTREAM_NETWORK_ERROR', 'UPSTREAM_HTTP_ERROR',
@@ -18,14 +21,22 @@
   const timeoutStages = new Set(['READ_REQUEST', 'POST_HEADERS', 'REDIRECT_GET_HEADERS', 'FINAL_BODY']);
   let ready = false, busy = false, identity = null;
   const manager = () => identity?.state === 'ACTIVE_EMPLOYEE' && ['OWNER', 'ADMIN'].includes(identity.permission);
+  const statusAccess = () => {
+    try { return ready && manager() && liff.isInClient() && Boolean(liff.getIDToken()); }
+    catch { return false; }
+  };
   function controls() {
     button.disabled = !ready || busy;
     baselineButton.disabled = !ready || busy || !manager();
     document.getElementById('baselineSection').hidden = !manager();
+    statusButton.disabled = busy || !statusAccess();
+    requestIdInput.disabled = busy || !statusAccess();
+    document.getElementById('requestStatusSection').hidden = !statusAccess();
   }
-  async function request(action) {
+  async function request(action, requestId) {
     set('transportStage', '—');
-    if (!['identityBootstrap', 'employeeLifecycleBaselineDryRun'].includes(action)) throw new Error('ACTION_DENIED');
+    if (!['identityBootstrap', 'employeeLifecycleBaselineDryRun', 'employeeLifecycleBaselineRequestStatus'].includes(action)) throw new Error('ACTION_DENIED');
+    if (action === 'employeeLifecycleBaselineRequestStatus' && (!statusAccess() || typeof requestId !== 'string' || !/^[A-Za-z0-9_-]{16,100}$/.test(requestId))) throw new Error('FORBIDDEN');
     if (action === 'employeeLifecycleBaselineDryRun' && !manager()) throw new Error('FORBIDDEN');
     const controller = new AbortController(); let timer;
     try {
@@ -33,13 +44,15 @@
       try { endpoint = new URL(window.TransportT1Config.relayEndpoint); } catch { throw new Error('CONFIG_ERROR'); }
       if (endpoint.protocol !== 'https:' || endpoint.username || endpoint.password || endpoint.search || endpoint.hash || endpoint.pathname !== '/identity') throw new Error('CONFIG_ERROR');
       if (action === 'employeeLifecycleBaselineDryRun') endpoint.pathname = '/employee-read';
+      if (action === 'employeeLifecycleBaselineRequestStatus') endpoint.pathname = '/employee-operation-status';
       const idToken = liff.getIDToken();
       set('token', idToken ? '是' : '否');
       if (!idToken) throw new Error('TOKEN_REQUIRED');
       timer = setTimeout(() => controller.abort(), 25000);
       const response = await fetch(endpoint.href, { method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(action === 'identityBootstrap' ? { action, idToken } : { action, idToken, employeeId: 'EMP001' }),
+        body: JSON.stringify(action === 'identityBootstrap' ? { action, idToken } : { action, idToken, employeeId: 'EMP001',
+          ...(action === 'employeeLifecycleBaselineRequestStatus' ? { requestId } : {}) }),
         redirect: 'error', credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', signal: controller.signal });
       set('http', String(response.status));
       const version = response.headers.get('x-transport-version');
@@ -67,6 +80,7 @@
   button.addEventListener('click', async () => {
     if (!ready || busy) return;
     busy = true; identity = null; controls();
+    statusFields.replaceChildren(); set('requestStatusMessage', '尚未查詢');
     baselineFields.replaceChildren(); set('baselineStatus', '尚未執行');
     for (const id of ['employee', 'state']) set(id, '—');
     resetTransport();
@@ -117,6 +131,42 @@
       set('error', codes.has(error.message) ? error.message : 'TRANSPORT_ERROR');
       set('baselineStatus', '預覽未完成，請確認安全錯誤碼。');
       identity = null; // Re-verify before another management attempt after any failure.
+    } finally { busy = false; controls(); }
+  });
+  const statusMessages = Object.freeze({
+    COMPLETED: '已觀察到完成證據。',
+    STARTED: '已觀察到開始證據；請勿重新送出 Baseline。',
+    RECOVERY_REQUIRED: '資料需要人工核對；請勿重新送出 Baseline。',
+    NOT_OBSERVED: '未觀察到此 Request 的操作證據；不代表原操作失敗，也不代表可以重新送出。',
+    UNKNOWN: '目前無法安全判定，請稍後以同一 Request ID 再次唯讀查詢。'
+  });
+  statusButton.addEventListener('click', async () => {
+    if (busy || !statusAccess()) return;
+    statusFields.replaceChildren();
+    const requestId = requestIdInput.value.trim();
+    if (!/^[A-Za-z0-9_-]{16,100}$/.test(requestId)) {
+      set('requestStatusMessage', 'Request ID 須為 16–100 個英數字、底線或連字號。'); return;
+    }
+    busy = true; controls(); resetTransport(); set('requestStatusMessage', '查詢中');
+    try {
+      const result = await request('employeeLifecycleBaselineRequestStatus', requestId);
+      if (Array.isArray(result) || result.employeeId !== 'EMP001' || result.requestId !== requestId ||
+          result.action !== 'employeeLifecycleBaselineMigrate' || result.recoveryAllowed !== false || result.newRequestAllowed !== false ||
+          typeof result.requestStatus !== 'string' || !Object.hasOwn(statusMessages, result.requestStatus) ||
+          ![true, false, null].includes(result.historicalCompletion) ||
+          !['MATCHED', 'CHANGED_WITH_AUDIT', 'ABSENT', 'PARTIAL', 'CONFLICT', 'UNKNOWN'].includes(result.currentConsistency)) throw new Error('TRANSPORT_ERROR');
+      const values = [['Request ID', requestId], ['Request 狀態', result.requestStatus],
+        ['歷史完成證據', result.historicalCompletion === true ? '有' : result.historicalCompletion === false ? '未觀察到完成證據' : '無法判定'],
+        ['目前一致性', result.currentConsistency], ['可恢復', '否'], ['可建立新操作', '否']];
+      for (const [label, value] of values) {
+        const dt = document.createElement('dt'), dd = document.createElement('dd');
+        dt.textContent = label; dd.textContent = value; statusFields.append(dt, dd);
+      }
+      set('requestStatusMessage', statusMessages[result.requestStatus]);
+      set('http', document.getElementById('http').textContent + ' / 成功');
+    } catch (error) {
+      set('error', codes.has(error.message) ? error.message : 'TRANSPORT_ERROR');
+      set('requestStatusMessage', '查詢未完成，請確認安全錯誤碼；不代表原操作失敗。');
     } finally { busy = false; controls(); }
   });
   document.getElementById('login').addEventListener('click', () => { if (!busy) liff.login(); });
