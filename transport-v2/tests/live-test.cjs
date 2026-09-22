@@ -67,6 +67,7 @@ assert.deepEqual([...client.matchAll(/await request\('([^']+)'\)/g)].map(m => m[
     console.log('PASS: ' + scenarios.length + ' T1 browser scenarios');
     await runT3(browser);
     await runInitDiagnostics(browser);
+    await runTimeoutStages(browser);
   } finally { await browser.close(); }
 })().catch(() => { console.error('Isolated browser test failed'); process.exitCode = 1; });
 
@@ -184,4 +185,69 @@ async function runT3(browser) {
     assert(!logs.join('').includes(hash)); await context.close();
   }
   console.log('PASS: ' + Object.keys(cases).length + ' T3 browser scenarios');
+}
+
+async function runTimeoutStages(browser) {
+  const stages = ['READ_REQUEST', 'POST_HEADERS', 'REDIRECT_GET_HEADERS', 'FINAL_BODY'];
+  const cases = [...stages.map(stage => ({ stage, expected: stage })),
+    { expected: 'UNKNOWN' }, { stage: 'PRIVATE_UNKNOWN', expected: 'UNKNOWN' },
+    ...[null, 123, {}, ['FINAL_BODY']].map(stage => ({ stage, expected: 'UNKNOWN' })),
+    { stage: 'FINAL_BODY', error: 'UPSTREAM_HTTP_ERROR', expected: '—' },
+    { stage: 'FINAL_BODY', success: true, expected: '—' }];
+  let count = 0;
+  for (const target of ['identityBootstrap', 'employeeLifecycleBaselineDryRun']) for (const c of cases) {
+    const context = await browser.newContext(); const page = await context.newPage();
+    const calls = [], logs = []; let release, tested = false;
+    page.on('console', m => logs.push(m.text())); page.on('pageerror', e => logs.push(e.message));
+    const identity = { success: true, state: 'ACTIVE_EMPLOYEE', employee: { employeeId: 'EMP001', name: '操作員', permission: 'ADMIN' } };
+    const baseline = { success: true, dryRun: true, employeeId: 'EMP001', name: '測試員工', employeeStatus: '在職',
+      grade: '師傅', salaryType: '日薪', salaryAmount: 2200, systemRole: 'ADMIN', hireDate: '', bindingSource: 'PRESENT',
+      baselineState: 'LEGACY_NOT_BASELINED', eligible: true, warnings: [], snapshotVersion: 'abcdef0123456789'.repeat(4) };
+    await context.route('**/*', async route => {
+      const url = new URL(route.request().url());
+      if (url.hostname === 'static.line-scdn.net') return route.fulfill({ contentType: 'text/javascript', body:
+        'window.liff={init:async()=>{},isLoggedIn:()=>true,isInClient:()=>true,getIDToken:()=>"PRIVATE_TOKEN",login:()=>{}};' });
+      if (url.hostname === 'test.example') {
+        const file = url.pathname.slice(1); assert(['index.html', 'client.js', 'config.js'].includes(file));
+        if (file === 'client.js') assert.equal(url.search, '?v=t3-1-stage1');
+        return route.fulfill({ contentType: file.endsWith('.js') ? 'text/javascript' : 'text/html', body: file === 'config.js' ?
+          'window.TransportT1Config={liffId:"offline",relayEndpoint:"https://relay.example/identity"};' : fs.readFileSync(path.join(root, file), 'utf8') });
+      }
+      assert.equal(url.hostname, 'relay.example'); const data = route.request().postDataJSON(); calls.push(data);
+      assert.deepEqual(data, data.action === 'identityBootstrap' ? { action: 'identityBootstrap', idToken: 'PRIVATE_TOKEN' } :
+        { action: 'employeeLifecycleBaselineDryRun', employeeId: 'EMP001', idToken: 'PRIVATE_TOKEN' });
+      assert.equal(url.pathname, data.action === 'identityBootstrap' ? '/identity' : '/employee-read');
+      let result = identity, status = 200;
+      if (!tested && data.action === target) {
+        tested = true;
+        result = c.success ? (target === 'identityBootstrap' ? identity : baseline) : { success: false, transportError: c.error || 'UPSTREAM_TIMEOUT' };
+        result = { ...result, transportStage: c.stage, idToken: 'PRIVATE_TOKEN', sub: 'PRIVATE_SUB',
+          body: 'PRIVATE_BODY', url: 'https://private.example/?secret=PRIVATE_URL', message: 'PRIVATE_EXCEPTION', stack: 'PRIVATE_STACK' };
+        status = c.success ? 200 : c.error ? 502 : 504;
+      } else if (tested) await new Promise(resolve => { release = resolve; });
+      return route.fulfill({ status, json: result, headers: { 'access-control-allow-origin': 'https://test.example' } });
+    });
+    await page.goto('https://test.example/index.html');
+    await page.waitForFunction(() => !document.getElementById('check').disabled);
+    assert.equal(await page.locator('#transportStage').textContent(), '—');
+    await page.click('#check'); await page.waitForFunction(() => !document.getElementById('check').disabled);
+    if (target !== 'identityBootstrap') {
+      assert.equal(await page.locator('#transportStage').textContent(), '—');
+      await page.click('#baselineCheck'); await page.waitForFunction(() => !document.getElementById('check').disabled);
+    }
+    assert.equal(await page.locator('#transportStage').textContent(), c.expected);
+    assert.equal(await page.locator('#error').textContent(), c.success ? '無' : c.error || 'UPSTREAM_TIMEOUT');
+    assert.equal(calls.length, target === 'identityBootstrap' ? 1 : 2, 'no retry/fallback');
+    assert(!/PRIVATE_|private\.example/.test(await page.content() + logs.join('')));
+    // Keep the next fetch pending to prove reset happens before its response.
+    await page.click('#check'); await page.waitForFunction(() => document.getElementById('http').textContent === '處理中');
+    assert.equal(await page.locator('#transportStage').textContent(), '—');
+    while (!release) await new Promise(resolve => setImmediate(resolve));
+    release(); await page.waitForFunction(() => !document.getElementById('check').disabled);
+    assert.equal(await page.locator('#transportStage').textContent(), '—');
+    assert.equal(calls.length, target === 'identityBootstrap' ? 2 : 3);
+    assert(!/PRIVATE_|private\.example/.test(await page.content() + logs.join('')));
+    await context.close(); count++;
+  }
+  console.log('PASS: ' + count + ' timeout-stage browser scenarios');
 }
