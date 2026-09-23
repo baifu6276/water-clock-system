@@ -256,11 +256,12 @@
               const response = await fetch('../js/config.js', { cache: 'no-store' });
               if (!response.ok) throw new Error();
               config = await response.text();
-              const id = config.match(/\bconst\s+LIFF_ID\s*=\s*"([^"\r\n]+)"\s*;/);
               const url = config.match(/\bconst\s+GAS_URL\s*=\s*"([^"\r\n]+)"\s*;/);
-              if (!id || !url || new URL(url[1]).origin !== 'https://script.google.com') throw new Error();
+              if (!url || new URL(url[1]).origin !== 'https://script.google.com') throw new Error();
               GAS_URL = url[1];
-              config = id[1];
+              // Dedicated LIFF app for this read-only identity/baseline test page.
+              // Keep the production clock-in LIFF app isolated from test configuration.
+              config = '2011467618-S9evJzmm';
             } catch (_) { put('init', '設定讀取失敗'); fail('CONFIG_ERROR'); return; }
             try { await liff.init({ liffId: config }); }
             catch (_) { put('init', '失敗'); fail('LIFF_INIT_ERROR'); return; }
