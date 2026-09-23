@@ -8,11 +8,11 @@
   <style>body{font-family:system-ui;margin:20px auto;padding:0 16px;max-width:600px;line-height:1.6}button{padding:12px;font:inherit}dd{margin:0 0 12px;overflow-wrap:anywhere}dt{font-weight:bold}</style>
   <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script defer src="config.js"></script>
-  <script defer src="client.js?v=t3-1-stage1"></script>
+  <script defer src="client.js?v=t3-2-status-only"></script>
 </head>
 <body>
   <h1>Transport V2 T1／T3 隔離測試</h1>
-  <p>僅供身分與基線唯讀預覽，不提供業務寫入。T3 需搭配另行部署的相容 Relay。</p>
+  <p>僅供身分、基線預覽與原請求狀態查詢，不提供建立基線、重送或復原寫入。</p>
   <dl>
     <dt>LIFF 初始化</dt><dd id="init">尚未開始</dd>
     <dt>在 LINE 內</dt><dd id="inLine">未確認</dd>
@@ -32,6 +32,18 @@
     <button id="baselineCheck" disabled>檢查 EMP001 Legacy Baseline（唯讀）</button>
     <p id="baselineStatus" role="status">尚未執行</p>
     <dl id="baselineFields"></dl>
+  </section>
+  <section id="operationStatusSection" hidden>
+    <h2>EMP001 原請求狀態（唯讀）</h2>
+    <p id="operationStatusHint">需先完成身分驗證。</p>
+    <label for="operationRequestId">原請求編號（requestId，不是 Correlation ID）</label>
+    <input id="operationRequestId" type="text" maxlength="100" autocomplete="off" spellcheck="false" disabled
+      aria-describedby="operationStatusHint" style="display:block;width:100%;box-sizing:border-box;padding:12px;font:inherit;margin:8px 0">
+    <button id="operationStatusProbe" disabled>建立唯讀測試編號（不寫資料）</button>
+    <button id="operationStatusCheck" disabled>查詢原請求狀態（唯讀）</button>
+    <p id="operationStatusMessage" role="status">尚未查詢</p>
+    <dl id="operationStatusFields"></dl>
+    <p>尚未進行 Migration 時，可使用唯讀測試編號驗證查詢路徑。NOT_OBSERVED 不代表允許新寫入。</p>
   </section>
 </body>
 </html>
