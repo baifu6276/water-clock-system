@@ -26,6 +26,12 @@
     'BACKEND_IDENTITY_CONFLICT', 'BACKEND_LOOKUP_ERROR', 'BACKEND_INTERNAL_ERROR']);
   const states = new Set(['ACTIVE_EMPLOYEE', 'UNREGISTERED', 'APPLICATION_PENDING', 'SUSPENDED', 'LEAVE', 'TERMINATED', 'AUTH_ERROR']);
   const timeoutStages = new Set(['READ_REQUEST', 'POST_HEADERS', 'REDIRECT_GET_HEADERS', 'FINAL_BODY']);
+  const redirectDiagnostics = new Set(['REDIRECT_STATUS_DENIED', 'REDIRECT_LOCATION_INVALID',
+    'REDIRECT_SCHEME_DENIED', 'REDIRECT_HOST_DENIED', 'REDIRECT_URL_COMPONENT_DENIED']);
+  const setRedirectDiagnostic = value => {
+    const field = document.getElementById('redirectDiagnostic');
+    if (field) field.textContent = value; // Older cached HTML may not have the field.
+  };
   let ready = false, busy = false, identity = null;
   const manager = () => identity?.state === 'ACTIVE_EMPLOYEE' && ['OWNER', 'ADMIN'].includes(identity.permission);
   function controls() {
@@ -45,6 +51,7 @@
   }
   async function request(action, requestId) {
     set('transportStage', '—');
+    setRedirectDiagnostic('—');
     lastTransportVersion = null;
     if (!['identityBootstrap', 'employeeLifecycleBaselineDryRun', 'employeeLifecycleBaselineRequestStatus'].includes(action)) throw new Error('ACTION_DENIED');
     if (action !== 'identityBootstrap' && !manager()) throw new Error('FORBIDDEN');
@@ -77,6 +84,10 @@
       if (!response.ok || !result.success) {
         if (result.transportError === 'UPSTREAM_TIMEOUT') {
           set('transportStage', timeoutStages.has(result.transportStage) ? result.transportStage : 'UNKNOWN');
+        }
+        if (result.transportError === 'UPSTREAM_REDIRECT_DENIED') {
+          setRedirectDiagnostic(redirectDiagnostics.has(result.redirectDiagnostic) ? result.redirectDiagnostic : '—');
+          set('transportStage', ['POST_HEADERS', 'REDIRECT_GET_HEADERS'].includes(result.transportStage) ? result.transportStage : '—');
         }
         const code = result.transportError || result.diagnosticCode || result.code;
         throw new Error(codes.has(code) ? code : 'TRANSPORT_ERROR');
