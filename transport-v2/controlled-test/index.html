@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>T4 EMP001 受控基線隔離測試</title>
+  <style>body{font-family:system-ui;max-width:640px;margin:20px auto;padding:0 16px;line-height:1.6}button,input,textarea{font:inherit;padding:12px;box-sizing:border-box;max-width:100%}label,textarea{display:block}textarea{width:100%}button{margin:6px 0}dd,p{overflow-wrap:anywhere}dd{margin:0 0 12px}fieldset{min-width:0}input[type=checkbox]{margin-right:8px}</style>
+  <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script defer src="../live-test/config.js"></script>
+  <script defer src="client.js?v=t4-safety-1"></script>
+</head>
+<body>
+  <h1>T4 EMP001 受控基線隔離測試</h1>
+  <p>Production Migration 仍 HOLD。本頁須另行人工批准與 GAS server permit 才能寫入；目前只供離線審查。</p>
+  <p>不提供重送、復原或新增替代請求；未確認的結果只能使用原操作編號查詢。</p>
+  <p id="identityStatus" role="status">尚未初始化</p>
+  <p id="message" role="status">尚未操作</p>
+  <p>安全錯誤碼：<span id="error">無</span></p>
+  <button id="login" hidden>登入 LINE</button>
+  <button id="identityCheck" disabled>重新驗證身分（唯讀）</button>
+  <section id="management" hidden>
+    <h2>唯一目標：EMP001</h2>
+    <button id="preview" disabled>重新讀取基線預覽（唯讀）</button>
+    <dl id="previewFields"></dl>
+    <p id="snapshotGate">尚未取得快照</p>
+    <label for="reason">操作原因</label>
+    <textarea id="reason" maxlength="1000" disabled></textarea>
+    <label><input id="confirmed" type="checkbox" disabled>我已核對 EMP001；未知到職日保持空白，主檔不變，沒有跨表 rollback，且已取得本次人工批准。</label>
+    <button id="prepare" disabled>固定本次操作編號與內容</button>
+    <p>原操作編號：<span id="requestId">—</span></p>
+    <button id="submit" disabled>送出一次受控基線操作</button>
+    <button id="statusCheck" disabled>查詢原請求狀態（唯讀）</button>
+    <dl id="statusFields"></dl>
+  </section>
+</body>
+</html>
