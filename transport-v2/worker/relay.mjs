@@ -6,6 +6,8 @@ const routes = Object.freeze({
   '/employee-operation-status': { action: 'employeeLifecycleBaselineRequestStatus', keys: ['action', 'idToken', 'employeeId', 'requestId'] }
 });
 const timeoutStages = new Set(['READ_REQUEST', 'POST_HEADERS', 'REDIRECT_GET_HEADERS', 'FINAL_BODY']);
+const redirectDiagnostics = new Set(['REDIRECT_STATUS_DENIED', 'REDIRECT_LOCATION_INVALID',
+  'REDIRECT_SCHEME_DENIED', 'REDIRECT_HOST_DENIED', 'REDIRECT_URL_COMPONENT_DENIED']);
 const fail = code => { throw new Error(code); };
 const errors = new Set(['CONFIG_ERROR', 'HTTPS_REQUIRED', 'PATH_DENIED', 'ORIGIN_DENIED',
   'METHOD_DENIED', 'CONTENT_TYPE_INVALID', 'REQUEST_INVALID', 'REQUEST_TOO_LARGE',
@@ -64,6 +66,8 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
   }
   const controller = new AbortController(); let timer;
   let stage = 'READ_REQUEST';
+  let redirectDiagnostic;
+  const denyRedirect = diagnostic => { redirectDiagnostic = diagnostic; fail('UPSTREAM_REDIRECT_DENIED'); };
   try {
     const config = configuration(env);
     const url = new URL(request.url);
@@ -114,11 +118,13 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
         if (response.status >= 300 && response.status < 400) {
           void response.body?.cancel().catch(() => {});
           if (redirects >= 3) fail('UPSTREAM_REDIRECT_LIMIT');
-          if (![302, 303].includes(response.status)) fail('UPSTREAM_REDIRECT_DENIED');
+          // Precedence: existing redirect limit, status, parse, scheme, host, components.
+          if (![302, 303].includes(response.status)) denyRedirect('REDIRECT_STATUS_DENIED');
           let next;
-          try { next = new URL(response.headers.get('location')); } catch { fail('UPSTREAM_REDIRECT_DENIED'); }
-          if (next.protocol !== 'https:' || next.hostname !== 'script.googleusercontent.com' ||
-            next.port || next.username || next.password || next.hash) fail('UPSTREAM_REDIRECT_DENIED');
+          try { next = new URL(response.headers.get('location')); } catch { denyRedirect('REDIRECT_LOCATION_INVALID'); }
+          if (next.protocol !== 'https:') denyRedirect('REDIRECT_SCHEME_DENIED');
+          if (next.hostname !== 'script.googleusercontent.com') denyRedirect('REDIRECT_HOST_DENIED');
+          if (next.port || next.username || next.password || next.hash) denyRedirect('REDIRECT_URL_COMPONENT_DENIED');
           target = next.href;
           // ContentService retrieval is GET: never resend the token/body/cookies.
           options = { method: 'GET' };
@@ -139,6 +145,10 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
     const code = errors.has(error.message) ? error.message : 'TRANSPORT_ERROR';
     const body = { success: false, transportError: code };
     if (code === 'UPSTREAM_TIMEOUT' && timeoutStages.has(stage)) body.transportStage = stage;
+    if (code === 'UPSTREAM_REDIRECT_DENIED' && redirectDiagnostics.has(redirectDiagnostic)) {
+      body.redirectDiagnostic = redirectDiagnostic;
+      if (['POST_HEADERS', 'REDIRECT_GET_HEADERS'].includes(stage)) body.transportStage = stage;
+    }
     return reply(body, code === 'UPSTREAM_TIMEOUT' ? 504 :
       code.startsWith('UPSTREAM_') ? 502 : code === 'CONFIG_ERROR' || code === 'TRANSPORT_ERROR' ? 500 : 400);
   } finally { clearTimeout(timer); }
