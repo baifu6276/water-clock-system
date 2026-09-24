@@ -71,7 +71,7 @@ assert.deepEqual([...client.matchAll(/await request\('([^']+)'/g)].map(m => m[1]
     await runRequestStatus(browser);
     await runRedirectDiagnostics(browser);
   } finally { await browser.close(); }
-})().catch(() => { console.error('Isolated browser test failed'); process.exitCode = 1; });
+})().catch(error => { console.error('Offline isolated browser test failed', error); process.exitCode = 1; });
 
 async function runInitDiagnostics(browser) {
   const codes = ['INIT_FAILED', 'INVALID_ARGUMENT', 'INVALID_CONFIG', 'UNAUTHORIZED', 'FORBIDDEN', 'INVALID_ID_TOKEN', 'UNKNOWN'];
@@ -211,7 +211,7 @@ async function runTimeoutStages(browser) {
         'window.liff={init:async()=>{},isLoggedIn:()=>true,isInClient:()=>true,getIDToken:()=>"PRIVATE_TOKEN",login:()=>{}};' });
       if (url.hostname === 'test.example') {
         const file = url.pathname.slice(1); assert(['index.html', 'client.js', 'config.js'].includes(file));
-        if (file === 'client.js') assert.equal(url.search, '?v=t3-2-redirect-diag1');
+        if (file === 'client.js') assert.equal(url.search, '?v=t3-t4-read-compat1');
         return route.fulfill({ contentType: file.endsWith('.js') ? 'text/javascript' : 'text/html', body: file === 'config.js' ?
           'window.TransportT1Config={liffId:"offline",relayEndpoint:"https://relay.example/identity"};' : fs.readFileSync(path.join(root, file), 'utf8') });
       }
@@ -257,7 +257,7 @@ async function runTimeoutStages(browser) {
 // Adapted to PR #9's version-gated status UI; no feature-only UI is copied.
 async function runRequestStatus(browser) {
   const id='status-request-0001', good={success:true,employeeId:'EMP001',requestId:id,action:'employeeLifecycleBaselineMigrate',requestStatus:'COMPLETED',historicalCompletion:true,currentConsistency:'MATCHED',recoveryAllowed:false,newRequestAllowed:false};
-  const cases={owner:{},admin:{},employee:{},manager:{},inactive:{},unregistered:{},missingToken:{},invalidInput:{},double:{},oldVersion:{},missingVersion:{},probe:{},
+  const cases={owner:{},admin:{},t4Version:{},employee:{},manager:{},inactive:{},unregistered:{},missingToken:{},invalidInput:{},double:{},oldVersion:{},missingVersion:{},probe:{},
     STARTED:{requestStatus:'STARTED',historicalCompletion:false,currentConsistency:'PARTIAL'},RECOVERY_REQUIRED:{requestStatus:'RECOVERY_REQUIRED',historicalCompletion:true,currentConsistency:'CONFLICT'},
     NOT_OBSERVED:{requestStatus:'NOT_OBSERVED',historicalCompletion:false,currentConsistency:'UNKNOWN'},UNKNOWN:{requestStatus:'UNKNOWN',historicalCompletion:null,currentConsistency:'UNKNOWN'},
     wrongId:{requestId:'different-request-0001'},wrongEmployee:{employeeId:'EMP002'},wrongAction:{action:'other'},recovery:{recoveryAllowed:true},newRequest:{newRequestAllowed:true},
@@ -276,7 +276,7 @@ async function runRequestStatus(browser) {
         return route.fulfill({contentType:f.endsWith('.js')?'text/javascript':'text/html',body:f==='config.js'?'window.TransportT1Config={liffId:"offline",relayEndpoint:"https://relay.example/identity"};':fs.readFileSync(path.join(root,f),'utf8')});
       }
       assert.equal(url.hostname,'relay.example');const data=route.request().postDataJSON();calls.push(data);
-      const headers={'access-control-allow-origin':'https://test.example','access-control-expose-headers':'x-transport-version','x-transport-version':name==='oldVersion'?'t3-1':name==='missingVersion'?'':'t3-2-status-only'};
+      const headers={'access-control-allow-origin':'https://test.example','access-control-expose-headers':'x-transport-version','x-transport-version':name==='oldVersion'?'t3-1':name==='missingVersion'?'':name==='t4Version'?'t4-safety-1':'t3-2-status-only'};
       if(url.pathname==='/identity')return route.fulfill({headers,json:{success:true,state:name==='inactive'?'TERMINATED':name==='unregistered'?'UNREGISTERED':'ACTIVE_EMPLOYEE',employee:{employeeId:'EMP001',name:'操作員',permission:name==='owner'?'OWNER':name==='employee'?'EMPLOYEE':name==='manager'?'SITE_MANAGER':'ADMIN'}}});
       assert.equal(url.pathname,'/employee-operation-status');assert.deepEqual(data,{action:'employeeLifecycleBaselineRequestStatus',idToken:'PRIVATE_TOKEN',employeeId:'EMP001',requestId:id});
       await new Promise(r=>setTimeout(r,80));

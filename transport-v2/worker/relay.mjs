@@ -1,9 +1,10 @@
-// Isolated T1/T3 reads only. No logging, storage, retries, or business authorization.
+// T1/T3 reads; opt-in EMP001 T4 route. GAS alone authorizes business writes.
 export const VERSION = 't3-2-status-only';
 const routes = Object.freeze({
   '/identity': { action: 'identityBootstrap', keys: ['action', 'idToken'] },
   '/employee-read': { action: 'employeeLifecycleBaselineDryRun', keys: ['action', 'idToken', 'employeeId'] },
-  '/employee-operation-status': { action: 'employeeLifecycleBaselineRequestStatus', keys: ['action', 'idToken', 'employeeId', 'requestId'] }
+  '/employee-operation-status': { action: 'employeeLifecycleBaselineRequestStatus', keys: ['action', 'idToken', 'employeeId', 'requestId'] },
+  '/employee-baseline-migrate': { action: 'employeeLifecycleBaselineMigrate', keys: ['action', 'idToken', 'employeeId', 'requestId', 'expectedSnapshotVersion', 'reason', 'confirmed'] }
 });
 const timeoutStages = new Set(['READ_REQUEST', 'POST_HEADERS', 'REDIRECT_GET_HEADERS', 'FINAL_BODY']);
 const redirectDiagnostics = new Set(['REDIRECT_STATUS_DENIED', 'REDIRECT_LOCATION_INVALID',
@@ -58,7 +59,7 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
   function reply(body, status = 200) {
     const headers = { 'Content-Type': 'application/json;charset=utf-8', 'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff', 'Vary': 'Origin',
-      'X-Transport-Version': VERSION, 'X-Correlation-Id': correlationId };
+      'X-Transport-Version': env.T4_CONTROLLED_MIGRATION_ENABLED === 'true' ? 't4-safety-1' : VERSION, 'X-Correlation-Id': correlationId };
     if (origin) Object.assign(headers, { 'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type',
       'Access-Control-Expose-Headers': 'X-Transport-Version, X-Correlation-Id' });
@@ -74,6 +75,8 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
     if (url.protocol !== 'https:') fail('HTTPS_REQUIRED');
     if (!Object.hasOwn(routes, url.pathname) || url.search) fail('PATH_DENIED');
     const route = routes[url.pathname];
+    const controlled = url.pathname === '/employee-baseline-migrate';
+    if (controlled && env.T4_CONTROLLED_MIGRATION_ENABLED !== 'true') fail('PATH_DENIED');
     const candidate = request.headers.get('origin');
     if (!config.origins.includes(candidate)) fail('ORIGIN_DENIED');
     origin = candidate;
@@ -96,6 +99,10 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
       if (!data || Array.isArray(data) || typeof data !== 'object') fail('REQUEST_INVALID');
       if (data.action !== route.action) fail('ACTION_DENIED');
       if (Object.keys(data).some(key => !route.keys.includes(key))) fail('REQUEST_INVALID');
+      if (controlled && (route.keys.some(key => !Object.hasOwn(data, key)) ||
+          typeof data.requestId !== 'string' || !/^[A-Za-z0-9_-]{16,100}$/.test(data.requestId) || /^status-probe-/.test(data.requestId) ||
+          typeof data.expectedSnapshotVersion !== 'string' || !/^[a-f0-9]{64}$/.test(data.expectedSnapshotVersion) ||
+          typeof data.reason !== 'string' || !data.reason.trim() || data.reason.length > 1000 || data.confirmed !== true)) fail('REQUEST_INVALID');
       // Scope restriction only. GAS still verifies the actor and management authority.
       if (url.pathname !== '/identity' && data.employeeId !== 'EMP001') fail('REQUEST_INVALID');
       if (url.pathname === '/employee-operation-status' &&
@@ -106,7 +113,8 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
       let options = { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(url.pathname === '/identity' ? { action: route.action, idToken: data.idToken } :
           { action: route.action, idToken: data.idToken, employeeId: 'EMP001',
-            ...(url.pathname === '/employee-operation-status' ? { requestId: data.requestId } : {}) }) };
+            ...(url.pathname === '/employee-operation-status' || controlled ? { requestId: data.requestId } : {}),
+            ...(controlled ? { expectedSnapshotVersion: data.expectedSnapshotVersion, reason: data.reason, confirmed: true } : {}) }) };
       for (let redirects = 0; ; redirects++) {
         if (controller.signal.aborted) fail('UPSTREAM_TIMEOUT');
         let response;

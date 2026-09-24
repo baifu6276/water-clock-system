@@ -5,6 +5,7 @@
   const baselineButton = document.getElementById('baselineCheck');
   const baselineFields = document.getElementById('baselineFields');
   const STATUS_VERSION = 't3-2-status-only';
+  const statusCapable = version => [STATUS_VERSION, 't4-safety-1'].includes(version);
   const statusButton = document.getElementById('operationStatusCheck');
   const probeButton = document.getElementById('operationStatusProbe');
   const requestIdInput = document.getElementById('operationRequestId');
@@ -40,7 +41,7 @@
     document.getElementById('baselineSection').hidden = !manager();
     if (hasStatusUi) {
       statusSection.hidden = !manager();
-      const capable = manager() && identity.transportVersion === STATUS_VERSION;
+      const capable = manager() && statusCapable(identity.transportVersion);
       requestIdInput.disabled = !ready || busy || !capable;
       probeButton.disabled = !ready || busy || !capable;
       statusButton.disabled = !ready || busy || !capable || !validRequestId(requestIdInput.value);
@@ -74,9 +75,9 @@
         redirect: 'error', credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', signal: controller.signal });
       set('http', String(response.status));
       const version = response.headers.get('x-transport-version');
-      lastTransportVersion = ['t1-1', 't3-1', STATUS_VERSION].includes(version) ? version : null;
+      lastTransportVersion = ['t1-1', 't3-1', STATUS_VERSION, 't4-safety-1'].includes(version) ? version : null;
       set('version', lastTransportVersion || '未識別');
-      if (action === 'employeeLifecycleBaselineRequestStatus' && version !== STATUS_VERSION) throw new Error('STATUS_VERSION_REQUIRED');
+      if (action === 'employeeLifecycleBaselineRequestStatus' && !statusCapable(version)) throw new Error('STATUS_VERSION_REQUIRED');
       const correlation = response.headers.get('x-correlation-id');
       if (/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(correlation || '')) set('correlation', correlation);
       const result = await response.json();
@@ -176,7 +177,7 @@
   if (hasStatusUi) {
     requestIdInput.addEventListener('input', () => { clearOperationStatus(); controls(); });
     probeButton.addEventListener('click', () => {
-      if (!ready || busy || !manager() || identity.transportVersion !== STATUS_VERSION) return;
+      if (!ready || busy || !manager() || !statusCapable(identity.transportVersion)) return;
       clearOperationStatus();
       try {
         // Generate a read-only probe ID locally; it is NOT a write request or reservation.
@@ -186,7 +187,7 @@
       controls();
     });
     statusButton.addEventListener('click', async () => {
-      if (!ready || busy || !manager() || identity.transportVersion !== STATUS_VERSION) return;
+      if (!ready || busy || !manager() || !statusCapable(identity.transportVersion)) return;
       const requestId = requestIdInput.value;
       clearOperationStatus();
       if (!validRequestId(requestId)) { set('error', 'REQUEST_ID_INVALID'); controls(); return; }
