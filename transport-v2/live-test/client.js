@@ -6,7 +6,8 @@
   const baselineFields = document.getElementById('baselineFields');
   const STATUS_VERSION = 't3-2-status-only';
   const TIMING_VERSION = 't3-3-timing-diag';
-  const statusCapable = version => [STATUS_VERSION, 't4-safety-1', TIMING_VERSION].includes(version);
+  const GAS_TIMING_VERSION = 't3-4-gas-read-diag';
+  const statusCapable = version => [STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION].includes(version);
   const statusButton = document.getElementById('operationStatusCheck');
   const probeButton = document.getElementById('operationStatusProbe');
   const requestIdInput = document.getElementById('operationRequestId');
@@ -41,6 +42,30 @@
     TIMEOUT: '逾時（共用 20 秒期限）', NOT_RUN: '未執行'
   });
   const timingIds = ['timingTotal', 'timingCurrentStage', 'timingHops', 'timingPostHeaders', 'timingLastGet'];
+  const gasStages = ['VERIFY_LINE', 'EMPLOYEE_CONTEXT', 'ACTION_READ', 'LOCK_WAIT', 'RESPONSE_PREP'];
+  const gasTimingIds = ['gasTimingTotal', 'gasVerifyLine', 'gasEmployeeContext', 'gasActionRead', 'gasLockWait', 'gasResponsePrep'];
+  const hasGasTimingUi = ['gasTimingAvailability', ...gasTimingIds].every(id => document.getElementById(id));
+  function resetGasTiming() {
+    if (!hasGasTimingUi) return;
+    set('gasTimingAvailability', '無法取得');
+    for (const id of gasTimingIds) set(id, '—');
+  }
+  function showGasTiming(value, correlation) {
+    if (!hasGasTimingUi) return;
+    try {
+      const exact = (object, keys) => object && typeof object === 'object' && !Array.isArray(object) &&
+        Object.keys(object).length === keys.length && keys.every(key => Object.hasOwn(object, key));
+      const duration = bucket => typeof bucket === 'string' && Object.hasOwn(timingText, bucket) && !['TIMEOUT', 'NOT_RUN'].includes(bucket);
+      if (!exact(value, ['version', 'transportTraceId', 'total', 'stages']) || value.version !== 1 ||
+          typeof value.transportTraceId !== 'string' ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value.transportTraceId) ||
+          value.transportTraceId !== correlation || !duration(value.total) || !exact(value.stages, gasStages) ||
+          gasStages.some(key => value.stages[key] !== 'NOT_RUN' && !duration(value.stages[key]))) return;
+      const buckets = [value.total, ...gasStages.map(key => value.stages[key])];
+      gasTimingIds.forEach((id, i) => set(id, timingText[buckets[i]]));
+      set('gasTimingAvailability', '可用');
+    } catch { resetGasTiming(); }
+  }
   const hasTimingUi = ['timingAvailability', ...timingIds].every(id => document.getElementById(id));
   function resetTiming() {
     if (!hasTimingUi) return;
@@ -109,6 +134,7 @@
   }
   async function request(action, requestId) {
     resetTiming();
+    resetGasTiming();
     set('transportStage', '—');
     setRedirectDiagnostic('—');
     lastTransportVersion = null;
@@ -134,13 +160,14 @@
       set('http', String(response.status));
       showTiming(response);
       const version = response.headers.get('x-transport-version');
-      lastTransportVersion = ['t1-1', 't3-1', STATUS_VERSION, 't4-safety-1', TIMING_VERSION].includes(version) ? version : null;
+      lastTransportVersion = ['t1-1', 't3-1', STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION].includes(version) ? version : null;
       set('version', lastTransportVersion || '未識別');
       if (action === 'employeeLifecycleBaselineRequestStatus' && !statusCapable(version)) throw new Error('STATUS_VERSION_REQUIRED');
       const correlation = response.headers.get('x-correlation-id');
       if (/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(correlation || '')) set('correlation', correlation);
       const result = await response.json();
       if (!result || typeof result.success !== 'boolean') throw new Error('TRANSPORT_ERROR');
+      showGasTiming(result._gasReadDiagnostics, correlation);
       if (!response.ok || !result.success) {
         if (result.transportError === 'UPSTREAM_TIMEOUT') {
           set('transportStage', timeoutStages.has(result.transportStage) ? result.transportStage : 'UNKNOWN');

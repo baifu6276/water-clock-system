@@ -8,7 +8,7 @@
   <style>body{font-family:system-ui;margin:20px auto;padding:0 16px;max-width:600px;line-height:1.6}button{padding:12px;font:inherit}dd{margin:0 0 12px;overflow-wrap:anywhere}dt{font-weight:bold}</style>
   <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script defer src="config.js"></script>
-  <script defer src="client.js?v=t3-3-timing-diag"></script>
+  <script defer src="client.js?v=t3-4-gas-read-diag"></script>
 </head>
 <body>
   <h1>Transport V2 T1／T3 隔離測試</h1>
@@ -37,6 +37,19 @@
       <dt>最後一次 GET 等候</dt><dd id="timingLastGet">—</dd>
     </dl>
     <p>逾時表示共用 20 秒期限到達，不代表單一步驟耗時 20 秒。</p>
+  </section>
+  <section aria-labelledby="gasTimingTitle">
+    <h2 id="gasTimingTitle">GAS timing</h2>
+    <p id="gasTimingAvailability" role="status">無法取得</p>
+    <dl>
+      <dt>GAS 總耗時（量測範圍）</dt><dd id="gasTimingTotal">—</dd>
+      <dt>LINE verify</dt><dd id="gasVerifyLine">—</dd>
+      <dt>員工資料解析</dt><dd id="gasEmployeeContext">—</dd>
+      <dt>Action read</dt><dd id="gasActionRead">—</dd>
+      <dt>Lock wait</dt><dd id="gasLockWait">—</dd>
+      <dt>Response prep</dt><dd id="gasResponsePrep">—</dd>
+    </dl>
+    <p>不含前置解析、診斷開關讀取、最終序列化、平台傳送及 redirect GET。</p>
   </section>
   <button id="login" hidden>登入 LINE</button>
   <button id="check" disabled>檢查身分（唯讀）</button>

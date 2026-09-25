@@ -74,6 +74,7 @@ assert.deepEqual([...client.matchAll(/await request\('([^']+)'/g)].map(m => m[1]
     await runRedirectDiagnostics(browser);
     await runTimingDiagnostics(browser);
     await runTimingCompatibility(browser);
+    await runGasTiming(browser);
     if (process.env.TRANSPORT_CONTRACT_RELAY) await runCrossBranchContract(browser);
   } finally { await browser.close(); }
 })().catch(error => { console.error('Offline isolated browser test failed', error); process.exitCode = 1; });
@@ -217,7 +218,7 @@ async function runTimeoutStages(browser) {
         'window.liff={init:async()=>{},isLoggedIn:()=>true,isInClient:()=>true,getIDToken:()=>"PRIVATE_TOKEN",login:()=>{}};' });
       if (url.hostname === 'test.example') {
         const file = url.pathname.slice(1); assert(['index.html', 'client.js', 'config.js'].includes(file));
-        if (file === 'client.js') assert.equal(url.search, '?v=t3-3-timing-diag');
+        if (file === 'client.js') assert.equal(url.search, '?v=t3-4-gas-read-diag');
         return route.fulfill({ contentType: file.endsWith('.js') ? 'text/javascript' : 'text/html', body: file === 'config.js' ?
           'window.TransportT1Config={liffId:"offline",relayEndpoint:"https://relay.example/identity"};' : fs.readFileSync(path.join(root, file), 'utf8') });
       }
@@ -380,6 +381,57 @@ const timingBaseline = {success:true,dryRun:true,employeeId:'EMP001',name:'操�
   systemRole:'ADMIN',hireDate:'',bindingSource:'PRESENT',baselineState:'LEGACY_NOT_BASELINED',eligible:true,warnings:[],snapshotVersion:'a'.repeat(64)};
 const timingStatus = {success:true,employeeId:'EMP001',requestId:'status-request-0001',action:'employeeLifecycleBaselineMigrate',requestStatus:'NOT_OBSERVED',
   historicalCompletion:false,currentConsistency:'UNKNOWN',recoveryAllowed:false,newRequestAllowed:false};
+async function runGasTiming(browser) {
+  const trace='12345678-1234-4123-8123-123456789abc';
+  const stages=['VERIFY_LINE','EMPLOYEE_CONTEXT','ACTION_READ','LOCK_WAIT','RESPONSE_PREP'];
+  const diagnostic=()=>({version:1,transportTraceId:trace,total:'MS_5000_9999',stages:Object.fromEntries(stages.map(k=>[k,k==='LOCK_WAIT'?'NOT_RUN':'LT_100']))});
+  const invalid=[undefined,null,[],{},'PRIVATE_TOKEN',
+    {...diagnostic(),extra:'PRIVATE_BODY'}, {...diagnostic(),version:'1'}, {...diagnostic(),total:'TIMEOUT'},
+    {...diagnostic(),total:'NOT_RUN'}, {...diagnostic(),transportTraceId:'PRIVATE_UID'},
+    {...diagnostic(),transportTraceId:'11111111-2222-4333-8444-555555555555'},
+    {...diagnostic(),stages:{...diagnostic().stages,PRIVATE:'PRIVATE_AUDIT'}},
+    {...diagnostic(),stages:{...diagnostic().stages,LOCK_WAIT:['LT_100']}},
+    {...diagnostic(),stages:{...diagnostic().stages,RESPONSE_PREP:'<img src=x onerror=alert(1)>'}},
+    {...diagnostic(),stages:{}}];
+  let count=0;
+  for(const value of [diagnostic(),...invalid]){
+    const p=await timingPage(browser,[{version:'t3-4-gas-read-diag',body:{...timingIdentity,_gasReadDiagnostics:value}}]);
+    await p.click('check');assert.equal(await p.page.locator('#state').textContent(),'ACTIVE_EMPLOYEE');
+    assert.equal(await p.page.locator('#gasTimingAvailability').textContent(),count===0?'可用':'無法取得');
+    assert.equal(await p.page.locator('#error').textContent(),'無');
+    const region=await p.page.locator('[aria-labelledby="gasTimingTitle"]').textContent();assert(!region.includes(trace));assert.equal(await p.page.locator('img').count(),0);
+    if(count===0){assert.equal(await p.page.locator('#gasTimingTotal').textContent(),timingLabels.MS_5000_9999);assert.equal(await p.page.locator('#gasLockWait').textContent(),'未執行');}
+    assert.equal(p.calls.length,1);await p.close();count++;
+  }
+  for(const bucket of Object.keys(timingLabels).filter(k=>k!=='TIMEOUT')){
+    const d=diagnostic();d.stages.RESPONSE_PREP=bucket;
+    const p=await timingPage(browser,[{version:'t3-4-gas-read-diag',body:{...timingIdentity,_gasReadDiagnostics:d}}]);
+    await p.click('check');assert.equal(await p.page.locator('#gasResponsePrep').textContent(),timingLabels[bucket]);await p.close();count++;
+  }
+  for(const version of ['t1-1','t3-1','t3-2-status-only','t3-3-timing-diag','t4-safety-1','t3-4-gas-read-diag']){
+    const p=await timingPage(browser,Array.from({length:3},()=>({version})));await p.click('check');
+    assert.equal(await p.page.locator('#version').textContent(),version);assert.equal(await p.page.locator('#gasTimingAvailability').textContent(),'無法取得');
+    await p.click('baselineCheck');assert.equal(await p.page.locator('#baselineStatus').textContent(),'此員工可進行 Legacy Baseline');
+    if(!['t1-1','t3-1'].includes(version)){await p.page.fill('#operationRequestId','status-request-0001');await p.click('operationStatusCheck');assert((await p.page.locator('#operationStatusFields').textContent()).includes('NOT_OBSERVED'));}
+    else assert(await p.page.locator('#operationStatusCheck').isDisabled());
+    await p.close();count++;
+  }
+  const d=diagnostic();d.stages.LOCK_WAIT='MS_500_1999';
+  const p=await timingPage(browser,[{version:'t3-4-gas-read-diag',body:{...timingIdentity,_gasReadDiagnostics:diagnostic()}},
+    {version:'t3-4-gas-read-diag',body:{...timingBaseline,_gasReadDiagnostics:diagnostic()}},
+    {version:'t3-4-gas-read-diag',body:{...timingStatus,_gasReadDiagnostics:d}},
+    {version:'t3-3-timing-diag'}]);
+  await p.click('check');await p.click('baselineCheck');assert.equal(await p.page.locator('#gasTimingAvailability').textContent(),'可用');
+  await p.page.fill('#operationRequestId','status-request-0001');await p.click('operationStatusCheck');assert.equal(await p.page.locator('#gasLockWait').textContent(),timingLabels.MS_500_1999);
+  await p.click('check');assert.equal(await p.page.locator('#gasTimingAvailability').textContent(),'無法取得');assert.equal(await p.page.locator('#gasLockWait').textContent(),'—');
+  await p.close();count++;
+  const e=await timingPage(browser,[{version:'t3-4-gas-read-diag',body:{success:false,code:'SCHEMA_ERROR',_gasReadDiagnostics:diagnostic()}}]);
+  await e.click('check');assert.equal(await e.page.locator('#error').textContent(),'SCHEMA_ERROR');assert.equal(await e.page.locator('#gasTimingAvailability').textContent(),'可用');await e.close();count++;
+  const oldHtml=fs.readFileSync(path.join(root,'index.html'),'utf8').replace(/  <section aria-labelledby="gasTimingTitle">[\s\S]*?<\/section>\n/,'');
+  const old=await timingPage(browser,[{version:'t3-4-gas-read-diag',body:{...timingIdentity,_gasReadDiagnostics:diagnostic()}}],{html:oldHtml});
+  await old.click('check');assert.equal(await old.page.locator('#state').textContent(),'ACTIVE_EMPLOYEE');await old.close();count++;
+  console.log('PASS: '+count+' GAS timing browser scenarios');
+}
 async function timingPage(browser, plans, {script=client,html,identity=timingIdentity}={}) {
   const context=await browser.newContext({viewport:{width:360,height:800},serviceWorkers:'block'}),page=await context.newPage(),calls=[],logs=[],pageErrors=[];
   page.on('console',m=>logs.push(m.text()));page.on('pageerror',e=>pageErrors.push(e.message));
@@ -464,7 +516,7 @@ async function runTimingDiagnostics(browser) {
         ids:[...document.querySelectorAll('[id]')].map(e=>e.id),scripts:[...document.scripts].map(s=>s.getAttribute('src')),
         fits:document.documentElement.scrollWidth<=innerWidth}));
       assert.equal(markup.doctype,'html');assert.equal(markup.lang,'zh-Hant');assert.equal(new Set(markup.ids).size,markup.ids.length);assert(markup.fits);
-      assert.deepEqual(markup.scripts,['https://static.line-scdn.net/liff/edge/2/sdk.js','config.js','client.js?v=t3-3-timing-diag']);
+      assert.deepEqual(markup.scripts,['https://static.line-scdn.net/liff/edge/2/sdk.js','config.js','client.js?v=t3-4-gas-read-diag']);
     }
     await p.close();
   }
