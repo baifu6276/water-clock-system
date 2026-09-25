@@ -5,7 +5,8 @@
   const baselineButton = document.getElementById('baselineCheck');
   const baselineFields = document.getElementById('baselineFields');
   const STATUS_VERSION = 't3-2-status-only';
-  const statusCapable = version => [STATUS_VERSION, 't4-safety-1'].includes(version);
+  const TIMING_VERSION = 't3-3-timing-diag';
+  const statusCapable = version => [STATUS_VERSION, 't4-safety-1', TIMING_VERSION].includes(version);
   const statusButton = document.getElementById('operationStatusCheck');
   const probeButton = document.getElementById('operationStatusProbe');
   const requestIdInput = document.getElementById('operationRequestId');
@@ -33,6 +34,62 @@
     const field = document.getElementById('redirectDiagnostic');
     if (field) field.textContent = value; // Older cached HTML may not have the field.
   };
+  const timingText = Object.freeze({
+    LT_100: '未滿 0.1 秒', MS_100_499: '0.1 秒至未滿 0.5 秒', MS_500_1999: '0.5 秒至未滿 2 秒',
+    MS_2000_4999: '2 秒至未滿 5 秒', MS_5000_9999: '5 秒至未滿 10 秒',
+    MS_10000_19999: '10 秒至未滿 20 秒', MS_GE_20000: '20 秒以上',
+    TIMEOUT: '逾時（共用 20 秒期限）', NOT_RUN: '未執行'
+  });
+  const timingIds = ['timingTotal', 'timingCurrentStage', 'timingHops', 'timingPostHeaders', 'timingLastGet'];
+  const hasTimingUi = ['timingAvailability', ...timingIds].every(id => document.getElementById(id));
+  function resetTiming() {
+    if (!hasTimingUi) return;
+    set('timingAvailability', '尚未取得');
+    for (const id of timingIds) set(id, '—');
+  }
+  function parseTiming(header) {
+    if (typeof header !== 'string' || header.length > 256 || !/^[A-Za-z0-9_=;]+$/.test(header)) return null;
+    const keys = ['v', 'rr', 'ph', 'g1', 'g2', 'g3', 'fb', 'tot', 'cur', 'hops'];
+    const parts = header.split(';'), value = Object.create(null);
+    if (parts.length !== keys.length) return null;
+    for (let i = 0; i < keys.length; i++) {
+      const pair = parts[i].split('=');
+      if (pair.length !== 2 || pair[0] !== keys[i]) return null;
+      value[keys[i]] = pair[1];
+    }
+    const duration = bucket => Object.hasOwn(timingText, bucket) && !['TIMEOUT', 'NOT_RUN'].includes(bucket);
+    if (value.v !== '1' || !/^[0-3]$/.test(value.hops) ||
+        !['READ_REQUEST', 'POST_HEADERS', 'REDIRECT_GET_HEADERS', 'FINAL_BODY', 'DONE'].includes(value.cur) ||
+        !(duration(value.tot) || value.tot === 'TIMEOUT')) return null;
+    const hops = Number(value.hops), timeout = value.tot === 'TIMEOUT';
+    if ((['READ_REQUEST', 'POST_HEADERS'].includes(value.cur) && hops !== 0) ||
+        (value.cur === 'REDIRECT_GET_HEADERS' && hops === 0) || (value.cur === 'DONE' && timeout)) return null;
+    const entered = ['rr'];
+    if (value.cur !== 'READ_REQUEST') entered.push('ph');
+    for (let hop = 1; hop <= hops; hop++) entered.push('g' + hop);
+    if (['FINAL_BODY', 'DONE'].includes(value.cur)) entered.push('fb');
+    const active = entered[entered.length - 1];
+    for (const key of ['rr', 'ph', 'g1', 'g2', 'g3', 'fb']) {
+      if (!entered.includes(key)) { if (value[key] !== 'NOT_RUN') return null; }
+      else if (timeout && key === active) { if (value[key] !== 'TIMEOUT') return null; }
+      else if (!duration(value[key])) return null;
+    }
+    return value;
+  }
+  function showTiming(response) {
+    if (!hasTimingUi) return;
+    // Diagnostics are optional and never throw into the business request path.
+    try {
+      const value = parseTiming(response.headers.get('x-transport-timing'));
+      if (!value) { set('timingAvailability', '無法取得'); return; }
+      set('timingAvailability', '可用');
+      set('timingTotal', timingText[value.tot]);
+      set('timingCurrentStage', value.cur); set('timingHops', value.hops);
+      set('timingPostHeaders', timingText[value.ph]);
+      const getLabels = ['', 'GET1', 'GET2', 'GET3'];
+      set('timingLastGet', value.hops === '0' ? '未執行' : getLabels[Number(value.hops)] + '：' + timingText[value['g' + value.hops]]);
+    } catch { set('timingAvailability', '無法取得'); }
+  }
   let ready = false, busy = false, identity = null;
   const manager = () => identity?.state === 'ACTIVE_EMPLOYEE' && ['OWNER', 'ADMIN'].includes(identity.permission);
   function controls() {
@@ -47,10 +104,11 @@
       statusButton.disabled = !ready || busy || !capable || !validRequestId(requestIdInput.value);
       set('operationStatusHint', capable
         ? '只查 EMP001 的原請求；結果不會授權建立、重送或復原寫入。'
-        : '此身分回應尚未確認唯讀查詢版本；需 Relay t3-2-status-only，再手動檢查身分。');
+        : '此身分回應尚未確認唯讀查詢版本；需 Relay t3-2-status-only 或 t3-3-timing-diag，再手動檢查身分。');
     }
   }
   async function request(action, requestId) {
+    resetTiming();
     set('transportStage', '—');
     setRedirectDiagnostic('—');
     lastTransportVersion = null;
@@ -74,8 +132,9 @@
           { action, idToken, employeeId: 'EMP001', ...(action === 'employeeLifecycleBaselineRequestStatus' ? { requestId } : {}) }),
         redirect: 'error', credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', signal: controller.signal });
       set('http', String(response.status));
+      showTiming(response);
       const version = response.headers.get('x-transport-version');
-      lastTransportVersion = ['t1-1', 't3-1', STATUS_VERSION, 't4-safety-1'].includes(version) ? version : null;
+      lastTransportVersion = ['t1-1', 't3-1', STATUS_VERSION, 't4-safety-1', TIMING_VERSION].includes(version) ? version : null;
       set('version', lastTransportVersion || '未識別');
       if (action === 'employeeLifecycleBaselineRequestStatus' && !statusCapable(version)) throw new Error('STATUS_VERSION_REQUIRED');
       const correlation = response.headers.get('x-correlation-id');

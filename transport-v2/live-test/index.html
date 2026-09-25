@@ -8,7 +8,7 @@
   <style>body{font-family:system-ui;margin:20px auto;padding:0 16px;max-width:600px;line-height:1.6}button{padding:12px;font:inherit}dd{margin:0 0 12px;overflow-wrap:anywhere}dt{font-weight:bold}</style>
   <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script defer src="config.js"></script>
-  <script defer src="client.js?v=t3-t4-read-compat1"></script>
+  <script defer src="client.js?v=t3-3-timing-diag"></script>
 </head>
 <body>
   <h1>Transport V2 T1／T3 隔離測試</h1>
@@ -26,6 +26,18 @@
     <dt>Redirect 診斷</dt><dd id="redirectDiagnostic">—</dd>
     <dt>Correlation ID</dt><dd id="correlation">—</dd>
   </dl>
+  <section aria-labelledby="timingTitle">
+    <h2 id="timingTitle">Transport timing</h2>
+    <p id="timingAvailability" role="status">尚未取得</p>
+    <dl>
+      <dt>總耗時</dt><dd id="timingTotal">—</dd>
+      <dt>目前階段</dt><dd id="timingCurrentStage">—</dd>
+      <dt>Redirect hops</dt><dd id="timingHops">—</dd>
+      <dt>POST 等候</dt><dd id="timingPostHeaders">—</dd>
+      <dt>最後一次 GET 等候</dt><dd id="timingLastGet">—</dd>
+    </dl>
+    <p>逾時表示共用 20 秒期限到達，不代表單一步驟耗時 20 秒。</p>
+  </section>
   <button id="login" hidden>登入 LINE</button>
   <button id="check" disabled>檢查身分（唯讀）</button>
   <section id="baselineSection" hidden>
