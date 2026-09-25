@@ -1,0 +1,139 @@
+{
+  "format": 1,
+  "status": "OFFLINE_REVIEW_CANDIDATE",
+  "productionMigration": "HOLD",
+  "source": {
+    "version": 44,
+    "exportSha256": "804c166e5b6e77ea9b4286d7a5bc9d26f9fe7216eb44aa86a6930c41cf0a6ca4",
+    "assurance": "Saved export and prior projects.getContent(versionNumber=44) report; no fresh Production query. Never derived from main/V45 sources."
+  },
+  "workerBase": "c4ba55ca147da676759d7098f60ce4a4e31a77d3",
+  "frontendBase": "ebe52b07ee307f4b615af478775c32f0ceb99ef3",
+  "bundleHashFormat": "SHA-256 of concatenated sorted UTF-8 filename + NUL + ASCII byteLength + NUL + exact bytes; covers all 10 deployable files, not manifest/tests/docs",
+  "fullCandidateSha256": "ce7295e11cef5b381519920323470f60825394ed61466125f0ebe785e59dbdaa",
+  "evidenceBundleSha256": "22b66c3b9b31dd27b6eafa3b1d960995ee6e42becb199168cef09fb5c3e6a334",
+  "matrix": [
+    {
+      "file": "EmployeeApplication.gs",
+      "status": "MODIFIED",
+      "baseSha256": "d560abdab333a73e36dc7ead0e30906593fa8d00c9f0f0e43ee091af2e37f169",
+      "candidateSha256": "aea7cfecb4ec247ba8b14aaa1d356014bf1066633598f392a01024ae0d31b0fb",
+      "baseSize": 8543,
+      "size": 13438,
+      "modifiedFunctions": [
+        "employeeFoundationRequest_",
+        "handleEmployeeFoundation_"
+      ],
+      "addedFunctions": [
+        "employeeReadDiagnosticInput_",
+        "employeeReadDiagnosticEnabled_",
+        "employeeReadDiagnostics_",
+        "employeeReadDiagnosticResponse_"
+      ],
+      "removedFunctions": []
+    },
+    {
+      "file": "EmployeeApplicationAdmin.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "b5761d9ab6c5027766955f96bfb2765d0d84e6348b97b160d361bba277e4ca46",
+      "candidateSha256": "b5761d9ab6c5027766955f96bfb2765d0d84e6348b97b160d361bba277e4ca46",
+      "baseSize": 16421,
+      "size": 16421,
+      "modifiedFunctions": [],
+      "addedFunctions": [],
+      "removedFunctions": []
+    },
+    {
+      "file": "EmployeeIdentity.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "c6d8dad46ee6e0b5ed31408b6f6a80144f8e017d623b06100fca3b21a3ee74cf",
+      "candidateSha256": "c6d8dad46ee6e0b5ed31408b6f6a80144f8e017d623b06100fca3b21a3ee74cf",
+      "baseSize": 9931,
+      "size": 9931,
+      "modifiedFunctions": [],
+      "addedFunctions": [],
+      "removedFunctions": []
+    },
+    {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "status": "MODIFIED",
+      "baseSha256": "3582ce0afa4841664887ade1dd96f2969bac0b82c7aa167987a4ed8378296156",
+      "candidateSha256": "e3de0e08e83383df62c81e7046c2ba4169581ff9df309345204df538b4cc0a17",
+      "baseSize": 16985,
+      "size": 17308,
+      "modifiedFunctions": [
+        "employeeBaselineRequestStatus_"
+      ],
+      "addedFunctions": [],
+      "removedFunctions": []
+    },
+    {
+      "file": "EmployeeLifecycleMutation.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "7d3c454f37f9f0e1d60eaaa0415ae7c10f2fa1f44834fe571f3bc5199ecaf083",
+      "candidateSha256": "7d3c454f37f9f0e1d60eaaa0415ae7c10f2fa1f44834fe571f3bc5199ecaf083",
+      "baseSize": 14548,
+      "size": 14548,
+      "modifiedFunctions": [],
+      "addedFunctions": [],
+      "removedFunctions": []
+    },
+    {
+      "file": "EmployeeLifecycleRead.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "602a7157ed5e9756947aa14ae546263b5593fed420f74b04e5a8e99c8cb3a56d",
+      "candidateSha256": "602a7157ed5e9756947aa14ae546263b5593fed420f74b04e5a8e99c8cb3a56d",
+      "baseSize": 11207,
+      "size": 11207,
+      "modifiedFunctions": [],
+      "addedFunctions": [],
+      "removedFunctions": []
+    },
+    {
+      "file": "EmployeeLifecycleStore.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "40990ea7487a3588ee91b937b62ca91f4d461a51c3acb2de5893e015f171b951",
+      "candidateSha256": "40990ea7487a3588ee91b937b62ca91f4d461a51c3acb2de5893e015f171b951",
+      "baseSize": 12077,
+      "size": 12077,
+      "modifiedFunctions": [],
+      "addedFunctions": [],
+      "removedFunctions": []
+    },
+    {
+      "file": "appsscript.json",
+      "status": "UNCHANGED",
+      "baseSha256": "788d42fd367f154e0fc730f8953b842365de440f58560dc4333f723e0c8b44f3",
+      "candidateSha256": "788d42fd367f154e0fc730f8953b842365de440f58560dc4333f723e0c8b44f3",
+      "baseSize": 353,
+      "size": 353,
+      "modifiedFunctions": [],
+      "addedFunctions": [],
+      "removedFunctions": []
+    },
+    {
+      "file": "index.html",
+      "status": "UNCHANGED",
+      "baseSha256": "523048d4eae2135528794580ca57bdf93bddefcf550caf9fdeb0f9f650c63ff2",
+      "candidateSha256": "523048d4eae2135528794580ca57bdf93bddefcf550caf9fdeb0f9f650c63ff2",
+      "baseSize": 2576,
+      "size": 2576,
+      "modifiedFunctions": [],
+      "addedFunctions": [],
+      "removedFunctions": []
+    },
+    {
+      "file": "程式碼.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "7382764a0446a8937913789623516257ccb26c5162c155838be8d3d867fd1651",
+      "candidateSha256": "7382764a0446a8937913789623516257ccb26c5162c155838be8d3d867fd1651",
+      "baseSize": 217032,
+      "size": 217032,
+      "modifiedFunctions": [],
+      "addedFunctions": [],
+      "removedFunctions": []
+    }
+  ],
+  "addedGasFiles": [],
+  "removedGasFiles": []
+}

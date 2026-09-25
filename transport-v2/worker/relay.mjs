@@ -1,5 +1,5 @@
 // Isolated T1/T3 reads only. No logging, storage, retries, or business authorization.
-export const VERSION = 't3-3-timing-diag';
+export const VERSION = 't3-4-gas-read-diag';
 const routes = Object.freeze({
   '/identity': { action: 'identityBootstrap', keys: ['action', 'idToken'] },
   '/employee-read': { action: 'employeeLifecycleBaselineDryRun', keys: ['action', 'idToken', 'employeeId'] },
@@ -8,6 +8,22 @@ const routes = Object.freeze({
 const timeoutStages = new Set(['READ_REQUEST', 'POST_HEADERS', 'REDIRECT_GET_HEADERS', 'FINAL_BODY']);
 const redirectDiagnostics = new Set(['REDIRECT_STATUS_DENIED', 'REDIRECT_LOCATION_INVALID',
   'REDIRECT_SCHEME_DENIED', 'REDIRECT_HOST_DENIED', 'REDIRECT_URL_COMPONENT_DENIED']);
+// Reconstruct diagnostics from a fixed schema; never forward the upstream object.
+function gasReadDiagnostics(value, correlationId) {
+  const stageKeys = ['VERIFY_LINE', 'EMPLOYEE_CONTEXT', 'ACTION_READ', 'LOCK_WAIT', 'RESPONSE_PREP'];
+  const buckets = ['LT_100', 'MS_100_499', 'MS_500_1999', 'MS_2000_4999', 'MS_5000_9999', 'MS_10000_19999', 'MS_GE_20000'];
+  const exact = (object, keys) => object && typeof object === 'object' && !Array.isArray(object) &&
+    Object.keys(object).length === keys.length && keys.every(key => Object.hasOwn(object, key));
+  try {
+    if (!exact(value, ['version', 'transportTraceId', 'total', 'stages']) || value.version !== 1 ||
+        typeof value.transportTraceId !== 'string' ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value.transportTraceId) ||
+        value.transportTraceId !== correlationId || !buckets.includes(value.total) ||
+        !exact(value.stages, stageKeys) || stageKeys.some(key => value.stages[key] !== 'NOT_RUN' && !buckets.includes(value.stages[key]))) return;
+    return { version: 1, transportTraceId: correlationId, total: value.total,
+      stages: Object.fromEntries(stageKeys.map(key => [key, value.stages[key]])) };
+  } catch { return; }
+}
 const fail = code => { throw new Error(code); };
 const errors = new Set(['CONFIG_ERROR', 'HTTPS_REQUIRED', 'PATH_DENIED', 'ORIGIN_DENIED',
   'METHOD_DENIED', 'CONTENT_TYPE_INVALID', 'REQUEST_INVALID', 'REQUEST_TOO_LARGE',
@@ -171,9 +187,10 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
       if (controller.signal.aborted) fail('UPSTREAM_TIMEOUT');
       let target = config.upstream;
       let options = { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(url.pathname === '/identity' ? { action: route.action, idToken: data.idToken } :
+        body: JSON.stringify({ ...(url.pathname === '/identity' ? { action: route.action, idToken: data.idToken } :
           { action: route.action, idToken: data.idToken, employeeId: 'EMP001',
-            ...(url.pathname === '/employee-operation-status' ? { requestId: data.requestId } : {}) }) };
+            ...(url.pathname === '/employee-operation-status' ? { requestId: data.requestId } : {}) }),
+          _transportDiagnostics: { version: 1, traceId: correlationId } }) };
       for (let redirects = 0; ; redirects++) {
         if (controller.signal.aborted) fail('UPSTREAM_TIMEOUT');
         let response;
@@ -207,7 +224,10 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
         let result;
         try { result = JSON.parse(body); } catch { fail('UPSTREAM_JSON_INVALID'); }
         if (!result || Array.isArray(result) || typeof result !== 'object' || typeof result.success !== 'boolean') fail('UPSTREAM_JSON_INVALID');
-        // Preserve GAS business JSON; headers carry transport metadata separately.
+        const safeDiagnostics = gasReadDiagnostics(result._gasReadDiagnostics, correlationId);
+        delete result._gasReadDiagnostics;
+        if (safeDiagnostics) result._gasReadDiagnostics = safeDiagnostics;
+        // Preserve other GAS business fields. Only reconstructed diagnostics cross.
         closed = true;
         timing.close(false, true);
         return reply(result);

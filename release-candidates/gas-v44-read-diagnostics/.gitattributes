@@ -1,0 +1,3 @@
+# Release hashes describe bytes, never Git line-ending normalization.
+evidence/v44-sources/** -text
+sources/** -text

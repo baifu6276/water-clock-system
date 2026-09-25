@@ -7,6 +7,9 @@ globalThis.fetch = () => { throw new Error('Unexpected real network'); };
 const env = { GAS_UPSTREAM: 'https://script.google.com/macros/s/OFFLINE/exec', ALLOWED_ORIGINS: '["https://baifu6276.github.io"]' };
 const token = 'PRIVATE_TOKEN_SENTINEL';
 const good = { success: true, state: 'ACTIVE_EMPLOYEE', employee: { employeeId: 'EMP001', name: '測試' } };
+const gasStages = ['VERIFY_LINE','EMPLOYEE_CONTEXT','ACTION_READ','LOCK_WAIT','RESPONSE_PREP'];
+const gasValue = trace => ({version:1,transportTraceId:trace,total:'MS_500_1999',
+  stages:Object.fromEntries(gasStages.map(k=>[k,k==='LOCK_WAIT'?'NOT_RUN':'LT_100']))});
 const input = { action: 'identityBootstrap', idToken: token };
 function request(body = input, options = {}, route = '/identity') {
   return new Request('https://relay.example' + route, { method: 'POST',
@@ -40,7 +43,7 @@ test('success semantics, fixed upstream POST, no credentials/cache, UUID', async
   assert.equal(calls[0][0], env.GAS_UPSTREAM);
   const options = calls[0][1];
   assert.equal(options.method, 'POST'); assert.equal(options.headers['Content-Type'], 'text/plain;charset=utf-8');
-  assert.deepEqual(JSON.parse(options.body), input); assert.equal(options.redirect, 'manual');
+  assert.deepEqual(JSON.parse(options.body), {...input, _transportDiagnostics: {version:1, traceId:result.headers.get('x-correlation-id')}}); assert.equal(options.redirect, 'manual');
   assert.equal(options.credentials, 'omit'); assert.equal(options.cache, 'no-store');
   assert.match(result.headers.get('x-correlation-id'), /^[0-9a-f-]{36}$/);
   assert.equal(result.headers.get('cache-control'), 'no-store');
@@ -167,7 +170,7 @@ test('T3 exact request forwards to fixed GAS, business rejection preserved', asy
     const r = await run(request(baseline, {}, '/employee-read'), [json(result)]);
     assert.deepEqual(r.body, result); assert.equal(r.calls.length, 1);
     assert.equal(r.calls[0][0], env.GAS_UPSTREAM);
-    assert.deepEqual(JSON.parse(r.calls[0][1].body), baseline);
+    assert.deepEqual(JSON.parse(r.calls[0][1].body), {...baseline, _transportDiagnostics:{version:1,traceId:r.result.headers.get('x-correlation-id')}});
     assert.equal(r.calls[0][1].headers['Content-Type'], 'text/plain;charset=utf-8');
   }
 });
@@ -318,7 +321,7 @@ test('status route forwards exact read-only request and safe result', async () =
   const receipt = { success: true, employeeId: 'EMP001', requestId: statusInput.requestId, action: 'employeeLifecycleBaselineMigrate',
     requestStatus: 'NOT_OBSERVED', historicalCompletion: false, currentConsistency: 'UNKNOWN', recoveryAllowed: false, newRequestAllowed: false };
   const r = await run(request(statusInput, {}, '/employee-operation-status'), [json(receipt)]);
-  assert.deepEqual(r.body, receipt); assert.deepEqual(JSON.parse(r.calls[0][1].body), statusInput); assert.equal(r.calls.length, 1);
+  assert.deepEqual(r.body, receipt); assert.deepEqual(JSON.parse(r.calls[0][1].body), {...statusInput, _transportDiagnostics:{version:1,traceId:r.result.headers.get('x-correlation-id')}}); assert.equal(r.calls.length, 1);
   assert.equal(r.calls[0][1].headers['Content-Type'], 'text/plain;charset=utf-8');
 });
 for (const [label, patch] of [['wrong employee', {employeeId:'EMP002'}], ['missing request', {requestId:undefined}],
@@ -424,7 +427,7 @@ test('timing fast success / success header / CORS / unchanged JSON', async t => 
   const h = timed(t); await h.respond(json()); const r = await h.finish();
   assert.deepEqual(r.body, good);
   assert.deepEqual(timingOf(r.result), { v:'1', rr:'LT_100', ph:'LT_100', g1:'NOT_RUN', g2:'NOT_RUN', g3:'NOT_RUN', fb:'LT_100', tot:'LT_100', cur:'DONE', hops:'0' });
-  assert.equal(r.result.headers.get('x-transport-version'), 't3-3-timing-diag');
+  assert.equal(r.result.headers.get('x-transport-version'), 't3-4-gas-read-diag');
   assert.equal(r.result.headers.get('access-control-expose-headers'), 'X-Transport-Version, X-Correlation-Id, X-Transport-Timing');
   assert.equal(r.result.headers.get('timing-allow-origin'), null);
 });
@@ -574,7 +577,7 @@ for (const sentinel of ['PRIVATE_TOKEN_SENTINEL','PRIVATE_BODY','https://private
 }
 test('timing exact readonly release routes / no T4 artifact / config unchanged', async () => {
   const source = readFileSync(new URL('../worker/relay.mjs', import.meta.url), 'utf8');
-  assert.equal(VERSION, 't3-3-timing-diag');
+  assert.equal(VERSION, 't3-4-gas-read-diag');
   assert.deepEqual([...source.matchAll(/'(\/[^']+)'\s*:\s*\{ action:/g)].map(m => m[1]), ['/identity','/employee-read','/employee-operation-status']);
   assert(!/T4_|employee-baseline-migrate|employeeLifecycleBaselineMigrate|Date\.now|console\./.test(source));
   assert(source.includes('timeoutMs = 20000, now = () => performance.now()'));
@@ -590,3 +593,36 @@ test('timing exact readonly release routes / no T4 artifact / config unchanged',
   const original = execFileSync('git',['show','b92f9f91eea65b6064ae0e10c54c93db1e5f9dc5:transport-v2/live-test/config.js'],{encoding:'utf8'});
   assert.equal(config, original.replace(/\r\n/g,'\n'));
 });
+
+for (const path of ['/identity','/employee-read','/employee-operation-status']) {
+  test('GAS metadata injection after validation '+path, async()=>{
+    const data=path==='/identity'?input:path==='/employee-read'?{action:'employeeLifecycleBaselineDryRun',idToken:token,employeeId:'EMP001'}:
+      {action:'employeeLifecycleBaselineRequestStatus',idToken:token,employeeId:'EMP001',requestId:'status-probe-offline-0001'};
+    const bad=await run(request({...data,_transportDiagnostics:{version:1,traceId:'PRIVATE'}},{},path),[]);
+    assert.equal(bad.body.transportError,'REQUEST_INVALID');assert.equal(bad.calls.length,0);
+    let injected;
+    const r=await run(request(data,{},path),[(url,options)=>{injected=JSON.parse(options.body);return json({...good,_gasReadDiagnostics:gasValue(injected._transportDiagnostics.traceId)});}]);
+    const trace=r.result.headers.get('x-correlation-id');assert.match(trace,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    assert.deepEqual(injected,{...data,_transportDiagnostics:{version:1,traceId:trace}});
+    assert.deepEqual(r.body,{...good,_gasReadDiagnostics:gasValue(trace)});assert.equal(r.calls.length,1);
+  });
+}
+const invalidGas = [
+  v=>null,v=>[],v=>'PRIVATE_TOKEN_SENTINEL',v=>({...v,extra:'PRIVATE_BODY'}),v=>({...v,version:'1'}),
+  v=>({...v,total:'NOT_RUN'}),v=>({...v,total:'TIMEOUT'}),v=>({...v,total:{secret:'PRIVATE'}}),
+  v=>({...v,transportTraceId:'PRIVATE_SUB'}),v=>({...v,transportTraceId:'11111111-2222-4333-8444-555555555555'}),
+  v=>({...v,stages:{...v.stages,extra:'PRIVATE_HEADER'}}),v=>({...v,stages:{}}),v=>({...v,stages:[]}),
+  v=>({...v,stages:{...v.stages.ACTION_READ,PRIVATE:'PRIVATE_AUDIT'}}),
+  v=>({...v,stages:{...v.stages,ACTION_READ:'TIMEOUT'}}),v=>({...v,stages:{...v.stages,ACTION_READ:['LT_100']}}),
+  v=>{delete v.version;return v;},v=>{delete v.stages.VERIFY_LINE;return v;}
+];
+invalidGas.forEach((change,i)=>test('unsafe GAS diagnostics stripped '+i,async()=>{
+  const business={success:false,code:'FORBIDDEN',message:'固定訊息'};
+  const r=await run(request(),[(url,options)=>json({...business,_gasReadDiagnostics:change(gasValue(JSON.parse(options.body)._transportDiagnostics.traceId))})]);
+  assert.deepEqual(r.body,business);assert(!JSON.stringify(r.body).includes('PRIVATE'));assert.equal(r.calls.length,1);
+}));
+for(const bucket of ['LT_100','MS_100_499','MS_500_1999','MS_2000_4999','MS_5000_9999','MS_10000_19999','MS_GE_20000'])test('GAS allowed bucket '+bucket,async()=>{
+  const r=await run(request(),[(url,options)=>{const d=gasValue(JSON.parse(options.body)._transportDiagnostics.traceId);d.total=bucket;d.stages.ACTION_READ=bucket;return json({...good,_gasReadDiagnostics:d});}]);
+  assert.equal(r.body._gasReadDiagnostics.total,bucket);
+});
+test('GAS metadata diagnostics absent on old response; no retries',async()=>{const r=await run();assert.deepEqual(r.body,good);assert.equal(r.calls.length,1);});

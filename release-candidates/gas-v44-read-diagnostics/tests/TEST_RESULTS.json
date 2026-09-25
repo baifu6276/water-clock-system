@@ -1,0 +1,98 @@
+{
+  "status": "OFFLINE_FINAL_PASS",
+  "countUnit": "Test groups/scenarios as reported by the runners, not individual assertions",
+  "productionMigration": "HOLD",
+  "network": "All LINE/GAS/Worker requests and Sheets services mocked; browser requests intercepted. No Production requests.",
+  "results": [
+    {
+      "name": "V44 foundation/baseline/status regression",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "node release-candidates/gas-v44-read-diagnostics/tests/foundation-regression.cjs",
+      "exitCode": 0,
+      "passed": 89,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "name": "GAS diagnostics + artifact checks + Worker relay",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "$env:FRONTEND_ROOT='C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-frontend'\nnode --test release-candidates/gas-v44-read-diagnostics/tests/gas-diagnostics.test.cjs release-candidates/gas-v44-read-diagnostics/tests/artifact-checks.test.cjs transport-v2/tests/relay.test.mjs",
+      "exitCode": 0,
+      "passed": 356,
+      "failed": 0,
+      "skipped": 0,
+      "breakdown": {
+        "gasDiagnostics": 69,
+        "artifactSyntaxStatic": 14,
+        "workerRelay": 273
+      }
+    },
+    {
+      "name": "T1/T3 browser and prior cross-branch regression",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-frontend",
+      "command": "$env:PLAYWRIGHT_MODULE='C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\node_modules\\playwright'\n$env:CHROME_PATH='C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'\n$env:TRANSPORT_CONTRACT_RELAY='C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t3-timing-worker-release\\transport-v2\\worker\\relay.mjs'\nnode transport-v2/tests/live-test.cjs",
+      "exitCode": 0,
+      "passed": 269,
+      "failed": 0,
+      "skipped": 0,
+      "breakdown": {
+        "existingBrowser": 228,
+        "newGasTimingBrowser": 33,
+        "priorCrossBranch": 8
+      }
+    },
+    {
+      "name": "Actual candidate GAS + new Worker + current-main frontend",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "$env:PLAYWRIGHT_MODULE='C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\node_modules\\playwright'\n$env:CHROME_PATH='C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'\n$env:FRONTEND_ROOT='C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-frontend'\nnode release-candidates/gas-v44-read-diagnostics/tests/cross-artifact.cjs",
+      "exitCode": 0,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "name": "Candidate manifest exact bytes and function scope",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "node release-candidates/gas-v44-read-diagnostics/tests/package-candidate.cjs",
+      "exitCode": 0,
+      "result": "PASS: 2 modified, 8 unchanged, 0 added/removed GAS files; all pinned evidence hashes match"
+    },
+    {
+      "name": "Tracked diff whitespace - Worker",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "git diff --check",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "name": "Tracked diff whitespace - frontend",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-frontend",
+      "command": "git diff --check",
+      "exitCode": 0,
+      "result": "PASS"
+    },
+    {
+      "name": "Candidate source diff whitespace",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "git diff --no-index --check -- release-candidates/gas-v44-read-diagnostics/evidence/v44-sources release-candidates/gas-v44-read-diagnostics/sources",
+      "exitCode": 1,
+      "result": "No whitespace diagnostics. no-index returns 1 because the two source trees differ; the expected two modified files are separately validated by the manifest."
+    }
+  ],
+  "totals": {
+    "passed": 729,
+    "failed": 0,
+    "skipped": 0
+  },
+  "resolvedHarnessIssues": [
+    "Sandbox initially prevented node test-runner child process creation (EPERM); authorized offline test reruns succeeded.",
+    "Cross-artifact expectation aligned with existing safe UI preference for diagnosticCode BACKEND_SCHEMA_ERROR over code SCHEMA_ERROR.",
+    "Negative browser cases allow only the fixed Chromium 502/504 failed-resource notice; application logs, private values and arbitrary console output remain forbidden.",
+    "Static checks distinguish executable service/storage accesses from comments and distinguish outgoing actions from the legitimate status receipt action field."
+  ],
+  "limitations": [
+    "Offline results do not prove Production latency root cause or successful deployment.",
+    "No Migration deadline margin established. Migration remains HOLD.",
+    "Source bundle hashes cover the ten deployable source files using the manifest's length-prefixed deterministic format, not documentation/tests."
+  ]
+}
