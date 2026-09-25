@@ -1,6 +1,9 @@
-import test from 'node:test';
+import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { handle } from '../worker/relay.mjs';
+import { handle, VERSION } from '../worker/relay.mjs';
+import { readFileSync } from 'node:fs';
+// No test can accidentally reach a real service, even if injection is forgotten.
+globalThis.fetch = () => { throw new Error('Unexpected real network'); };
 const env = { GAS_UPSTREAM: 'https://script.google.com/macros/s/OFFLINE/exec', ALLOWED_ORIGINS: '["https://baifu6276.github.io"]' };
 const token = 'PRIVATE_TOKEN_SENTINEL';
 const good = { success: true, state: 'ACTIVE_EMPLOYEE', employee: { employeeId: 'EMP001', name: '測試' } };
@@ -13,12 +16,20 @@ function request(body = input, options = {}, route = '/identity') {
 const json = (body = good) => Response.json(body);
 async function run(req = request(), responses = [json()], config = env, timeoutMs = 200) {
   const calls = [];
-  const result = await handle(req, config, { timeoutMs, fetchImpl: async (...args) => {
+  // Legacy stalled-I/O cases used a real 5 ms sleep. Advance a fake timer instead.
+  const fakeDeadline = timeoutMs === 5;
+  if (fakeDeadline) mock.timers.enable({ apis: ['setTimeout'] });
+  let result;
+  try {
+  const pending = handle(req, config, { timeoutMs, now: () => 0, fetchImpl: async (...args) => {
     calls.push(args); const response = responses.shift();
     if (response instanceof Error) throw response;
     if (typeof response === 'function') return response(...args);
     assert(response, 'Unexpected retry'); return response;
   } });
+  if (fakeDeadline) { await new Promise(resolve => setImmediate(resolve)); mock.timers.tick(timeoutMs); }
+  result = await pending;
+  } finally { if (fakeDeadline) mock.timers.reset(); }
   const body = await result.json();
   if (!['UPSTREAM_TIMEOUT', 'UPSTREAM_REDIRECT_DENIED'].includes(body.transportError)) assert.equal(Object.hasOwn(body, 'transportStage'), false);
   return { result, calls, body };
@@ -190,16 +201,30 @@ test('T3 uses unchanged redirect/timeout/size/no-retry guards', async () => {
   const large = await run(req(), [new Response('x'.repeat(65537))]);
   assert.equal(large.body.transportError, 'UPSTREAM_RESPONSE_TOO_LARGE'); assert.equal(large.calls.length, 1);
 });
-test('real GAS dry-run dispatcher with external feature fixtures: every Sheet mutation throws', { skip: !process.env.EMPLOYEE_FOUNDATION_FIXTURE }, async () => {
-  const { readFile } = await import('node:fs/promises');
+test('pinned committed GAS read-only fixture: every Sheet mutation throws', async () => {
+  // This baseline predates GAS source control. Read immutable Git objects, never
+  // another worktree or its uncommitted files; no checkout/network is required.
+  const { execFileSync } = await import('node:child_process');
   const { createRequire } = await import('node:module');
-  const { fileURLToPath, pathToFileURL } = await import('node:url');
   const vm = await import('node:vm');
-  const fixtureURL = pathToFileURL(process.env.EMPLOYEE_FOUNDATION_FIXTURE);
-  const fixture = await readFile(fixtureURL, 'utf8');
+  const require = createRequire(import.meta.url);
+  const path = require('node:path');
+  const revision = 'c1c9d30a21cba7a0cd700f61a93e1e6b4beab3fd';
+  const committed = file => execFileSync('git', ['show', revision + ':' + file], { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
+  const fixture = committed('tests/employee-foundation.test.cjs');
   // Reuse only the existing mock factory, before any foundation test executes.
   const boundary = fixture.indexOf('\nconst payload ='); assert(boundary > 0);
-  const sandbox = { require: createRequire(fixtureURL), __dirname: fileURLToPath(new URL('.', fixtureURL)) };
+  const virtualRoot = path.resolve('pinned-offline-gas-fixture');
+  const sandbox = { __dirname: path.join(virtualRoot, 'tests'), require: name => {
+    if (name === 'node:fs') return { readFileSync: filename => {
+      const relative = path.relative(virtualRoot, filename).replace(/\\/g, '/');
+      assert.match(relative, /^gas\/[A-Za-z]+\.gs$/);
+      return committed(relative);
+    } };
+    assert(['node:assert/strict', 'node:vm', 'node:crypto', 'node:path'].includes(name));
+    return require(name);
+  } };
+
   vm.runInNewContext(fixture.slice(0, boundary) + '\nglobalThis.makeEnv = env;', sandbox);
   for (const role of ['OWNER', 'ADMIN', 'SITE_MANAGER', 'EMPLOYEE']) {
     const e = sandbox.makeEnv();
@@ -353,4 +378,215 @@ for(const n of [1,2,3,4])test('redirect limit precedence chain '+n,async()=>{
   const responses=Array.from({length:n},(_,i)=>new Response(null,{status:i===3?307:302,headers:{location:i===3?'not a URL':'https://script.googleusercontent.com/echo?private=SECRET'}}));
   const r=await run(request(),[...responses,json()]);assert.equal(r.calls.length,n===4?4:n+1);
   assert.deepEqual(r.body,n===4?{success:false,transportError:'UPSTREAM_REDIRECT_LIMIT'}:good);
+});
+
+// Contract v1: deferred I/O + injected monotonic clock + fake global deadline.
+function timed(t, { req = request(), clock, config = env } = {}) {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let time = 0, clockCalls = 0;
+  const calls = [], waiting = [];
+  const pending = handle(req, config, {
+    now: () => { clockCalls++; return clock ? clock(clockCalls, time) : time; },
+    fetchImpl: (...args) => {
+      calls.push(args);
+      return new Promise((resolve, reject) => waiting.push({ resolve, reject }));
+    }
+  });
+  return {
+    calls, pending, clockCalls: () => clockCalls,
+    async advance(ms) { time += ms; t.mock.timers.tick(ms); await turn(); },
+    // Simulate clock observation before a delayed timer callback; not a new budget.
+    observe(ms) { time += ms; },
+    async respond(response) { await turn(); assert(waiting.length, 'No pending fetch'); waiting.shift().resolve(response); await turn(); },
+    async reject(error) { await turn(); assert(waiting.length); waiting.shift().reject(error); await turn(); },
+    async finish() { const result = await pending; return { result, body: await result.json(), calls }; }
+  };
+}
+const hopResponse = (status = 302) => new Response(null, { status, headers: {
+  location: 'https://script.googleusercontent.com/PRIVATE_PATH?secret=PRIVATE_QUERY', 'set-cookie': 'PRIVATE_COOKIE'
+} });
+const durationBuckets = ['LT_100', 'MS_100_499', 'MS_500_1999', 'MS_2000_4999', 'MS_5000_9999', 'MS_10000_19999', 'MS_GE_20000'];
+function timingOf(result) {
+  const header = result.headers.get('x-transport-timing');
+  assert(header && header.length <= 256);
+  const pairs = header.split(';').map(part => part.split('='));
+  assert.deepEqual(pairs.map(p => p[0]), ['v', 'rr', 'ph', 'g1', 'g2', 'g3', 'fb', 'tot', 'cur', 'hops']);
+  assert(pairs.every(p => p.length === 2));
+  const value = Object.fromEntries(pairs);
+  assert.equal(value.v, '1'); assert.match(value.hops, /^[0-3]$/);
+  for (const key of ['rr', 'ph', 'g1', 'g2', 'g3', 'fb']) assert([...durationBuckets, 'TIMEOUT', 'NOT_RUN'].includes(value[key]));
+  assert([...durationBuckets, 'TIMEOUT'].includes(value.tot));
+  assert(['READ_REQUEST', 'POST_HEADERS', 'REDIRECT_GET_HEADERS', 'FINAL_BODY', 'DONE'].includes(value.cur));
+  assert(!/PRIVATE|EMP001|https|google|uuid|exception/i.test(header));
+  return value;
+}
+test('timing fast success / success header / CORS / unchanged JSON', async t => {
+  const h = timed(t); await h.respond(json()); const r = await h.finish();
+  assert.deepEqual(r.body, good);
+  assert.deepEqual(timingOf(r.result), { v:'1', rr:'LT_100', ph:'LT_100', g1:'NOT_RUN', g2:'NOT_RUN', g3:'NOT_RUN', fb:'LT_100', tot:'LT_100', cur:'DONE', hops:'0' });
+  assert.equal(r.result.headers.get('x-transport-version'), 't3-3-timing-diag');
+  assert.equal(r.result.headers.get('access-control-expose-headers'), 'X-Transport-Version, X-Correlation-Id, X-Transport-Timing');
+  assert.equal(r.result.headers.get('timing-allow-origin'), null);
+});
+test('timing request body slow', async t => {
+  let stream;
+  const h = timed(t, { req: request('', { body: new ReadableStream({ start(c) { stream = c; } }), duplex:'half' }) });
+  await h.advance(600); assert.equal(h.calls.length, 0);
+  stream.enqueue(new TextEncoder().encode(JSON.stringify(input))); stream.close();
+  await h.respond(json()); const r = await h.finish();
+  assert.equal(timingOf(r.result).rr, 'MS_500_1999'); assert.deepEqual(r.body, good);
+});
+test('timing POST slow', async t => {
+  const h = timed(t); await turn(); await h.advance(2500); await h.respond(json());
+  assert.equal(timingOf((await h.finish()).result).ph, 'MS_2000_4999');
+});
+test('timing POST timeout / default global 20000 / no retry', async t => {
+  const h = timed(t); await turn(); let settled = false; h.pending.then(() => { settled = true; });
+  await h.advance(19999); assert.equal(settled, false);
+  await h.advance(1); const r = await h.finish(); assertTimeout(r, 'POST_HEADERS', 1);
+  const v = timingOf(r.result); assert.equal(v.ph, 'TIMEOUT'); assert.equal(v.tot, 'TIMEOUT'); assert.equal(v.hops, '0');
+  assert.equal(v.fb, 'NOT_RUN'); assert.equal(h.calls[0][1].signal.aborted, true);
+});
+test('timing POST near deadline then redirect uses only remaining budget', async t => {
+  const h = timed(t); await turn(); await h.advance(19500); await h.respond(hopResponse());
+  await h.advance(500); const r = await h.finish(); assertTimeout(r, 'REDIRECT_GET_HEADERS', 2);
+  const v = timingOf(r.result); assert.equal(v.ph, 'MS_10000_19999'); assert.equal(v.g1, 'TIMEOUT'); assert.equal(v.g2, 'NOT_RUN');
+});
+test('timing GET1 slow', async t => {
+  const h = timed(t); await h.respond(hopResponse()); await h.advance(600); await h.respond(json());
+  const v = timingOf((await h.finish()).result); assert.equal(v.g1, 'MS_500_1999'); assert.equal(v.hops, '1'); assert.equal(v.g2, 'NOT_RUN');
+});
+for (const stalledHop of [1, 2]) test('timing GET' + stalledHop + ' timeout', async t => {
+  const h = timed(t); await h.respond(hopResponse());
+  if (stalledHop === 2) { await h.advance(50); await h.respond(hopResponse(303)); }
+  await h.advance(20000 - (stalledHop === 2 ? 50 : 0)); const r = await h.finish();
+  assertTimeout(r, 'REDIRECT_GET_HEADERS', stalledHop + 1);
+  const v = timingOf(r.result); assert.equal(v['g' + stalledHop], 'TIMEOUT'); assert.equal(v.g3, 'NOT_RUN');
+  if (stalledHop === 2) assert.equal(v.g1, 'LT_100');
+});
+test('timing GET1 fast GET2 slow', async t => {
+  const h = timed(t); await h.respond(hopResponse()); await h.advance(50); await h.respond(hopResponse());
+  await h.advance(700); await h.respond(json()); const v = timingOf((await h.finish()).result);
+  assert.equal(v.g1, 'LT_100'); assert.equal(v.g2, 'MS_500_1999'); assert.equal(v.g3, 'NOT_RUN'); assert.equal(v.hops, '2');
+});
+test('timing three redirect hops / POST to GET has no token, body or cookies', async t => {
+  const h = timed(t);
+  for (let i = 0; i < 3; i++) { await turn(); await h.advance(100); await h.respond(hopResponse(i === 1 ? 303 : 302)); }
+  await h.advance(100); await h.respond(json()); const r = await h.finish(), v = timingOf(r.result);
+  assert.equal(r.calls.length, 4); assert.equal(v.hops, '3');
+  for (const key of ['ph','g1','g2','g3']) assert.equal(v[key], 'MS_100_499');
+  for (const [,options] of r.calls.slice(1)) {
+    assert.equal(options.method, 'GET'); assert.equal(options.body, undefined); assert.equal(options.headers, undefined);
+    assert.equal(options.credentials, 'omit'); assert.equal(options.redirect, 'manual');
+  }
+});
+test('timing cumulative global timeout is not a per-stage budget', async t => {
+  const h = timed(t); await turn(); await h.advance(9000); await h.respond(hopResponse());
+  await h.advance(9000); await h.respond(hopResponse()); await h.advance(2000);
+  const r = await h.finish(), v = timingOf(r.result); assertTimeout(r, 'REDIRECT_GET_HEADERS', 3);
+  assert.equal(v.ph, 'MS_5000_9999'); assert.equal(v.g1, 'MS_5000_9999'); assert.equal(v.g2, 'TIMEOUT');
+});
+for (const timeout of [false, true]) test('timing final body ' + (timeout ? 'timeout and late reader immutable' : 'slow'), async t => {
+  let stream;
+  const h = timed(t); await h.respond(hopResponse());
+  await h.respond(new Response(new ReadableStream({ start(c) { stream = c; } })));
+  await h.advance(timeout ? 20000 : 800);
+  if (!timeout) { stream.enqueue(new TextEncoder().encode(JSON.stringify(good))); stream.close(); }
+  const r = await h.finish(), header = r.result.headers.get('x-transport-timing'), v = timingOf(r.result);
+  assert.equal(v.fb, timeout ? 'TIMEOUT' : 'MS_500_1999');
+  if (timeout) {
+    assertTimeout(r, 'FINAL_BODY', 2); const calls = h.clockCalls();
+    stream.enqueue(new TextEncoder().encode('PRIVATE_BODY')); stream.close(); await turn();
+    assert.equal(r.result.headers.get('x-transport-timing'), header); assert.equal(h.clockCalls(), calls); assert.equal(h.calls.length, 2);
+  }
+});
+test('timing timeout snapshot immutable / late fetch cannot mutate or follow redirect', async t => {
+  const h = timed(t); await turn(); await h.advance(20000); const r = await h.finish();
+  const header = r.result.headers.get('x-transport-timing'), count = h.clockCalls();
+  await h.advance(5000); await h.respond(hopResponse());
+  assert.equal(h.calls.length, 1); assert.equal(h.clockCalls(), count); assert.equal(r.result.headers.get('x-transport-timing'), header);
+  assert.equal(timingOf(r.result).ph, 'TIMEOUT');
+});
+test('timing inbound timeout / late reader cannot start POST', async t => {
+  let stream;
+  const h = timed(t, { req: request('', { body: new ReadableStream({ start(c) { stream = c; } }), duplex:'half' }) });
+  await h.advance(20000); const r = await h.finish(), header = r.result.headers.get('x-transport-timing');
+  assertTimeout(r, 'READ_REQUEST', 0); assert.equal(timingOf(r.result).rr, 'TIMEOUT');
+  stream.enqueue(new TextEncoder().encode(JSON.stringify(input))); stream.close(); await turn();
+  assert.equal(h.calls.length, 0); assert.equal(r.result.headers.get('x-transport-timing'), header);
+});
+test('timing unrelated AbortError remains network error, not deadline', async t => {
+  const h = timed(t); await turn(); await h.advance(100);
+  await h.reject(new DOMException('PRIVATE_EXCEPTION PRIVATE_STACK', 'AbortError')); const r = await h.finish();
+  assert.equal(r.body.transportError, 'UPSTREAM_NETWORK_ERROR'); assert.equal(r.result.status, 502);
+  const v = timingOf(r.result); assert.equal(v.ph, 'MS_100_499'); assert.equal(v.cur, 'POST_HEADERS'); assert.equal(v.tot, 'MS_100_499');
+});
+test('timing business-error header preserves HTTP 200 and exact business JSON', async t => {
+  const h = timed(t), value = { success:false, code:'FORBIDDEN' }; await h.respond(json(value));
+  const r = await h.finish(); assert.deepEqual(r.body, value); assert.equal(r.result.status, 200); assert.equal(timingOf(r.result).cur, 'DONE');
+});
+for (const get of [false, true]) test('timing redirect-denied header / completed stages ' + get, async t => {
+  const h = timed(t); if (get) await h.respond(hopResponse()); await turn(); await h.advance(150);
+  await h.respond(new Response(null, { status:302, headers:{ location:'https://PRIVATE_HOST.example/PRIVATE_PATH?PRIVATE_QUERY#PRIVATE_HASH' } }));
+  const r = await h.finish(), v = timingOf(r.result);
+  assert.equal(r.body.redirectDiagnostic, 'REDIRECT_HOST_DENIED'); assert.equal(v[get ? 'g1' : 'ph'], 'MS_100_499');
+  assert.equal(v.g2, 'NOT_RUN'); assert.equal(v.fb, 'NOT_RUN'); assert.equal(v.hops, get ? '1' : '0');
+});
+for (const [ms, expected] of [[0,'LT_100'],[99.999,'LT_100'],[100,'MS_100_499'],[499.999,'MS_100_499'],
+  [500,'MS_500_1999'],[1999.999,'MS_500_1999'],[2000,'MS_2000_4999'],[4999.999,'MS_2000_4999'],
+  [5000,'MS_5000_9999'],[9999.999,'MS_5000_9999'],[10000,'MS_10000_19999'],[19999.999,'MS_10000_19999'],
+  [20000,'MS_GE_20000'],[25000,'MS_GE_20000']]) test('timing bucket boundary ' + ms, async t => {
+  const h = timed(t); await turn(); h.observe(ms); await h.respond(json());
+  const r = await h.finish(), v = timingOf(r.result); assert.equal(v.ph, expected); assert.equal(v.tot, expected);
+  assert.equal(r.result.status, 200); assert.deepEqual(r.body, good);
+});
+const badClocks = {
+  throws: () => { throw new Error('PRIVATE_CLOCK_EXCEPTION'); }, nan: () => NaN, infinity: () => Infinity,
+  negative: () => -1, string: () => 'PRIVATE_CLOCK', backwards: n => n === 1 ? 10 : 9,
+  lateFailure: n => n < 4 ? 0 : NaN
+};
+for (const [name, clock] of Object.entries(badClocks)) test('timing invalid clock ' + name + ' cannot change result', async t => {
+  const h = timed(t, { clock }); await h.respond(json()); const r = await h.finish();
+  assert.deepEqual(r.body, good); assert.equal(r.result.status, 200); assert.equal(r.result.headers.get('x-transport-timing'), null);
+});
+test('timing failed clock cannot mask timeout', async t => {
+  const h = timed(t, { clock: () => NaN }); await turn(); await h.advance(20000); const r = await h.finish();
+  assertTimeout(r, 'POST_HEADERS', 1); assert.equal(r.result.headers.get('x-transport-timing'), null);
+});
+test('timing snapshot failure omits diagnostics, not business result', async t => {
+  const h = timed(t); await turn(); t.mock.method(Object, 'freeze', () => { throw new Error('PRIVATE_FORMAT_EXCEPTION'); });
+  await h.respond(json()); const r = await h.finish(); assert.deepEqual(r.body, good); assert.equal(r.result.headers.get('x-transport-timing'), null);
+});
+test('timing early rejection and OPTIONS have no header and do not read clock', async () => {
+  for (const req of [request(input, { method:'GET', body:undefined }), request('', { method:'OPTIONS', body:undefined,
+    headers:{origin:'https://baifu6276.github.io','access-control-request-method':'POST'} })]) {
+    let clockCalls = 0;
+    const r = await handle(req, env, { now: () => { clockCalls++; return 0; }, fetchImpl: () => assert.fail('Unexpected fetch') });
+    assert.equal(clockCalls, 0); assert.equal(r.headers.get('x-transport-timing'), null);
+  }
+});
+for (const sentinel of ['PRIVATE_TOKEN_SENTINEL','PRIVATE_BODY','https://private.example/','PRIVATE_HOST','PRIVATE_QUERY','PRIVATE_EXCEPTION']) {
+  test('timing privacy sentinel category ' + ['PRIVATE_TOKEN_SENTINEL','PRIVATE_BODY','https://private.example/','PRIVATE_HOST','PRIVATE_QUERY','PRIVATE_EXCEPTION'].indexOf(sentinel), async t => {
+    const h = timed(t); await h.reject(new Error(sentinel)); const r = await h.finish();
+    timingOf(r.result); assert(!JSON.stringify(r.body).includes(sentinel));
+    assert(![...r.result.headers].flat().join('').includes(sentinel)); assert.equal(h.calls.length, 1);
+  });
+}
+test('timing exact readonly release routes / no T4 artifact / config unchanged', async () => {
+  const source = readFileSync(new URL('../worker/relay.mjs', import.meta.url), 'utf8');
+  assert.equal(VERSION, 't3-3-timing-diag');
+  assert.deepEqual([...source.matchAll(/'(\/[^']+)'\s*:\s*\{ action:/g)].map(m => m[1]), ['/identity','/employee-read','/employee-operation-status']);
+  assert(!/T4_|employee-baseline-migrate|employeeLifecycleBaselineMigrate|Date\.now|console\./.test(source));
+  assert(source.includes('timeoutMs = 20000, now = () => performance.now()'));
+  assert(source.includes('fetch: (request, env) => handle(request, env)'));
+  const r = await run(request(input, {}, '/employee-baseline-migrate'), []);
+  assert.equal(r.body.transportError, 'PATH_DENIED'); assert.equal(r.calls.length, 0);
+  for (const key of ['now','timeoutMs']) {
+    const bad = await run(request({...input,[key]:1}), []);
+    assert.equal(bad.body.transportError, 'REQUEST_INVALID'); assert.equal(bad.calls.length, 0);
+  }
+  const { execFileSync } = await import('node:child_process');
+  const config = readFileSync(new URL('../live-test/config.js', import.meta.url), 'utf8').replace(/\r\n/g,'\n');
+  const original = execFileSync('git',['show','b92f9f91eea65b6064ae0e10c54c93db1e5f9dc5:transport-v2/live-test/config.js'],{encoding:'utf8'});
+  assert.equal(config, original.replace(/\r\n/g,'\n'));
 });

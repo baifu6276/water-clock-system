@@ -1,5 +1,5 @@
 // Isolated T1/T3 reads only. No logging, storage, retries, or business authorization.
-export const VERSION = 't3-2-status-only';
+export const VERSION = 't3-3-timing-diag';
 const routes = Object.freeze({
   '/identity': { action: 'identityBootstrap', keys: ['action', 'idToken'] },
   '/employee-read': { action: 'employeeLifecycleBaselineDryRun', keys: ['action', 'idToken', 'employeeId'] },
@@ -15,7 +15,60 @@ const errors = new Set(['CONFIG_ERROR', 'HTTPS_REQUIRED', 'PATH_DENIED', 'ORIGIN
   'UPSTREAM_HTTP_ERROR', 'UPSTREAM_REDIRECT_DENIED', 'UPSTREAM_REDIRECT_LIMIT',
   'UPSTREAM_RESPONSE_TOO_LARGE', 'UPSTREAM_JSON_INVALID']);
 
-async function limitedText(message, limit, code) {
+// Request-local diagnostics only. A clock/formatting failure never changes transport.
+function timingDiagnostics(now) {
+  const values = { rr: 'NOT_RUN', ph: 'NOT_RUN', g1: 'NOT_RUN', g2: 'NOT_RUN', g3: 'NOT_RUN', fb: 'NOT_RUN' };
+  let available = true, started = false, closed = false, last, start, entered;
+  let active = 'rr', currentStage = 'READ_REQUEST', hops = 0, header;
+  function read() {
+    if (!available) return 0;
+    try {
+      const value = now();
+      if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || (last !== undefined && value < last)) throw new Error();
+      last = value;
+      return value;
+    } catch { available = false; return 0; }
+  }
+  function bucket(duration) {
+    if (duration < 100) return 'LT_100';
+    if (duration < 500) return 'MS_100_499';
+    if (duration < 2000) return 'MS_500_1999';
+    if (duration < 5000) return 'MS_2000_4999';
+    if (duration < 10000) return 'MS_5000_9999';
+    if (duration < 20000) return 'MS_10000_19999';
+    return 'MS_GE_20000';
+  }
+  return {
+    start() {
+      if (closed || started) return;
+      started = true;
+      start = entered = read();
+    },
+    enter(key, stage, hop = hops) {
+      if (closed || !started) return;
+      const time = read();
+      values[active] = bucket(time - entered);
+      active = key; currentStage = stage; hops = hop; entered = time;
+    },
+    close(timeout, done = false) {
+      if (closed) return;
+      closed = true;
+      if (!started) return;
+      try {
+        const time = timeout ? 0 : read();
+        const snapshot = Object.freeze({ ...values,
+          [active]: timeout ? 'TIMEOUT' : bucket(time - entered),
+          tot: timeout ? 'TIMEOUT' : bucket(time - start), cur: done ? 'DONE' : currentStage, hops });
+        if (available) header = 'v=1;rr=' + snapshot.rr + ';ph=' + snapshot.ph + ';g1=' + snapshot.g1 +
+          ';g2=' + snapshot.g2 + ';g3=' + snapshot.g3 + ';fb=' + snapshot.fb +
+          ';tot=' + snapshot.tot + ';cur=' + snapshot.cur + ';hops=' + snapshot.hops;
+      } catch { header = undefined; }
+    },
+    header: () => header
+  };
+}
+
+async function limitedText(message, limit, code, ensureOpen) {
   if (Number(message.headers.get('content-length')) > limit) fail(code);
   const reader = message.body?.getReader();
   if (!reader) return '';
@@ -23,6 +76,7 @@ async function limitedText(message, limit, code) {
   try {
     for (;;) {
       const { done, value } = await reader.read();
+      ensureOpen();
       if (done) break;
       size += value.byteLength;
       if (size > limit) { void reader.cancel().catch(() => {}); fail(code); }
@@ -52,19 +106,24 @@ function configuration(env) {
 }
 
 // Dependencies are injectable for fully offline tests; runtime uses web standards.
-export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 20000 } = {}) {
+export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 20000, now = () => performance.now() } = {}) {
   const correlationId = crypto.randomUUID();
+  const timing = timingDiagnostics(now);
   let origin = null;
   function reply(body, status = 200) {
     const headers = { 'Content-Type': 'application/json;charset=utf-8', 'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff', 'Vary': 'Origin',
       'X-Transport-Version': VERSION, 'X-Correlation-Id': correlationId };
+    const timingHeader = timing.header();
+    if (timingHeader !== undefined) headers['X-Transport-Timing'] = timingHeader;
     if (origin) Object.assign(headers, { 'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Expose-Headers': 'X-Transport-Version, X-Correlation-Id' });
+      'Access-Control-Expose-Headers': 'X-Transport-Version, X-Correlation-Id, X-Transport-Timing' });
     return new Response(status === 204 ? null : JSON.stringify(body), { status, headers });
   }
   const controller = new AbortController(); let timer;
+  let closed = false;
+  const ensureOpen = () => { if (closed) fail('UPSTREAM_TIMEOUT'); };
   let stage = 'READ_REQUEST';
   let redirectDiagnostic;
   const denyRedirect = diagnostic => { redirectDiagnostic = diagnostic; fail('UPSTREAM_REDIRECT_DENIED'); };
@@ -85,13 +144,21 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
     if (request.method !== 'POST') fail('METHOD_DENIED');
     if (!/^(text\/plain|application\/json)(;\s*charset=utf-8)?$/i.test(request.headers.get('content-type') || '')) fail('CONTENT_TYPE_INVALID');
     // Deadline also bounds inbound/body reads; it covers the entire redirect chain.
+    timing.start();
     const timeout = new Promise((_, reject) => {
-      timer = setTimeout(() => { controller.abort(); reject(new Error('UPSTREAM_TIMEOUT')); }, timeoutMs);
+      timer = setTimeout(() => {
+        if (closed) return;
+        closed = true; // Block abort callbacks and late continuations before freezing.
+        controller.abort();
+        timing.close(true);
+        reject(new Error('UPSTREAM_TIMEOUT'));
+      }, timeoutMs);
     });
     const operation = async () => {
       let data;
       stage = 'READ_REQUEST';
-      const text = await limitedText(request, 16384, 'REQUEST_TOO_LARGE');
+      const text = await limitedText(request, 16384, 'REQUEST_TOO_LARGE', ensureOpen);
+      ensureOpen();
       try { data = JSON.parse(text); } catch { fail('REQUEST_INVALID'); }
       if (!data || Array.isArray(data) || typeof data !== 'object') fail('REQUEST_INVALID');
       if (data.action !== route.action) fail('ACTION_DENIED');
@@ -112,8 +179,10 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
         let response;
         try {
           stage = options.method === 'POST' ? 'POST_HEADERS' : 'REDIRECT_GET_HEADERS';
+          timing.enter(options.method === 'POST' ? 'ph' : 'g' + redirects, stage, redirects);
           response = await fetchImpl(target, { ...options, redirect: 'manual', credentials: 'omit',
             cache: 'no-store', signal: controller.signal });
+          ensureOpen();
         } catch { fail(controller.signal.aborted ? 'UPSTREAM_TIMEOUT' : 'UPSTREAM_NETWORK_ERROR'); }
         if (response.status >= 300 && response.status < 400) {
           void response.body?.cancel().catch(() => {});
@@ -132,17 +201,22 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
         }
         if (!response.ok) { void response.body?.cancel().catch(() => {}); fail('UPSTREAM_HTTP_ERROR'); }
         stage = 'FINAL_BODY';
-        const body = await limitedText(response, 65536, 'UPSTREAM_RESPONSE_TOO_LARGE');
+        timing.enter('fb', stage);
+        const body = await limitedText(response, 65536, 'UPSTREAM_RESPONSE_TOO_LARGE', ensureOpen);
+        ensureOpen();
         let result;
         try { result = JSON.parse(body); } catch { fail('UPSTREAM_JSON_INVALID'); }
         if (!result || Array.isArray(result) || typeof result !== 'object' || typeof result.success !== 'boolean') fail('UPSTREAM_JSON_INVALID');
         // Preserve GAS business JSON; headers carry transport metadata separately.
+        closed = true;
+        timing.close(false, true);
         return reply(result);
       }
     };
     return await Promise.race([operation(), timeout]);
   } catch (error) {
     const code = errors.has(error.message) ? error.message : 'TRANSPORT_ERROR';
+    if (!closed) { closed = true; timing.close(false); }
     const body = { success: false, transportError: code };
     if (code === 'UPSTREAM_TIMEOUT' && timeoutStages.has(stage)) body.transportStage = stage;
     if (code === 'UPSTREAM_REDIRECT_DENIED' && redirectDiagnostics.has(redirectDiagnostic)) {
