@@ -8,8 +8,8 @@
     "bytes": 399
   },
   "release-candidates/t4-migration-transport-final/tests/finalize.py": {
-    "sha256": "5de548453a993ecd155e9533f7b8a796ff7c6494061c9ee217714690c2a34840",
-    "bytes": 4791
+    "sha256": "d3a76b4becac45d0fb2a1a3e7d376d87e5e21f27c5947d6ec82cd3c2b68ac3e6",
+    "bytes": 5344
   },
   "release-candidates/t4-migration-transport-final/tests/gas-contract.test.cjs": {
     "sha256": "35235be02a2c916a080bcf9b5cb7a8b69dacff588c9f5b18ba149c677b09cf22",
@@ -32,15 +32,15 @@
     "bytes": 45500
   },
   "release-candidates/t4-migration-transport-final/tests/run.py": {
-    "sha256": "1945f4b49472339a8cd61c02b700050b9864d0b6331380a54843d92b871b757a",
-    "bytes": 2569
+    "sha256": "d869a76f885b790c5550ce626998b4e9f78ee666a921b2dcb545da9cebb9edc2",
+    "bytes": 3359
   },
   "release-candidates/t4-migration-transport-final/tests/runner-browser.cjs": {
     "sha256": "d748f6d9b10fe4a3969aee6d81e4a47d2ace3cc1ee8ee75094ae5c4bc48d2301",
     "bytes": 15196
   },
   "release-candidates/t4-migration-transport-final/tests/static.cjs": {
-    "sha256": "010c6784da6c42df05764d0748b8c870b4fb64db28fb494e9cc0bf732a650f58",
-    "bytes": 4147
+    "sha256": "4770bb493e4cb481c9d9e46f823f013d6c6d6411b22df6dd1b0428b1a84abd50",
+    "bytes": 5546
   }
 }

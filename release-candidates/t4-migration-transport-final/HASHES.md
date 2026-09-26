@@ -8,7 +8,7 @@ Runner bundle SHA-256: `1f5e781a6a3f40df100a33926a97327ea60f571d15a9ee876a2009dd
 
 Read frontend bundle SHA-256: `fd9fc54d94f7154dc5d0ac8f2742a402cf48f4e8e8b05c5c48a832fee172f013`
 
-Evidence bundle SHA-256: `309662cecf1c2cdf02b086c6b9a5fda971cc4f5a82b2a45d8116476257b38036`
+Evidence bundle SHA-256: `6622d7bba214fcc75489f0c5228c82cb7abafcf5bba521472e45630fa3c5b25f`
 
 | Artifact | File | SHA-256 |
 |---|---|---|

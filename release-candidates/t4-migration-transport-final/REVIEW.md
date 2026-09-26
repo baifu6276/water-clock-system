@@ -118,6 +118,16 @@ Runner 的 56 項包含 actual Worker + browser + fake GAS 組合。缺少 Produ
 
 重跑：設定 PLAYWRIGHT_MODULE、CHROME_PATH、ROLLBACK_RELAY（見 TEST_RESULTS）後，執行 `python release-candidates/t4-migration-transport-final/tests/run.py`。隨後執行 static.cjs / finalize.py。舊 test 只調整明確版本、第四 route/default deny、固定 cache-buster；adapter diff 全部保存在 evidence。
 
+### Committed-candidate reproducibility
+
+原 pre-commit 686 PASS 證據完整保存在 commit `d13c31cbb4d5a4b91844bf697623d45fca212514` 的 TEST_RESULTS / MANIFEST / evidence，沒有刪除或改寫 Git 歷史。本輪 working tree 證據為 committed candidate 的新離線重跑。
+
+baseCommit 僅作來源 provenance。static 不再要求 HEAD 等於 base，也不要求 candidate 為 untracked；改查 base ancestry、base 至 working tree / index 的允許範圍、固定來源 blobs、manifest 與固定 runtime hashes、GAS 11 檔及原 syntax/privacy invariants。tracked 與 untracked candidate tests 均納入語法檢查。
+
+在 committed branch 設定上述三個本機依賴環境變數後，可直接依序執行 run.py、node tests/static.cjs、finalize.py（路徑均以本 candidate 為準）。run.py 記錄執行前輸入 hashes 並於每個 suite 後確認未變；finalize 必須核對相同 test/runtime/rollback inputs，才更新 review evidence。部分重跑只允許同一組輸入。這些命令不 stage / commit / deploy；新結果會使 review/test/evidence 檔成為 modified，runtime bytes 必須保持原 hash。不要重新執行 assemble.py。
+
+Migration HOLD；本次沒有處理 LIFF Endpoint 或任何 Production gate。
+
 ## K. Hashes
 
 見 `MANIFEST.json` 與 `HASHES.md`：固定 Worker 原始 blob、新 Worker、runner bundle、read frontend bundle、evidence bundle，以及各檔 SHA。Wrapper Prepare 原始檔沒有帶入 runner；沒有寫入任何 production property。

@@ -6,7 +6,7 @@ ROOT=Path(__file__).resolve().parents[1];REPO=ROOT.parents[1];RUNNER=REPO/'trans
 def sha(b):return hashlib.sha256(b).hexdigest()
 def bundle(files):return sha(b''.join(n.encode()+b'\0'+str(len(files[n])).encode()+b'\0'+files[n] for n in sorted(files)))
 def files(directory):return {str(p.relative_to(directory)).replace('\\','/'):p.read_bytes() for p in directory.rglob('*') if p.is_file()}
-def write(path,value):path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
+def write(path,value):path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf8',newline='\n')
 subprocess.run(['node',str(ROOT/'tests/static.cjs')],cwd=REPO,check=True)
 for p in [ROOT/'worker/relay.mjs',*list((ROOT/'tests').glob('*.mjs'))]:subprocess.run(['node','--check',str(p)],check=True,cwd=REPO)
 for p in (ROOT/'tests').glob('*.py'):compile(p.read_bytes(),str(p),'exec')
@@ -25,6 +25,11 @@ for folder in [ROOT/'live-test',RUNNER]:
 runtime={'worker':files(ROOT/'worker'),'runner':files(RUNNER),'readFrontend':files(ROOT/'live-test')}
 assert set(runtime['worker'])=={'relay.mjs'} and set(runtime['runner'])=={'index.html','client.js'} and set(runtime['readFrontend'])=={'index.html','client.js','config.js'}
 results=json.loads((ROOT/'TEST_RESULTS.json').read_text(encoding='utf8'))
+# Refuse to reseal stale results against changed source/test inputs.
+paths=[q for folder in [ROOT/'tests',ROOT/'worker',ROOT/'live-test',RUNNER,REPO/'release-candidates/gas-t4-control-no-flush/sources'] for q in folder.iterdir() if q.is_file()]
+inputs={str(q.relative_to(REPO)).replace('\\','/'):sha(q.read_bytes()) for q in sorted(paths)}
+inputs['ROLLBACK_RELAY']=sha(Path(results['environment']['ROLLBACK_RELAY']).read_bytes())
+assert results.get('inputHashes')==inputs,'Test inputs differ: rerun all suites before finalize'
 expected={'relay-regression':273,'migration-relay':71,'read-browser':269,'runner-browser':56,'read-compatibility':10,'gas-contract':7}
 assert {r['suite'] for r in results['runs']}==set(expected)
 for r in results['runs']:
@@ -49,5 +54,5 @@ lines=['# Review hashes','',f"Worker file SHA-256: `{hashes['workerFile']}`",'',
 for group,value in manifest['files'].items():
  for name,item in value.items():lines.append('| '+group+' | '+name+' | '+item['sha256']+' |')
 lines+=['','All values describe local offline candidates, not deployed state. Migration HOLD.']
-(ROOT/'HASHES.md').write_text('\n'.join(lines)+'\n',encoding='utf8')
+(ROOT/'HASHES.md').write_text('\n'.join(lines)+'\n',encoding='utf8',newline='\n')
 print(json.dumps({'PASS':True,'hashes':hashes,'evidenceSha256':manifest['evidenceSha256'],'tests':results['totals']},indent=2))

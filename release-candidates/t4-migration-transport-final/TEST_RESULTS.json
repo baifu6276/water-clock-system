@@ -1,5 +1,36 @@
 {
   "offlineOnly": true,
+  "inputHashes": {
+    "release-candidates/gas-t4-control-no-flush/sources/appsscript.json": "788d42fd367f154e0fc730f8953b842365de440f58560dc4333f723e0c8b44f3",
+    "release-candidates/gas-t4-control-no-flush/sources/EmployeeApplication.gs": "aea7cfecb4ec247ba8b14aaa1d356014bf1066633598f392a01024ae0d31b0fb",
+    "release-candidates/gas-t4-control-no-flush/sources/EmployeeApplicationAdmin.gs": "b5761d9ab6c5027766955f96bfb2765d0d84e6348b97b160d361bba277e4ca46",
+    "release-candidates/gas-t4-control-no-flush/sources/EmployeeBaselineControl.gs": "46a1e243c0c1eb788137f8300e7beb8b864a7341ac4dc3d8344b652f4a0789e9",
+    "release-candidates/gas-t4-control-no-flush/sources/EmployeeIdentity.gs": "c6d8dad46ee6e0b5ed31408b6f6a80144f8e017d623b06100fca3b21a3ee74cf",
+    "release-candidates/gas-t4-control-no-flush/sources/EmployeeLifecycleBaseline.gs": "1f0de28ab189b68b7f9758fd430b5c648ce3d8f2a0ff407e492b43a33a0b875e",
+    "release-candidates/gas-t4-control-no-flush/sources/EmployeeLifecycleMutation.gs": "7d3c454f37f9f0e1d60eaaa0415ae7c10f2fa1f44834fe571f3bc5199ecaf083",
+    "release-candidates/gas-t4-control-no-flush/sources/EmployeeLifecycleRead.gs": "602a7157ed5e9756947aa14ae546263b5593fed420f74b04e5a8e99c8cb3a56d",
+    "release-candidates/gas-t4-control-no-flush/sources/EmployeeLifecycleStore.gs": "40990ea7487a3588ee91b937b62ca91f4d461a51c3acb2de5893e015f171b951",
+    "release-candidates/gas-t4-control-no-flush/sources/index.html": "523048d4eae2135528794580ca57bdf93bddefcf550caf9fdeb0f9f650c63ff2",
+    "release-candidates/gas-t4-control-no-flush/sources/程式碼.gs": "7382764a0446a8937913789623516257ccb26c5162c155838be8d3d867fd1651",
+    "release-candidates/t4-migration-transport-final/live-test/client.js": "355ea12bc0b17260b19e8b410bc8e9d7d8ebe6b3ce02e4de7cd9b0500fd770a9",
+    "release-candidates/t4-migration-transport-final/live-test/config.js": "c398e5ad04bd2be0ca595751424e1a5666e007840e2edcbc7aabc36dfff5b31a",
+    "release-candidates/t4-migration-transport-final/live-test/index.html": "4ed855881a5fc55ad9fcee7094892542ebdc7d2d86d4107b136f0e008267deb3",
+    "release-candidates/t4-migration-transport-final/tests/assemble.py": "8067caab5c19f1b9ab170e81ddffb91fec54f07349f6c164c6f2094b700aaee3",
+    "release-candidates/t4-migration-transport-final/tests/deny-network.cjs": "ea4acc5d276adc273930e95aba32cd8e9ac416ce4bab9ed4ece3bd4c1d125825",
+    "release-candidates/t4-migration-transport-final/tests/finalize.py": "d3a76b4becac45d0fb2a1a3e7d376d87e5e21f27c5947d6ec82cd3c2b68ac3e6",
+    "release-candidates/t4-migration-transport-final/tests/gas-contract.test.cjs": "35235be02a2c916a080bcf9b5cb7a8b69dacff588c9f5b18ba149c677b09cf22",
+    "release-candidates/t4-migration-transport-final/tests/migration-relay.test.mjs": "f3f3ca3e098474cd38f0b10da68d087ac275f24c0013fdd99d5daac714b7de5e",
+    "release-candidates/t4-migration-transport-final/tests/read-browser.cjs": "de40825eef631059d3e15ea2110187dc70b8564afb9d464861ae03813161c72e",
+    "release-candidates/t4-migration-transport-final/tests/read-compatibility.cjs": "47d98eedc22ce3403c198714f961e1233cf16c8d29ac5f9a5a55f7f9bc0c1000",
+    "release-candidates/t4-migration-transport-final/tests/relay-regression.test.mjs": "d4e3b41389f6b2d0750178b70de318d612f7b95edc57fd65bda34c448ff9cefe",
+    "release-candidates/t4-migration-transport-final/tests/run.py": "d869a76f885b790c5550ce626998b4e9f78ee666a921b2dcb545da9cebb9edc2",
+    "release-candidates/t4-migration-transport-final/tests/runner-browser.cjs": "d748f6d9b10fe4a3969aee6d81e4a47d2ace3cc1ee8ee75094ae5c4bc48d2301",
+    "release-candidates/t4-migration-transport-final/tests/static.cjs": "4770bb493e4cb481c9d9e46f823f013d6c6d6411b22df6dd1b0428b1a84abd50",
+    "release-candidates/t4-migration-transport-final/worker/relay.mjs": "7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c61c7600",
+    "transport-v2/t4-migration-runner/client.js": "9935881ed8a34a8d4a4e9e24f104132422daa3b2589e268628a08b6f1e2c1f34",
+    "transport-v2/t4-migration-runner/index.html": "285d55f83788249c5626e28f4c620494384c0929f8f99253a355e3de1461036a",
+    "ROLLBACK_RELAY": "fe10facd68adac7e801041a4216603fc0f26e8412cb3d26c40ef95aa6827c99a"
+  },
   "environment": {
     "PLAYWRIGHT_MODULE": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\node_modules\\playwright",
     "CHROME_PATH": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
@@ -18,7 +49,7 @@
         "skipped": 0,
         "cancelled": 0
       },
-      "outputSha256": "3a44c72983dcd995547b7ad2a8c3f66dcb0bece4efb8314cb33f7fae3caaed5b"
+      "outputSha256": "db09dfb5da52a483e9d6ba673432ac8087f6546ef4c7810b386ebb52e1b614b5"
     },
     {
       "suite": "migration-relay",
@@ -32,7 +63,7 @@
         "skipped": 0,
         "cancelled": 0
       },
-      "outputSha256": "40d3ec161be93374879dedb8b9400146ad070de56912893f0fdcd8c8ec6ca624"
+      "outputSha256": "65ec35620a4a0d289bc7b5157b2bcc192883a41ee3b82ab74df89e7c854fd9ff"
     },
     {
       "suite": "read-browser",
@@ -82,7 +113,7 @@
         "skipped": 0,
         "cancelled": 0
       },
-      "outputSha256": "b9ff51a4a5ef8f58e32b27aee139016dd4748a725d335e09e613e759b4a4f529"
+      "outputSha256": "3b439efcfc63c68f63b5cd6d7d004bf6792cebb3abafca433a8367be9698d040"
     }
   ],
   "artifactHashes": {

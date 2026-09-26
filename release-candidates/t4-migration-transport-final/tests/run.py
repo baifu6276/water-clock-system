@@ -12,12 +12,21 @@ commands=[
  ('read-compatibility',[node,T+'read-compatibility.cjs']),
  ('gas-contract',[node,'--require','./'+T+'deny-network.cjs','--test','--test-reporter=tap',T+'gas-contract.test.cjs']),
 ]
+# Bind results to exact test and runtime inputs BEFORE execution, not only at finalize.
+def input_hashes():
+ paths=[q for folder in [ROOT/'tests',ROOT/'worker',ROOT/'live-test',REPO/'transport-v2/t4-migration-runner',REPO/'release-candidates/gas-t4-control-no-flush/sources'] for q in folder.iterdir() if q.is_file()]
+ values={str(q.relative_to(REPO)).replace('\\','/'):hashlib.sha256(q.read_bytes()).hexdigest() for q in sorted(paths)}
+ values['ROLLBACK_RELAY']=hashlib.sha256(Path(env['ROLLBACK_RELAY']).read_bytes()).hexdigest()
+ return values
+inputs=input_hashes()
 selected=set(sys.argv[1:]);assert not selected or selected.issubset({n for n,_ in commands})
 prior=json.loads((ROOT/'TEST_RESULTS.json').read_text(encoding='utf8')) if selected and (ROOT/'TEST_RESULTS.json').exists() else {}
+if selected:assert prior.get('inputHashes')==inputs,'Partial rerun requires matching input hashes; run all suites instead'
 results=[r for r in prior.get('runs',[]) if r['suite'] not in selected] if selected else []
 for name,command in commands:
  if selected and name not in selected:continue
  run=subprocess.run(command,cwd=REPO,env=env,capture_output=True,text=True,encoding='utf8',errors='replace',timeout=420)
+ assert input_hashes()==inputs,'Inputs changed while tests ran'
  output=run.stdout+run.stderr;counts={}
  for key in ['tests','pass','fail','skipped','cancelled']:
   m=re.search(r'^# '+key+r' (\d+)$',output,re.M)
@@ -28,7 +37,7 @@ for name,command in commands:
   m=re.search(r'passed=(\d+) failed=(\d+) skipped=(\d+)',output)
   if m:counts=dict(zip(['pass','fail','skipped'],map(int,m.groups())))
  results.append({'suite':name,'command':subprocess.list2cmdline(command),'cwd':str(REPO),'exitCode':run.returncode,'counts':counts,'outputSha256':hashlib.sha256(output.encode()).hexdigest()})
- (ROOT/'TEST_RESULTS.json').write_text(json.dumps({'offlineOnly':True,'environment':{k:env[k] for k in ['PLAYWRIGHT_MODULE','CHROME_PATH','ROLLBACK_RELAY']},'runs':results},ensure_ascii=False,indent=2)+'\n',encoding='utf8')
+ (ROOT/'TEST_RESULTS.json').write_text(json.dumps({'offlineOnly':True,'inputHashes':inputs,'environment':{k:env[k] for k in ['PLAYWRIGHT_MODULE','CHROME_PATH','ROLLBACK_RELAY']},'runs':results},ensure_ascii=False,indent=2)+'\n',encoding='utf8',newline='\n')
  print(name,'exit='+str(run.returncode),counts,flush=True)
  if run.returncode:print(output[-16000:],flush=True);sys.exit(run.returncode)
 print('SELECTED OFFLINE SUITES PASS',flush=True)
