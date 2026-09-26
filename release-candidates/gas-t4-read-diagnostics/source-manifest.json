@@ -1,0 +1,384 @@
+{
+  "status": "OFFLINE_REVIEW_CANDIDATE",
+  "migration": "HOLD",
+  "readRef": "6f3921f2bbea6d175c8bcac3888b09e231f44774",
+  "t4Ref": "4319d3e9518ca4c4cbb83fd27d2ee9b148d43ff4",
+  "algorithm": "SHA-256 of sorted UTF-8 relative filename + NUL + ASCII byteLength + NUL + exact file bytes; sources covers 11 deployable files; evidence covers the five pinned input files listed below, excludes derived diffs/reports",
+  "candidateSha256": "279af27a24eeeffebc7114cea795bdf9a0bef682cf2c2721d18ad94e50817449",
+  "evidenceBundleSha256": "5daa2605f16210df79d194b21cd3fcd2a6433a4a0b0570514c86468c99bfe59a",
+  "sourceLayers": {
+    "V44": "22b66c3b9b31dd27b6eafa3b1d960995ee6e42becb199168cef09fb5c3e6a334",
+    "V45_T4": "b38c491b28c047b6581cfe083a4c776bf2b7aa0473b8e31f060e60f9f781a327",
+    "V46_READ_DIAGNOSTICS": "ce7295e11cef5b381519920323470f60825394ed61466125f0ebe785e59dbdaa"
+  },
+  "evidence": [
+    {
+      "path": "base/EmployeeLifecycleBaseline.gs",
+      "sha256": "3582ce0afa4841664887ade1dd96f2969bac0b82c7aa167987a4ed8378296156",
+      "size": 16985
+    },
+    {
+      "path": "read/EmployeeApplication.gs",
+      "sha256": "aea7cfecb4ec247ba8b14aaa1d356014bf1066633598f392a01024ae0d31b0fb",
+      "size": 13438
+    },
+    {
+      "path": "read/EmployeeLifecycleBaseline.gs",
+      "sha256": "e3de0e08e83383df62c81e7046c2ba4169581ff9df309345204df538b4cc0a17",
+      "size": 17308
+    },
+    {
+      "path": "t4/EmployeeBaselineControl.gs",
+      "sha256": "413e7834b104793a6534ea52fb56d445c9046b0e62e65c90a79ccca781a3ad9e",
+      "size": 10284
+    },
+    {
+      "path": "t4/EmployeeLifecycleBaseline.gs",
+      "sha256": "51693ec22f9d319bdcb67d5753e9f723d80fdab58fc440a46f2a4c4895d34787",
+      "size": 18962
+    }
+  ],
+  "matrices": {
+    "V44": [
+      {
+        "file": "EmployeeApplication.gs",
+        "status": "MODIFIED",
+        "baseSha256": "d560abdab333a73e36dc7ead0e30906593fa8d00c9f0f0e43ee091af2e37f169",
+        "candidateSha256": "aea7cfecb4ec247ba8b14aaa1d356014bf1066633598f392a01024ae0d31b0fb",
+        "size": 13438,
+        "lines": 214
+      },
+      {
+        "file": "EmployeeApplicationAdmin.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "b5761d9ab6c5027766955f96bfb2765d0d84e6348b97b160d361bba277e4ca46",
+        "candidateSha256": "b5761d9ab6c5027766955f96bfb2765d0d84e6348b97b160d361bba277e4ca46",
+        "size": 16421,
+        "lines": 246
+      },
+      {
+        "file": "EmployeeBaselineControl.gs",
+        "status": "ADDED",
+        "baseSha256": null,
+        "candidateSha256": "413e7834b104793a6534ea52fb56d445c9046b0e62e65c90a79ccca781a3ad9e",
+        "size": 10284,
+        "lines": 141
+      },
+      {
+        "file": "EmployeeIdentity.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "c6d8dad46ee6e0b5ed31408b6f6a80144f8e017d623b06100fca3b21a3ee74cf",
+        "candidateSha256": "c6d8dad46ee6e0b5ed31408b6f6a80144f8e017d623b06100fca3b21a3ee74cf",
+        "size": 9931,
+        "lines": 215
+      },
+      {
+        "file": "EmployeeLifecycleBaseline.gs",
+        "status": "MODIFIED",
+        "baseSha256": "3582ce0afa4841664887ade1dd96f2969bac0b82c7aa167987a4ed8378296156",
+        "candidateSha256": "1f0de28ab189b68b7f9758fd430b5c648ce3d8f2a0ff407e492b43a33a0b875e",
+        "size": 19285,
+        "lines": 235
+      },
+      {
+        "file": "EmployeeLifecycleMutation.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "7d3c454f37f9f0e1d60eaaa0415ae7c10f2fa1f44834fe571f3bc5199ecaf083",
+        "candidateSha256": "7d3c454f37f9f0e1d60eaaa0415ae7c10f2fa1f44834fe571f3bc5199ecaf083",
+        "size": 14548,
+        "lines": 196
+      },
+      {
+        "file": "EmployeeLifecycleRead.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "602a7157ed5e9756947aa14ae546263b5593fed420f74b04e5a8e99c8cb3a56d",
+        "candidateSha256": "602a7157ed5e9756947aa14ae546263b5593fed420f74b04e5a8e99c8cb3a56d",
+        "size": 11207,
+        "lines": 132
+      },
+      {
+        "file": "EmployeeLifecycleStore.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "40990ea7487a3588ee91b937b62ca91f4d461a51c3acb2de5893e015f171b951",
+        "candidateSha256": "40990ea7487a3588ee91b937b62ca91f4d461a51c3acb2de5893e015f171b951",
+        "size": 12077,
+        "lines": 179
+      },
+      {
+        "file": "appsscript.json",
+        "status": "UNCHANGED",
+        "baseSha256": "788d42fd367f154e0fc730f8953b842365de440f58560dc4333f723e0c8b44f3",
+        "candidateSha256": "788d42fd367f154e0fc730f8953b842365de440f58560dc4333f723e0c8b44f3",
+        "size": 353,
+        "lines": 14
+      },
+      {
+        "file": "index.html",
+        "status": "UNCHANGED",
+        "baseSha256": "523048d4eae2135528794580ca57bdf93bddefcf550caf9fdeb0f9f650c63ff2",
+        "candidateSha256": "523048d4eae2135528794580ca57bdf93bddefcf550caf9fdeb0f9f650c63ff2",
+        "size": 2576,
+        "lines": 142
+      },
+      {
+        "file": "程式碼.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "7382764a0446a8937913789623516257ccb26c5162c155838be8d3d867fd1651",
+        "candidateSha256": "7382764a0446a8937913789623516257ccb26c5162c155838be8d3d867fd1651",
+        "size": 217032,
+        "lines": 14110
+      }
+    ],
+    "V45_T4": [
+      {
+        "file": "EmployeeApplication.gs",
+        "status": "MODIFIED",
+        "baseSha256": "d560abdab333a73e36dc7ead0e30906593fa8d00c9f0f0e43ee091af2e37f169",
+        "candidateSha256": "aea7cfecb4ec247ba8b14aaa1d356014bf1066633598f392a01024ae0d31b0fb",
+        "size": 13438,
+        "lines": 214
+      },
+      {
+        "file": "EmployeeApplicationAdmin.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "b5761d9ab6c5027766955f96bfb2765d0d84e6348b97b160d361bba277e4ca46",
+        "candidateSha256": "b5761d9ab6c5027766955f96bfb2765d0d84e6348b97b160d361bba277e4ca46",
+        "size": 16421,
+        "lines": 246
+      },
+      {
+        "file": "EmployeeBaselineControl.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "413e7834b104793a6534ea52fb56d445c9046b0e62e65c90a79ccca781a3ad9e",
+        "candidateSha256": "413e7834b104793a6534ea52fb56d445c9046b0e62e65c90a79ccca781a3ad9e",
+        "size": 10284,
+        "lines": 141
+      },
+      {
+        "file": "EmployeeIdentity.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "c6d8dad46ee6e0b5ed31408b6f6a80144f8e017d623b06100fca3b21a3ee74cf",
+        "candidateSha256": "c6d8dad46ee6e0b5ed31408b6f6a80144f8e017d623b06100fca3b21a3ee74cf",
+        "size": 9931,
+        "lines": 215
+      },
+      {
+        "file": "EmployeeLifecycleBaseline.gs",
+        "status": "MODIFIED",
+        "baseSha256": "51693ec22f9d319bdcb67d5753e9f723d80fdab58fc440a46f2a4c4895d34787",
+        "candidateSha256": "1f0de28ab189b68b7f9758fd430b5c648ce3d8f2a0ff407e492b43a33a0b875e",
+        "size": 19285,
+        "lines": 235
+      },
+      {
+        "file": "EmployeeLifecycleMutation.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "7d3c454f37f9f0e1d60eaaa0415ae7c10f2fa1f44834fe571f3bc5199ecaf083",
+        "candidateSha256": "7d3c454f37f9f0e1d60eaaa0415ae7c10f2fa1f44834fe571f3bc5199ecaf083",
+        "size": 14548,
+        "lines": 196
+      },
+      {
+        "file": "EmployeeLifecycleRead.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "602a7157ed5e9756947aa14ae546263b5593fed420f74b04e5a8e99c8cb3a56d",
+        "candidateSha256": "602a7157ed5e9756947aa14ae546263b5593fed420f74b04e5a8e99c8cb3a56d",
+        "size": 11207,
+        "lines": 132
+      },
+      {
+        "file": "EmployeeLifecycleStore.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "40990ea7487a3588ee91b937b62ca91f4d461a51c3acb2de5893e015f171b951",
+        "candidateSha256": "40990ea7487a3588ee91b937b62ca91f4d461a51c3acb2de5893e015f171b951",
+        "size": 12077,
+        "lines": 179
+      },
+      {
+        "file": "appsscript.json",
+        "status": "UNCHANGED",
+        "baseSha256": "788d42fd367f154e0fc730f8953b842365de440f58560dc4333f723e0c8b44f3",
+        "candidateSha256": "788d42fd367f154e0fc730f8953b842365de440f58560dc4333f723e0c8b44f3",
+        "size": 353,
+        "lines": 14
+      },
+      {
+        "file": "index.html",
+        "status": "UNCHANGED",
+        "baseSha256": "523048d4eae2135528794580ca57bdf93bddefcf550caf9fdeb0f9f650c63ff2",
+        "candidateSha256": "523048d4eae2135528794580ca57bdf93bddefcf550caf9fdeb0f9f650c63ff2",
+        "size": 2576,
+        "lines": 142
+      },
+      {
+        "file": "程式碼.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "7382764a0446a8937913789623516257ccb26c5162c155838be8d3d867fd1651",
+        "candidateSha256": "7382764a0446a8937913789623516257ccb26c5162c155838be8d3d867fd1651",
+        "size": 217032,
+        "lines": 14110
+      }
+    ],
+    "V46_READ_DIAGNOSTICS": [
+      {
+        "file": "EmployeeApplication.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "aea7cfecb4ec247ba8b14aaa1d356014bf1066633598f392a01024ae0d31b0fb",
+        "candidateSha256": "aea7cfecb4ec247ba8b14aaa1d356014bf1066633598f392a01024ae0d31b0fb",
+        "size": 13438,
+        "lines": 214
+      },
+      {
+        "file": "EmployeeApplicationAdmin.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "b5761d9ab6c5027766955f96bfb2765d0d84e6348b97b160d361bba277e4ca46",
+        "candidateSha256": "b5761d9ab6c5027766955f96bfb2765d0d84e6348b97b160d361bba277e4ca46",
+        "size": 16421,
+        "lines": 246
+      },
+      {
+        "file": "EmployeeBaselineControl.gs",
+        "status": "ADDED",
+        "baseSha256": null,
+        "candidateSha256": "413e7834b104793a6534ea52fb56d445c9046b0e62e65c90a79ccca781a3ad9e",
+        "size": 10284,
+        "lines": 141
+      },
+      {
+        "file": "EmployeeIdentity.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "c6d8dad46ee6e0b5ed31408b6f6a80144f8e017d623b06100fca3b21a3ee74cf",
+        "candidateSha256": "c6d8dad46ee6e0b5ed31408b6f6a80144f8e017d623b06100fca3b21a3ee74cf",
+        "size": 9931,
+        "lines": 215
+      },
+      {
+        "file": "EmployeeLifecycleBaseline.gs",
+        "status": "MODIFIED",
+        "baseSha256": "e3de0e08e83383df62c81e7046c2ba4169581ff9df309345204df538b4cc0a17",
+        "candidateSha256": "1f0de28ab189b68b7f9758fd430b5c648ce3d8f2a0ff407e492b43a33a0b875e",
+        "size": 19285,
+        "lines": 235
+      },
+      {
+        "file": "EmployeeLifecycleMutation.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "7d3c454f37f9f0e1d60eaaa0415ae7c10f2fa1f44834fe571f3bc5199ecaf083",
+        "candidateSha256": "7d3c454f37f9f0e1d60eaaa0415ae7c10f2fa1f44834fe571f3bc5199ecaf083",
+        "size": 14548,
+        "lines": 196
+      },
+      {
+        "file": "EmployeeLifecycleRead.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "602a7157ed5e9756947aa14ae546263b5593fed420f74b04e5a8e99c8cb3a56d",
+        "candidateSha256": "602a7157ed5e9756947aa14ae546263b5593fed420f74b04e5a8e99c8cb3a56d",
+        "size": 11207,
+        "lines": 132
+      },
+      {
+        "file": "EmployeeLifecycleStore.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "40990ea7487a3588ee91b937b62ca91f4d461a51c3acb2de5893e015f171b951",
+        "candidateSha256": "40990ea7487a3588ee91b937b62ca91f4d461a51c3acb2de5893e015f171b951",
+        "size": 12077,
+        "lines": 179
+      },
+      {
+        "file": "appsscript.json",
+        "status": "UNCHANGED",
+        "baseSha256": "788d42fd367f154e0fc730f8953b842365de440f58560dc4333f723e0c8b44f3",
+        "candidateSha256": "788d42fd367f154e0fc730f8953b842365de440f58560dc4333f723e0c8b44f3",
+        "size": 353,
+        "lines": 14
+      },
+      {
+        "file": "index.html",
+        "status": "UNCHANGED",
+        "baseSha256": "523048d4eae2135528794580ca57bdf93bddefcf550caf9fdeb0f9f650c63ff2",
+        "candidateSha256": "523048d4eae2135528794580ca57bdf93bddefcf550caf9fdeb0f9f650c63ff2",
+        "size": 2576,
+        "lines": 142
+      },
+      {
+        "file": "程式碼.gs",
+        "status": "UNCHANGED",
+        "baseSha256": "7382764a0446a8937913789623516257ccb26c5162c155838be8d3d867fd1651",
+        "candidateSha256": "7382764a0446a8937913789623516257ccb26c5162c155838be8d3d867fd1651",
+        "size": 217032,
+        "lines": 14110
+      }
+    ]
+  },
+  "removedFiles": [],
+  "threeWayMerge": {
+    "tool": "git merge-file --diff3 -p READ BASE T4",
+    "exitCode": 0,
+    "conflicts": 0,
+    "manualResolutions": 0
+  },
+  "reviewEvidenceBundleSha256": "5ac5730b6d3419e5ff7efbc968c0cd9b9f61682af250ec414243b72bacd12b15",
+  "reviewEvidenceFiles": [
+    {
+      "path": "base-read.diff",
+      "size": 1599,
+      "sha256": "b46b4b7fbe90e37ded50c2fe4ccd86edc2953fe2887300e9533e0bd899e36f6a"
+    },
+    {
+      "path": "base-t4.diff",
+      "size": 9001,
+      "sha256": "b4dceb5988dc2c6f19ce7b69e9a83f5a897348936151a90931e0b15c27b31175"
+    },
+    {
+      "path": "base/EmployeeLifecycleBaseline.gs",
+      "size": 16985,
+      "sha256": "3582ce0afa4841664887ade1dd96f2969bac0b82c7aa167987a4ed8378296156"
+    },
+    {
+      "path": "dependency-closure.json",
+      "size": 56005,
+      "sha256": "a85dd58b85662302f6122341adb06ef3944b8b4e24e3749ac51368a7d8ff9528"
+    },
+    {
+      "path": "read-combined.diff",
+      "size": 9013,
+      "sha256": "a93b9eb38b2066ec53001d603631ca8b915591b09591918ac1e74e1f84980319"
+    },
+    {
+      "path": "read/EmployeeApplication.gs",
+      "size": 13438,
+      "sha256": "aea7cfecb4ec247ba8b14aaa1d356014bf1066633598f392a01024ae0d31b0fb"
+    },
+    {
+      "path": "read/EmployeeLifecycleBaseline.gs",
+      "size": 17308,
+      "sha256": "e3de0e08e83383df62c81e7046c2ba4169581ff9df309345204df538b4cc0a17"
+    },
+    {
+      "path": "scope-check.json",
+      "size": 562,
+      "sha256": "2e0763d6e6e521405ff4b763400900e25f39629749ab5c197f01a0b43cb50db8"
+    },
+    {
+      "path": "t4-combined.diff",
+      "size": 1603,
+      "sha256": "22e09bb4daaf29725936bd446c3d53b968917260121829cabe069a5076490831"
+    },
+    {
+      "path": "t4/EmployeeBaselineControl.gs",
+      "size": 10284,
+      "sha256": "413e7834b104793a6534ea52fb56d445c9046b0e62e65c90a79ccca781a3ad9e"
+    },
+    {
+      "path": "t4/EmployeeLifecycleBaseline.gs",
+      "size": 18962,
+      "sha256": "51693ec22f9d319bdcb67d5753e9f723d80fdab58fc440a46f2a4c4895d34787"
+    },
+    {
+      "path": "test-provenance.json",
+      "size": 3238,
+      "sha256": "1145d7e5539d54570fb8dc3a9a1903e793c7f24a5c92270d4c32c3e080f1c1d0"
+    }
+  ],
+  "reviewEvidenceAlgorithm": "Same filename/NUL/byteLength/NUL/bytes algorithm; every file recursively under evidence/, including derived diffs, provenance, dependency and scope reports. Excludes source-manifest.json, MERGE_REVIEW.md, TEST_RESULTS.json and tests/."
+}

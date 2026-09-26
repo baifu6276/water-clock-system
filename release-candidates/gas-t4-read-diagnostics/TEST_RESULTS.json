@@ -1,0 +1,172 @@
+{
+  "offlineOnly": true,
+  "frontendCommit": "e6078e4fd12811ed42d48840656c721765c2ede7",
+  "workerCommit": "6f3921f2bbea6d175c8bcac3888b09e231f44774",
+  "environment": {
+    "FRONTEND_ROOT": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-frontend",
+    "PLAYWRIGHT_MODULE": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\node_modules\\playwright",
+    "CHROME_PATH": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "ROLLBACK_RELAY": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t3-timing-worker-release\\transport-v2\\worker\\relay.mjs"
+  },
+  "runs": [
+    {
+      "suite": "v44-foundation",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-read-diagnostics/tests/deny-network.cjs release-candidates/gas-t4-read-diagnostics/tests/v44-foundation.cjs",
+      "exitCode": 0,
+      "counts": {
+        "pass": 89,
+        "fail": 0,
+        "skipped": 0
+      },
+      "outputSha256": "ba2973da8a5a81720b6dda00607c205f521cf78b6197f628093d7556975bad56"
+    },
+    {
+      "suite": "combined-foundation",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-read-diagnostics/tests/deny-network.cjs release-candidates/gas-t4-read-diagnostics/tests/foundation.test.cjs",
+      "exitCode": 0,
+      "counts": {
+        "pass": 82,
+        "fail": 0,
+        "skipped": 0
+      },
+      "outputSha256": "667d9deaca13a3375894fa9fa1b15667664d6d0de2611b845543abc411514750"
+    },
+    {
+      "suite": "gas-diagnostics",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-read-diagnostics/tests/deny-network.cjs --test --test-reporter=tap release-candidates/gas-t4-read-diagnostics/tests/gas-diagnostics.test.cjs",
+      "exitCode": 0,
+      "counts": {
+        "tests": 69,
+        "pass": 69,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "f98562fe7933c1def4edcf7baddfc6c345dd45471af8bca8e50ac9fe2f1330bf"
+    },
+    {
+      "suite": "t4-safety-fixtures",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-read-diagnostics/tests/deny-network.cjs --test --test-reporter=tap release-candidates/gas-t4-read-diagnostics/tests/t4-gas.test.cjs",
+      "exitCode": 0,
+      "counts": {
+        "tests": 77,
+        "pass": 77,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "53683769d35cef7c3178d9402da1046d96920d042edc6ffd0ecc2d64be70a659"
+    },
+    {
+      "suite": "combined-contract",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-read-diagnostics/tests/deny-network.cjs --test --test-reporter=tap release-candidates/gas-t4-read-diagnostics/tests/combined-contract.test.cjs",
+      "exitCode": 0,
+      "counts": {
+        "tests": 74,
+        "pass": 74,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "0b0970f17af50a76abead724cb72c7e80e243695f4edead3fe0ae5bad6af4aea"
+    },
+    {
+      "suite": "worker-t3-4",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-read-diagnostics/tests/deny-network.cjs --test --test-reporter=tap transport-v2/tests/relay.test.mjs",
+      "exitCode": 0,
+      "counts": {
+        "tests": 273,
+        "pass": 273,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "2059e9088c2ad6d1d2cac88f77705f1e72c6f9e6d47e9c853e829fb6da8640cd"
+    },
+    {
+      "suite": "cross-artifact",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE release-candidates/gas-t4-read-diagnostics/tests/cross-artifact.cjs",
+      "exitCode": 0,
+      "counts": {
+        "passLines": 15,
+        "summaries": [
+          "CROSS_ARTIFACT passed=15 failed=0 skipped=0"
+        ]
+      },
+      "outputSha256": "ebb95468390e0d244444a1e8c7ecf7620079bcca26cbb4e52540e5b894f34d4c"
+    },
+    {
+      "suite": "static",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE release-candidates/gas-t4-read-diagnostics/tests/static.cjs",
+      "exitCode": 0,
+      "counts": {},
+      "outputSha256": "d9ef0f51200180814b3daacb7c0b1e5504fbadffa26442be466c2922d4739d66"
+    },
+    {
+      "suite": "diff-check",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics",
+      "command": "git diff --check",
+      "exitCode": 0,
+      "counts": {},
+      "outputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "suite": "browser",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-frontend",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE transport-v2/tests/live-test.cjs",
+      "exitCode": 0,
+      "counts": {
+        "passLines": 18,
+        "summaries": [
+          "PASS: 14 T1 browser scenarios",
+          "PASS: 38 T3 browser scenarios",
+          "PASS: 9 permanent LIFF init diagnostic scenarios",
+          "PASS: 24 timeout-stage browser scenarios",
+          "PASS: 31 main status browser scenarios",
+          "PASS: 42 redirect diagnostic browser scenarios",
+          "PASS: 50 timing diagnostic browser scenarios (HTML/static included)",
+          "PASS: 20 timing/version compatibility and permission browser scenarios",
+          "PASS: 33 GAS timing browser scenarios",
+          "PASS: offline cross-branch identity",
+          "PASS: offline cross-branch dry-run",
+          "PASS: offline cross-branch status",
+          "PASS: offline cross-branch timing-multihop",
+          "PASS: offline cross-branch malformed-timing",
+          "PASS: offline cross-branch timeout",
+          "PASS: offline cross-branch redirect-denied",
+          "PASS: offline cross-branch rollback",
+          "PASS: 8 cross-branch contract scenarios; Worker SHA-256 fe10facd68adac7e801041a4216603fc0f26e8412cb3d26c40ef95aa6827c99a"
+        ],
+        "browserPass": 261,
+        "crossBranchPass": 8,
+        "fail": 0,
+        "skipped": 0
+      },
+      "outputSha256": "83779c3b1e7a30f21bd9adaf4e296ca6f280d0bbef87e32cee3dfc3ded7d4fde"
+    }
+  ],
+  "finalChecks": {
+    "staticExitCode": 0,
+    "scopeCheckExitCode": 0,
+    "finalizeEvidenceExitCode": 0,
+    "pythonSyntaxFiles": 4,
+    "reviewEvidenceRevalidated": true,
+    "stagedFiles": 0,
+    "scope": "only release-candidates/gas-t4-read-diagnostics/",
+    "productionOperations": false,
+    "migration": "HOLD"
+  },
+  "developmentCorrections": [
+    "New assertion corrected CONTROL_NOT_ARMED to pinned CONTROLLED_MIGRATION_DENIED; runtime unchanged.",
+    "Scope checker now handles Chinese Git path quoting and normal --no-index exit 1.",
+    "Browser result collector records the actual 261 browser and 8 cross-branch scenario summaries; rerun passed."
+  ]
+}

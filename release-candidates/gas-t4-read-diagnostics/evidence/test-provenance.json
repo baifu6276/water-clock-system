@@ -1,0 +1,79 @@
+[
+  {
+    "source": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-v45-candidate\\release-candidates\\gas-v45\\validation\\tests\\service-fixture.cjs",
+    "sourceSha256": "768e36c925a7a895ea95d2759062f809e0789b3290bbe4b25a73ca9cb7c85ea6",
+    "target": "service-fixture.cjs",
+    "adaptations": [
+      [
+        "path.resolve(__dirname, '../..')",
+        "path.resolve(__dirname, '..')"
+      ]
+    ]
+  },
+  {
+    "source": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-v45-candidate\\release-candidates\\gas-v45\\validation\\tests\\foundation.test.cjs",
+    "sourceSha256": "a88befc024eccf5fa619369dcef2ba98c19c6dee43a9807be90654cf1b21d8c6",
+    "target": "foundation.test.cjs",
+    "adaptations": [
+      [
+        "path.resolve(__dirname, '../..')",
+        "path.resolve(__dirname, '..')"
+      ]
+    ]
+  },
+  {
+    "source": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-v45-candidate\\release-candidates\\gas-v45\\validation\\tests\\foundation-fixture.cjs",
+    "sourceSha256": "fd88f6136000431a65d8b93e00c72d9e9da5efdbf3fde41beeb3039052d7f1ac",
+    "target": "foundation-fixture.cjs",
+    "adaptations": []
+  },
+  {
+    "source": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-v45-candidate\\release-candidates\\gas-v45\\validation\\tests\\v3-data.cjs",
+    "sourceSha256": "4cf66f6025a858e3146f9fdf323e8eaaf38484e16d50667bdc02c94bbf562aef",
+    "target": "v3-data.cjs",
+    "adaptations": []
+  },
+  {
+    "source": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-v45-candidate\\release-candidates\\gas-v45\\validation\\tests\\deny-network.cjs",
+    "sourceSha256": "7c60bf3e4600a6ef7ac98486aec07b26773feb69326a42bbc973c1f1383b6bec",
+    "target": "deny-network.cjs",
+    "adaptations": []
+  },
+  {
+    "source": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-v45-candidate\\release-candidates\\gas-v45\\validation\\transport-v2\\tests\\t4-gas.test.cjs",
+    "sourceSha256": "38a8141014fe94855c71402c029a1dfe0480b303c5187228c519d57658cca48f",
+    "target": "t4-gas.test.cjs",
+    "adaptations": [
+      [
+        "require('../../tests/v3-data.cjs')",
+        "require('./v3-data.cjs')"
+      ]
+    ]
+  },
+  {
+    "source": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics\\release-candidates\\gas-v44-read-diagnostics\\tests\\gas-diagnostics.test.cjs",
+    "sourceSha256": "8414b7f3395827b3edac43f349421f2ad29a52053b8b38dd53b9bba043432235",
+    "target": "gas-diagnostics.test.cjs",
+    "adaptations": [
+      [
+        "require('./foundation-regression.cjs')",
+        "require('./service-fixture.cjs')"
+      ]
+    ]
+  },
+  {
+    "source": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-diagnostics\\release-candidates\\gas-v44-read-diagnostics\\tests\\cross-artifact.cjs",
+    "sourceSha256": "a078d9899164c91c0a93f302d6ca4e32d25ba8a0d289918acc5344e3b125bb05",
+    "target": "cross-artifact.cjs",
+    "adaptations": [
+      [
+        "require('./foundation-regression.cjs')",
+        "require('./service-fixture.cjs')"
+      ],
+      [
+        "../evidence/v44-sources",
+        "../../gas-v44-read-diagnostics/evidence/v44-sources"
+      ]
+    ]
+  }
+]

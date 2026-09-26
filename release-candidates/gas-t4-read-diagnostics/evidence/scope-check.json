@@ -1,0 +1,21 @@
+{
+  "head": "6f3921f2bbea6d175c8bcac3888b09e231f44774",
+  "trackedChanges": [],
+  "stagedChanges": [],
+  "onlyNewCandidate": true,
+  "newFiles": 42,
+  "candidateDeltaWhitespaceChecked": [
+    "appsscript.json",
+    "EmployeeApplication.gs",
+    "EmployeeApplicationAdmin.gs",
+    "EmployeeBaselineControl.gs",
+    "EmployeeIdentity.gs",
+    "EmployeeLifecycleBaseline.gs",
+    "EmployeeLifecycleMutation.gs",
+    "EmployeeLifecycleRead.gs",
+    "EmployeeLifecycleStore.gs",
+    "index.html",
+    "程式碼.gs"
+  ],
+  "gitDiffCheck": true
+}

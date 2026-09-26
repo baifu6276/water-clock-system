@@ -1,0 +1,28 @@
+--- base-read-before
++++ base-read-after
+@@ -138,17 +138,23 @@
+     requestStatus: status, historicalCompletion: historical, currentConsistency: consistency,
+     recoveryAllowed: false, newRequestAllowed: false };
+ }
+-function employeeBaselineRequestStatus_(context, data) {
++function employeeBaselineRequestStatus_(context, data, diagnostic) {
+   var keys = ['action', 'idToken', 'employeeId', 'requestId'];
+   if (Object.keys(data).some(function(k) { return keys.indexOf(k) < 0; })) employeeFailure_('VALIDATION_ERROR', '請檢查查詢欄位。');
+   var id = employeeBaselineId_(data.employeeId), requestId = employeeRequestId_(data.requestId);
+   employeeRequireReviewer_(context);
+   employeeLifecycleTarget_(context, id);
+   var lock = LockService.getScriptLock();
+-  if (!lock.tryLock(1000)) return employeeBaselineStatusResult_(id, requestId, 'UNKNOWN', null, 'UNKNOWN');
++  if (diagnostic) diagnostic.enter('LOCK_WAIT');
++  var acquired = lock.tryLock(1000);
++  if (diagnostic) diagnostic.enter('ACTION_READ');
++  if (!acquired) return employeeBaselineStatusResult_(id, requestId, 'UNKNOWN', null, 'UNKNOWN');
+   try {
++    if (diagnostic) { diagnostic.revoke(); diagnostic.enter('EMPLOYEE_CONTEXT'); }
+     context = employeeContext_(context);
++    if (diagnostic) diagnostic.enter('ACTION_READ');
+     employeeRequireReviewer_(context);
++    if (diagnostic) diagnostic.expose(context);
+     var master = employeeLifecycleTarget_(context, id), uid = employeeText_(master[1]);
+     var audit = employeeStoreRows_('audit');
+     var state = { channelId: context.channelId, master: master,

@@ -1,0 +1,105 @@
+--- base-t4-before
++++ base-t4-after
+@@ -16,17 +16,27 @@
+     audit: employeeBaselineSort_(audit) };
+ }
+ function employeeBaselineVersion_(state) { return employeeHash_(['LEGACY_BASELINE_SNAPSHOT_V1', state]); }
+-function employeeBaselineResult_(id, existing) {
+-  return { success: true, employeeId: id, baselineState: existing ? 'ALREADY_BASELINED' : 'RECORDED', version: 1, recoveryStatus: 'COMPLETED' };
++function employeeBaselineResult_(id, existing, requestId) {
++  return { success: true, employeeId: id, requestId: requestId, baselineState: existing ? 'ALREADY_BASELINED' : 'RECORDED', version: 1, recoveryStatus: 'COMPLETED' };
+ }
+ function employeeBaselineDecode_(intent) {
+   var bundle;
+   try { bundle = JSON.parse(intent.afterJson); } catch (_) { employeeReviewRecovery_(); }
+-  if (!bundle || bundle.format !== 3 || !bundle.employment || !bundle.binding || !/^[a-f0-9]{64}$/.test(bundle.snapshotVersion || '') ||
++  if (!bundle || [3, 4].indexOf(bundle.format) < 0 || !bundle.employment || !bundle.binding || !/^[a-f0-9]{64}$/.test(bundle.snapshotVersion || '') ||
+       bundle.employment.employeeId !== intent.employeeId || bundle.binding.employeeId !== intent.employeeId ||
+       bundle.employment.employmentId !== intent.employmentId || !bundle.binding.bindingId ||
+       bundle.employment.sourceType !== 'LEGACY_BASELINE' || bundle.binding.sourceType !== 'LEGACY_BASELINE' ||
+       bundle.employment.version !== 1 || bundle.binding.version !== 1) employeeReviewRecovery_();
++  if (bundle.format === 4) {
++    var before;
++    try { before = JSON.parse(intent.beforeJson); } catch (_) { employeeReviewRecovery_(); }
++    if (Object.keys(bundle).sort().join('|') !== 'approvalReference|binding|employment|format|snapshotVersion|source|warnings' ||
++        bundle.source !== 'T4_CONTROLLED_BASELINE_V1' || !employeeBaselineApprovalRef_(bundle.approvalReference) ||
++        !before || Object.keys(before).sort().join('|') !== 'baselineState|format|master' || before.format !== 4 ||
++        before.baselineState !== 'LEGACY_NOT_BASELINED' || !Array.isArray(before.master) || before.master.length !== 12 ||
++        before.master[0] !== intent.employeeId || before.master.some(function(v) { return v !== null && !['string', 'number', 'boolean'].includes(typeof v); }) ||
++        !employeeReviewSame_(bundle.warnings, before.master[7] ? [] : ['HIRE_DATE_UNKNOWN'])) employeeReviewRecovery_();
++  }
+   return bundle;
+ }
+ function employeeBaselineInspect_(state, intent, bundle) {
+@@ -45,6 +55,7 @@
+     return !(a.operatorSub === intent.operatorSub && a.requestId === intent.requestId);
+   }) });
+   if (employeeBaselineVersion_(original) !== bundle.snapshotVersion) employeeReviewRecovery_();
++  if (bundle.format === 4 && !employeeReviewSame_(JSON.parse(intent.beforeJson).master, state.master)) employeeReviewRecovery_();
+   return { employmentDone: p.length === 1, bindingDone: b.length === 1 };
+ }
+ function employeeBaselineEligibility_(state) {
+@@ -90,27 +101,30 @@
+   check = employeeBaselineInspect_(employeeBaselineState_(context, intent.employeeId), intent, bundle);
+   if (!check.employmentDone || !check.bindingDone) employeeReviewRecovery_();
+   employeeAuditAppend_(Object.assign({}, intent, { auditId: Utilities.getUuid(), phase: 'COMPLETED', operatedAt: new Date().toISOString() }));
+-  return employeeBaselineResult_(intent.employeeId, false);
++  return employeeBaselineResult_(intent.employeeId, false, intent.requestId);
+ }
+ function employeeBaselineMigrate_(context, data) {
+   employeeRequireReviewer_(context); // Dispatcher already re-resolved actor under lock.
++  employeeBaselineStrictInput_(data);
+   var id = employeeBaselineId_(data.employeeId), requestId = employeeRequestId_(data.requestId);
+   if (data.confirmed !== true || typeof data.reason !== 'string' || !data.reason.trim() || data.reason.length > 1000 ||
+       typeof data.expectedSnapshotVersion !== 'string' || !/^[a-f0-9]{64}$/.test(data.expectedSnapshotVersion)) employeeFailure_('VALIDATION_ERROR', '請先預覽、明確確認並填寫原因。');
+   var reason = data.reason.trim(), hash = employeeHash_(['LEGACY_BASELINE', context.sub, context.channelId, id, data.expectedSnapshotVersion, reason, true]);
+   var state = employeeBaselineState_(context, id);
+-  var logs = employeeStoreRows_('audit').filter(function(a) { return a.operatorSub === context.sub && a.requestId === requestId; });
++  var logs = employeeStoreRows_('audit').filter(function(a) { return a.requestId === requestId; });
+   if (logs.length) {
+-    if (logs.some(function(a) { return a.action !== 'LEGACY_BASELINE' || a.requestHash !== hash; })) employeeFailure_('REQUEST_CONFLICT', '相同請求編號的內容不同。');
+-    var completed = logs.filter(function(a) { return a.phase === 'COMPLETED'; });
+-    if (completed.length === 1) { employeeBaselineDecode_(completed[0]); return employeeBaselineResult_(id, false); }
+-    if (logs.length !== 1 || logs[0].phase !== 'STARTED') employeeReviewRecovery_();
++    if (logs.some(function(a) { return a.operatorSub !== context.sub || a.operatorId !== context.employee.employeeId || a.action !== 'LEGACY_BASELINE' || a.requestHash !== hash; })) employeeFailure_('REQUEST_CONFLICT', '相同請求編號的內容不同。');
++    var status = employeeBaselineStatusEvidence_(context, id, requestId, state, logs);
++    if (status.requestStatus === 'COMPLETED' && status.currentConsistency === 'MATCHED') return employeeBaselineResult_(id, false, requestId);
++    if (status.requestStatus !== 'STARTED' || logs.length !== 1 || employeeBaselineDecode_(logs[0]).format !== 4) employeeReviewRecovery_();
++    employeeBaselineClaim_(context, data, hash, 'RECOVER_ORIGINAL');
+     return employeeBaselineFinish_(context, logs[0]);
+   }
+   if (employeeBaselineVersion_(state) !== data.expectedSnapshotVersion) employeeFailure_('VERSION_CONFLICT', '確認後資料已變更，請重新預覽。');
+   var eligibility = employeeBaselineEligibility_(state);
+   if (eligibility.code) employeeFailure_(eligibility.code, '目前資料不適合自動建立基線，請由管理員人工核對。');
+-  if (eligibility.baselineState === 'ALREADY_BASELINED') return employeeBaselineResult_(id, true);
++  if (eligibility.baselineState === 'ALREADY_BASELINED') employeeBaselineDenied_();
++  var permit = employeeBaselineClaim_(context, data, hash, 'INITIAL');
+   var now = new Date().toISOString(), day = Utilities.formatDate(new Date(now), 'Asia/Taipei', 'yyyy-MM-dd'), m = state.master;
+   var employment = employeeReviewCanonical_('employments', {
+     employmentId: Utilities.getUuid(), employeeId: id, sequence: 1, startDate: employeeText_(m[7]) ? employeeLifecycleDate_(m[7]) : '',
+@@ -125,9 +139,14 @@
+   });
+   var intent = { auditId: Utilities.getUuid(), requestId: requestId, requestHash: hash, employeeId: id, employmentId: employment.employmentId,
+     applicationId: '', action: 'LEGACY_BASELINE', effectiveDate: day, effectiveAt: now,
+-    beforeJson: JSON.stringify({ format: 3, baselineState: 'LEGACY_NOT_BASELINED' }),
+-    afterJson: JSON.stringify({ format: 3, snapshotVersion: data.expectedSnapshotVersion, employment: employment, binding: binding }),
++    beforeJson: JSON.stringify({ format: 4, baselineState: 'LEGACY_NOT_BASELINED', master: state.master }),
++    afterJson: JSON.stringify({ format: 4, snapshotVersion: data.expectedSnapshotVersion, employment: employment, binding: binding,
++      source: 'T4_CONTROLLED_BASELINE_V1', approvalReference: permit.approvalReference, warnings: employeeText_(m[7]) ? [] : ['HIRE_DATE_UNKNOWN'] }),
+     reason: reason, operatorSub: context.sub, operatorId: context.employee.employeeId, operatedAt: now, phase: 'STARTED', beforeVersion: 0, afterVersion: 1 };
++  // Validate the exact proposed receipt without writing it. A consumed permit
++  // with no STARTED is intentionally recoverable only by manual re-approval.
++  var proposed = Object.assign({}, state, { audit: state.audit.concat([intent]) });
++  if (employeeBaselineStatusEvidence_(context, id, requestId, proposed, [intent]).requestStatus !== 'STARTED') employeeReviewRecovery_();
+   employeeAuditAppend_(intent);
+   return employeeBaselineFinish_(context, intent);
+ }
+@@ -179,7 +198,7 @@
+         intent.beforeVersion !== 0 || intent.afterVersion !== 1 || !intent.auditId ||
+         typeof intent.reason !== 'string' || !intent.reason.trim() || intent.reason.length > 1000 ||
+         !validTime(intent.operatedAt) || !validTime(intent.effectiveAt) ||
+-        intent.beforeJson !== JSON.stringify({ format: 3, baselineState: 'LEGACY_NOT_BASELINED' }) ||
++        (bundle.format === 3 && intent.beforeJson !== JSON.stringify({ format: 3, baselineState: 'LEGACY_NOT_BASELINED' })) ||
+         !employeeReviewSame_(p, employeeReviewCanonical_('employments', p)) ||
+         !employeeReviewSame_(b, employeeReviewCanonical_('bindings', b)) ||
+         !p.employmentId || p.sequence !== 1 || p.status !== '在職' || p.endDate !== '' || p.disabledAt !== '' ||
