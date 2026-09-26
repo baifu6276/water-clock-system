@@ -1,0 +1,1588 @@
+{
+  "method": "Acorn lexical scope identifier resolution + global reference closure; fixed eval integrity helper separately runtime-tested. Static analysis is not a proof of Google service authorization or atomicity.",
+  "globals": 214,
+  "functions": 210,
+  "duplicateGlobals": [],
+  "duplicateFunctions": [],
+  "unresolvedRuntimeSymbols": [],
+  "t4Closure": [
+    "EMPLOYEE_BASELINE_CONTROL_KEY_",
+    "EMPLOYEE_TABLES_",
+    "employeeAuditAppend_",
+    "employeeBaselineApprovalRef_",
+    "employeeBaselineClaim_",
+    "employeeBaselineControlClose_",
+    "employeeBaselineControlPersist_",
+    "employeeBaselineControlPrepare_",
+    "employeeBaselineControlRead_",
+    "employeeBaselineControlWithLock_",
+    "employeeBaselineDecode_",
+    "employeeBaselineDenied_",
+    "employeeBaselineEditorActor_",
+    "employeeBaselineEligibility_",
+    "employeeBaselineFinish_",
+    "employeeBaselineId_",
+    "employeeBaselineInspect_",
+    "employeeBaselineMigrate_",
+    "employeeBaselinePreview_",
+    "employeeBaselineRequestStatus_",
+    "employeeBaselineResult_",
+    "employeeBaselineSort_",
+    "employeeBaselineState_",
+    "employeeBaselineStatusEvidence_",
+    "employeeBaselineStatusResult_",
+    "employeeBaselineStrictInput_",
+    "employeeBaselineVersion_",
+    "employeeContext_",
+    "employeeFailure_",
+    "employeeHash_",
+    "employeeIdentityState_",
+    "employeeLegacyRows_",
+    "employeeLifecycleDate_",
+    "employeeLifecycleMaster_",
+    "employeeLifecyclePeriodImage_",
+    "employeeLifecycleScalar_",
+    "employeeLifecycleTarget_",
+    "employeeRequestId_",
+    "employeeRequireReviewer_",
+    "employeeReviewCanonical_",
+    "employeeReviewMasterRows_",
+    "employeeReviewMaster_",
+    "employeeReviewRecovery_",
+    "employeeReviewSame_",
+    "employeeRowObject_",
+    "employeeStoreRows_",
+    "employeeStoreSheet_",
+    "employeeText_",
+    "employeeWriteRow_"
+  ],
+  "dispatcherClosure": [
+    "EMPLOYEE_ACTIONS_",
+    "EMPLOYEE_BASELINE_CONTROL_KEY_",
+    "EMPLOYEE_LIFECYCLE_TRANSITIONS_",
+    "EMPLOYEE_TABLES_",
+    "appendAuditNote_",
+    "appendClockRecord_",
+    "appendMakeupRecord_",
+    "appendProgressAudit_",
+    "assertAttendanceManager_",
+    "assertCanManageDailyReportSite_",
+    "assertCanManageSite_",
+    "assertDailyReportManager_",
+    "assertDailySettlementManager_",
+    "assertPayrollManager_",
+    "assertProgressManager_",
+    "assertProgressMasterManager_",
+    "assertSiteDailyReportManager_",
+    "calculateDistanceMeters_",
+    "calculateWorkHours_",
+    "canManageSite_",
+    "cleanProgressText_",
+    "clockIn_",
+    "clockOut_",
+    "createId_",
+    "createProgressItemCode_",
+    "dailyReportRowToObject_",
+    "degreesToRadians_",
+    "doPost",
+    "employeeApplicationAdminList_",
+    "employeeApplicationResult_",
+    "employeeApplicationReview_",
+    "employeeApplicationRowNumber_",
+    "employeeAuditAppend_",
+    "employeeAuthFailure_",
+    "employeeBaselineApprovalRef_",
+    "employeeBaselineClaim_",
+    "employeeBaselineControlPersist_",
+    "employeeBaselineControlRead_",
+    "employeeBaselineDecode_",
+    "employeeBaselineDenied_",
+    "employeeBaselineEligibility_",
+    "employeeBaselineFinish_",
+    "employeeBaselineId_",
+    "employeeBaselineInspect_",
+    "employeeBaselineMigrate_",
+    "employeeBaselinePreview_",
+    "employeeBaselineRequestStatus_",
+    "employeeBaselineResult_",
+    "employeeBaselineSort_",
+    "employeeBaselineState_",
+    "employeeBaselineStatusEvidence_",
+    "employeeBaselineStatusResult_",
+    "employeeBaselineStrictInput_",
+    "employeeBaselineVersion_",
+    "employeeBootstrap_",
+    "employeeCancel_",
+    "employeeContext_",
+    "employeeEnsureNoPendingIntent_",
+    "employeeFailure_",
+    "employeeFinishIntent_",
+    "employeeFoundationRequest_",
+    "employeeHash_",
+    "employeeIdentityState_",
+    "employeeLegacyRows_",
+    "employeeLifecycleBaselineDryRun_",
+    "employeeLifecycleBindingActive_",
+    "employeeLifecycleBindingCheck_",
+    "employeeLifecycleBusinessValues_",
+    "employeeLifecycleDate_",
+    "employeeLifecycleFinish_",
+    "employeeLifecycleGuards_",
+    "employeeLifecycleInput_",
+    "employeeLifecycleInspectIntent_",
+    "employeeLifecycleMasterImage_",
+    "employeeLifecycleMaster_",
+    "employeeLifecycleMutate_",
+    "employeeLifecyclePending_",
+    "employeeLifecyclePeriodImage_",
+    "employeeLifecyclePeriod_",
+    "employeeLifecycleProjection_",
+    "employeeLifecycleRead_",
+    "employeeLifecycleScalar_",
+    "employeeLifecycleTarget_",
+    "employeeMutateApplication_",
+    "employeeNextId_",
+    "employeeOwnApplications_",
+    "employeePublicApplication_",
+    "employeeReadDiagnosticEnabled_",
+    "employeeReadDiagnosticInput_",
+    "employeeReadDiagnosticResponse_",
+    "employeeReadDiagnostics_",
+    "employeeReplay_",
+    "employeeRequestId_",
+    "employeeRequireReviewer_",
+    "employeeReviewAssertNew_",
+    "employeeReviewBundle_",
+    "employeeReviewCanonical_",
+    "employeeReviewFinish_",
+    "employeeReviewInput_",
+    "employeeReviewInspect_",
+    "employeeReviewMasterRows_",
+    "employeeReviewMaster_",
+    "employeeReviewPending_",
+    "employeeReviewRecovery_",
+    "employeeReviewSame_",
+    "employeeReviewText_",
+    "employeeRowObject_",
+    "employeeStoreRows_",
+    "employeeStoreSheet_",
+    "employeeSubmit_",
+    "employeeText_",
+    "employeeUrlFetchDiagnostic_",
+    "employeeWithLock_",
+    "employeeWriteRow_",
+    "ensureDailyReportProgressColumns_",
+    "findOpenWorkSegment_",
+    "findOverlappingWorkSegment_",
+    "findProgressCurrentRow_",
+    "formatDateTimeText_",
+    "formatDateTime_",
+    "formatDate_",
+    "formatReportDate_",
+    "formatSiteDailyDateTime_",
+    "getActiveSites_",
+    "getAttendanceReviewById_",
+    "getAttendanceReviewIndex_",
+    "getDailyReportById_",
+    "getDailySettlementById_",
+    "getDailySettlementIndex_",
+    "getEmployeeByEmployeeId_",
+    "getEmployeeByLineUid_",
+    "getOperatorEmployee_",
+    "getPayrollSettlementById_",
+    "getPayrollSettlementIndex_",
+    "getProgressItemByCode_",
+    "getProgressItems_",
+    "getProgressLocationById_",
+    "getProgressLocations_",
+    "getProgressManageableSites_",
+    "getProgressSheet_",
+    "getProgressStatusFromPercent_",
+    "getSetting_",
+    "getSiteById_",
+    "getSiteForClock_",
+    "getWorkSegmentById_",
+    "handleAdminAttendanceReviewApprove_",
+    "handleAdminAttendanceReviewList_",
+    "handleAdminAttendanceReviewRefresh_",
+    "handleAdminDailyReportReviewAction_",
+    "handleAdminDailyReportReviewList_",
+    "handleAdminDailySettlementFinalize_",
+    "handleAdminDailySettlementList_",
+    "handleAdminDailySettlementRefresh_",
+    "handleAdminMakeup_",
+    "handleAdminOpenSegments_",
+    "handleAdminPayrollFinalize_",
+    "handleAdminPayrollList_",
+    "handleAdminPayrollRefresh_",
+    "handleAdminPayrollReturnForCorrection_",
+    "handleAdminProgressBootstrap_",
+    "handleAdminProgressConfirm_",
+    "handleAdminProgressItemSave_",
+    "handleAdminProgressList_",
+    "handleAdminProgressLocationSave_",
+    "handleAdminProgressUpsert_",
+    "handleAdminSiteDailyReportFinalize_",
+    "handleAdminSiteDailyReportList_",
+    "handleAdminSiteDailyReportRefresh_",
+    "handleBootstrap_",
+    "handleClock_",
+    "handleDailyReportCreateBatch_",
+    "handleDailyReportCreate_",
+    "handleDailyReportListOwn_",
+    "handleDailyReportProgressOptions_",
+    "handleDailyReportUpdateReturned_",
+    "handleEmployeeFoundation_",
+    "jsonResponse_",
+    "listOpenWorkSegments_",
+    "makeupClockOut_",
+    "makeupFullSegment_",
+    "normalizeClockType_",
+    "normalizeDateInput_",
+    "normalizeMonthInput_",
+    "normalizeReportDateText_",
+    "normalizeReportDate_",
+    "normalizeStoredMonth_",
+    "parseDateOnly_",
+    "parseLocalDateTime_",
+    "parseNonNegativeMoney_",
+    "parseOptionalNonNegativeNumber_",
+    "parseProgressNumber_",
+    "parseProgressPercent_",
+    "parseReportDate_",
+    "progressRowToObject_",
+    "pushUniqueText_",
+    "roundMoney_",
+    "safeText_",
+    "siteDailyReportRowToObject_",
+    "syncAttendanceReview_",
+    "syncConfirmedDailyReportToProgress_",
+    "syncDailySettlement_",
+    "syncPayrollSettlement_",
+    "validateDailyReportProgressItem_",
+    "validateDailyReportProgressLocation_",
+    "validateMakeupTimeRange_",
+    "verifyLiffIdentity_"
+  ],
+  "services": [
+    "ContentService",
+    "LockService",
+    "PropertiesService",
+    "SpreadsheetApp",
+    "UrlFetchApp",
+    "Utilities"
+  ],
+  "actionSet": [
+    "identityBootstrap",
+    "employeeApplicationSubmit",
+    "employeeApplicationListOwn",
+    "employeeApplicationCancel",
+    "employeeLifecycleBaselineDryRun",
+    "employeeApplicationAdminList",
+    "employeeApplicationApprove",
+    "employeeApplicationReject",
+    "employeeLifecycleAdminList",
+    "employeeLifecycleAdminDetail",
+    "employeeLifecycleSuspend",
+    "employeeLifecycleLeave",
+    "employeeLifecycleResume",
+    "employeeLifecycleTerminate",
+    "employeeLifecycleBaselineMigrate",
+    "employeeLifecycleBaselineRequestStatus"
+  ],
+  "symbols": {
+    "EMPLOYEE_ACTIONS_": {
+      "file": "EmployeeApplication.gs",
+      "line": 1,
+      "kind": "VariableDeclaration",
+      "sourceHash": "768b40be69fcc33ccd6fee30cc144d9bbe5fafb565c5f616d4e46cf47f31e8c0"
+    },
+    "employeeFoundationRequest_": {
+      "file": "EmployeeApplication.gs",
+      "line": 7,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "6aaa411cfe5978532949cf1266bada47ec918794be6fe2d696240ca92b30a868"
+    },
+    "handleEmployeeFoundation_": {
+      "file": "EmployeeApplication.gs",
+      "line": 16,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "86786721a50212e1c54947ce9e4953bd61f86494ae37325ea81339fd1223dfde"
+    },
+    "employeeReadDiagnosticInput_": {
+      "file": "EmployeeApplication.gs",
+      "line": 66,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "2acf5e9952c99f40afd40b2d44659ca252474dcfb29e6d536a630cfa8e7f4a9c"
+    },
+    "employeeReadDiagnosticEnabled_": {
+      "file": "EmployeeApplication.gs",
+      "line": 81,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "36672f6bf9a4be889633cd0ab952f74d5741b4e187f958e350db8f79a7c90077"
+    },
+    "employeeReadDiagnostics_": {
+      "file": "EmployeeApplication.gs",
+      "line": 85,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "c998c367ae5c611f36d1f7041c258d4827e706cccf82897ac141cd918566d7a4"
+    },
+    "employeeReadDiagnosticResponse_": {
+      "file": "EmployeeApplication.gs",
+      "line": 135,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "68859a6822e37e6fe7ca9e765b1ae5cf0e1fd55eb14e9cede9b3b6ab4fa1b52b"
+    },
+    "employeeOwnApplications_": {
+      "file": "EmployeeApplication.gs",
+      "line": 144,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "d97f9840b71ce393e499cb50ea460b2733fa8e7a5a61ab28b4ba76e15cf212b2"
+    },
+    "employeePublicApplication_": {
+      "file": "EmployeeApplication.gs",
+      "line": 149,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "0b1d80388018b2c86032d1c695d1c34315a5053d834a98c1b0fcffdba60e888c"
+    },
+    "employeeBootstrap_": {
+      "file": "EmployeeApplication.gs",
+      "line": 153,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "df83651039bf0ad05e3090b8918777aa28ffe86ec43b0e2b2526ee208f1df525"
+    },
+    "employeeApplicationResult_": {
+      "file": "EmployeeApplication.gs",
+      "line": 160,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a27e07e415ec2456a432d6105ba8bd54bf5363bec82252bc64c067c1f46d7615"
+    },
+    "employeeSubmit_": {
+      "file": "EmployeeApplication.gs",
+      "line": 163,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "6e139f69b38a654e78022c40329b2ebe8dfe5c200dfae2c6afe810e948b329f0"
+    },
+    "employeeCancel_": {
+      "file": "EmployeeApplication.gs",
+      "line": 197,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "e1fc3efbc8d1579aa0b0e64cc4e897b6f2425e36787bda0e94c91ad6ff34cacd"
+    },
+    "employeeRequireReviewer_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 2,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "1461800b40c43231e3930b928cdc6c6bbd1f31575344cc4aa557ae17e1f042b0"
+    },
+    "employeeReviewRecovery_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 8,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "43c35e257ed8801a54ce37eb9be5bad764ae7f15612e41dde30204f790102f63"
+    },
+    "employeeReviewPending_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 11,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "3700fe583a57ddc214bc46c4ec79af6c462f07f64ab85f37159033fe2453c743"
+    },
+    "employeeApplicationAdminList_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 18,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "c9ae6c406c8385f5dcbb9ea3c02a4a2e48e04626198ff6c208e6d9abc64e78e4"
+    },
+    "employeeReviewText_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 29,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "b59f2949d35dd293da4fe837460d3d0422d88618521c6eb367d83c7c0a87fbef"
+    },
+    "employeeReviewInput_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 36,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "9d86c424a3386a62a7cb34767a542a834e4f867ef0f9586282aed12b3276c1aa"
+    },
+    "employeeReviewMaster_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 59,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "dbcdf197fb105b1e2dba70d81a6dec7a90ed71f99ebcf6f532833f831de85530"
+    },
+    "employeeReviewMasterRows_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 65,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "1a0b72cd8b707bc3e5c0c06024c7961598dd55d027ce577ae132318c2a288937"
+    },
+    "employeeNextId_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 77,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "1c147f0857c8e7c7d0190821e9f1fcb0a819a3a9160682c7dd6a0468ef45b7cb"
+    },
+    "employeeReviewCanonical_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 94,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "0553ea4e4d1e54d32acd277326827fbc279604a5709c1ff423827f9ab141c3db"
+    },
+    "employeeReviewBundle_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 97,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "066491e0c0815296d62eeb824db3236a09319487ff673912e727eb9b3e91d7f7"
+    },
+    "employeeReviewAssertNew_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 121,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "2b8587a2633b009211621721ec69127b2b3a93672c6ca25c292d88c2b987175e"
+    },
+    "employeeReviewSame_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 135,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "40ae03635a47e8a54cb3717f1884b513d87e09bf397e04d003aa4b12a51e42bf"
+    },
+    "employeeReviewInspect_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 136,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "7510ccec290cdd5463d6e647781e54dcfb6b7a38c13853cb1a68910913761baa"
+    },
+    "employeeReviewFinish_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 170,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "f0c10861ac43093a53a96732bcfed815aa334f7f50e37ebd51d093735ff98f61"
+    },
+    "employeeApplicationReview_": {
+      "file": "EmployeeApplicationAdmin.gs",
+      "line": 206,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a1ff37c853039d8a8e67591ef36e053b7af1eb047f636ea508ad10a88ba01fe3"
+    },
+    "EMPLOYEE_BASELINE_CONTROL_KEY_": {
+      "file": "EmployeeBaselineControl.gs",
+      "line": 3,
+      "kind": "VariableDeclaration",
+      "sourceHash": "e8906677efaa3281922b7823967fd8a44f46ea1795e593523ae1647432dd3a53"
+    },
+    "employeeBaselineDenied_": {
+      "file": "EmployeeBaselineControl.gs",
+      "line": 4,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "91f1848180ff7b7979a5882380cae72439d189e393d1326d2c4db570685407f3"
+    },
+    "employeeBaselineStrictInput_": {
+      "file": "EmployeeBaselineControl.gs",
+      "line": 7,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "ded9ca54cfba70e551422c24990fc5974c778130901a94bf341cd08166318c3b"
+    },
+    "employeeBaselineControlRead_": {
+      "file": "EmployeeBaselineControl.gs",
+      "line": 19,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "1b60bd67f09d6cddf9887b46efb1f8ca3ef33a15bd7e515c208197e4ff252547"
+    },
+    "employeeBaselineApprovalRef_": {
+      "file": "EmployeeBaselineControl.gs",
+      "line": 59,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "f59256b7ac9e8f88379924aa3cf212588015fff96c04c9da2f871c61c4b3f040"
+    },
+    "employeeBaselineControlPersist_": {
+      "file": "EmployeeBaselineControl.gs",
+      "line": 62,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "cd3f2d2288d81610d22714975b94559c63c9777d8a582a3e2392baf5018f0fdf"
+    },
+    "employeeBaselineClaim_": {
+      "file": "EmployeeBaselineControl.gs",
+      "line": 74,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "6e9cad1413cefcb59fad5039a84cdc7f32f2294867daa12b382f28f2b614bae7"
+    },
+    "employeeBaselineControlWithLock_": {
+      "file": "EmployeeBaselineControl.gs",
+      "line": 87,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "b92908d53bb41b775ba38c5c7025433cec384a91bcfd3f9aceba2eca5cb2e0c8"
+    },
+    "employeeBaselineControlPrepare_": {
+      "file": "EmployeeBaselineControl.gs",
+      "line": 95,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "f56983888ddeca2b082cf15bf2ebc5a978cdc1f0ded40fa31f75fb637ec9c26e"
+    },
+    "employeeBaselineEditorActor_": {
+      "file": "EmployeeBaselineControl.gs",
+      "line": 128,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "6ef96898fea2db23a45442200f24c1835bb498e0c5030acd2ecc5c993c06fdf3"
+    },
+    "employeeBaselineControlClose_": {
+      "file": "EmployeeBaselineControl.gs",
+      "line": 138,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "7f063189351f3fd9d76b9e87a1114e1ebdaf7768a5d4ff4a0eff1a9bde40033c"
+    },
+    "employeeIdentityEditorConnectivityTest": {
+      "file": "EmployeeIdentity.gs",
+      "line": 4,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "63446b09abd68591fd2e8bd0f1b33a220d5c38b2b3549ba6c2855c9a1aeb260c"
+    },
+    "employeeFailure_": {
+      "file": "EmployeeIdentity.gs",
+      "line": 35,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "f6d530098910a48e61146bee46d819e28359c95fce936ca5a966aec38427fcf0"
+    },
+    "employeeAuthFailure_": {
+      "file": "EmployeeIdentity.gs",
+      "line": 42,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "760489756656fe5f144766d60011c5d687116361ce280d3a50da4e0c81b1b495"
+    },
+    "employeeUrlFetchDiagnostic_": {
+      "file": "EmployeeIdentity.gs",
+      "line": 51,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "8970fded7585b4db15cba722635b1530bc87fbed70031d6639f3f7d762033494"
+    },
+    "verifyLiffIdentity_": {
+      "file": "EmployeeIdentity.gs",
+      "line": 68,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "f869400cbf9c6d7c6673fb168b20f49f90484cd4cf5c7a9d2a7f8b024af71744"
+    },
+    "resolveEmployeeIdentity_": {
+      "file": "EmployeeIdentity.gs",
+      "line": 103,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "de804ad20fb14aecbe6853555e9ef0bb394d0cb7a208ddef14ed742ca726867d"
+    },
+    "employeeContext_": {
+      "file": "EmployeeIdentity.gs",
+      "line": 107,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "df5eb8e85cbab8da2af801600a1f921dc8e0685e437e0e92404b44bc15304606"
+    },
+    "employeeIdentityState_": {
+      "file": "EmployeeIdentity.gs",
+      "line": 137,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "1e14dff669792584870bbd2f9bec6a76dbd4280341d1fb1dcea0a4f24614b088"
+    },
+    "employeeProjectIntegrityCheck": {
+      "file": "EmployeeIdentity.gs",
+      "line": 149,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "5da63451bcfd29ed69e7cbe7233a59c11124a11ae4be1a34168905bc79be0de3"
+    },
+    "employeeBaselineId_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 2,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "fd7e737bc031268c4d6af7e64273c47af18f9f016fc980bf582e5a046923f799"
+    },
+    "employeeBaselineSort_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 6,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "96bb29a0476b77ff2bf8f19cc16dcddac3ac2cd8a8ba48d0f415807caaa4c420"
+    },
+    "employeeBaselineState_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 9,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "0c7045f67cb1747a8665b90f3133d27f6020790c529127d8da826639cddcb2ca"
+    },
+    "employeeBaselineVersion_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 18,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "5962fe7eda870f55c02bfb79e1e8a82dbc8d8848d1228dbc5fd2b4bcdad09c7e"
+    },
+    "employeeBaselineResult_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 19,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "cbaa0f4e08c556ceb41216abbf48a83b2ac32ae2f3e14efdb71a580ae851789e"
+    },
+    "employeeBaselineDecode_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 22,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "7ef6e4fc1e8f6c641d9edf2618021c6a05c1782c2c4296c71344d525b96b8835"
+    },
+    "employeeBaselineInspect_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 42,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "cd24b4cd667111f505eafb2e5fa52a2ea1e24792013adfe1f59b35bc548a8889"
+    },
+    "employeeBaselineEligibility_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 61,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "61b0d9b0e076ece85556e8e70d51c130e3dc179f48a4a26027a39b182b14fb4f"
+    },
+    "employeeBaselinePreview_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 85,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "4c1df59abc0682e1cc5b395f6b394575a4e82c35bee3836ea858aa43ba7f6a07"
+    },
+    "employeeBaselineFinish_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 96,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "1d41c042c0e89530f40dddab7c281e28c5d3169566e4d6360537f55e32ed61ef"
+    },
+    "employeeBaselineMigrate_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 106,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "3ae4016eb7c6557b2c1176e962a8cc0e6c706dbd9a4f1f69a9e6642fe73c58d0"
+    },
+    "employeeBaselineStatusResult_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 155,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "df916f78995df33321c5413c911037a99bace500bc18aed531d01ea747c32379"
+    },
+    "employeeBaselineRequestStatus_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 160,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "918973ba8be05f1eadb91f6f09f133dbcc53f2581f2c0615fa6f8eaab15e9932"
+    },
+    "employeeBaselineStatusEvidence_": {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "line": 195,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "054a4cf9d45e33ed4ccf15f39ed0b6eab1b7da41e1df8c55e910b327e0706368"
+    },
+    "EMPLOYEE_LIFECYCLE_TRANSITIONS_": {
+      "file": "EmployeeLifecycleMutation.gs",
+      "line": 2,
+      "kind": "VariableDeclaration",
+      "sourceHash": "af6eb3b3e36a4e02ec80fbec23c37064286abc052297667dee136de8b1cc3806"
+    },
+    "employeeLifecycleInput_": {
+      "file": "EmployeeLifecycleMutation.gs",
+      "line": 8,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "9a98aa5895fb888d607acb592e23c07f67fedcbaf2c816e9f7717a869488e690"
+    },
+    "employeeLifecyclePending_": {
+      "file": "EmployeeLifecycleMutation.gs",
+      "line": 22,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "19060e8a3de78aecfd1de1836023e0ab3bd67940f1cefa4814661738eee883c2"
+    },
+    "employeeLifecycleTarget_": {
+      "file": "EmployeeLifecycleMutation.gs",
+      "line": 30,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "823e4ba073e891f64113fa259cd485f1a93b62e965ea65ed989beba751c2b430"
+    },
+    "employeeLifecycleBindingCheck_": {
+      "file": "EmployeeLifecycleMutation.gs",
+      "line": 41,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "22086c5bb5a78192f62b7fab4c08050cad8b44a7f25159371fce5dc4789c460c"
+    },
+    "employeeLifecycleGuards_": {
+      "file": "EmployeeLifecycleMutation.gs",
+      "line": 56,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "4fbb2fe176b6ae98ec683072ff44226585c77195139b07d95c83e0cd458a9e04"
+    },
+    "employeeLifecycleMasterImage_": {
+      "file": "EmployeeLifecycleMutation.gs",
+      "line": 79,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "1d1e33ab37a110d077228f682179468ded8fe4460dd243b1a0ba093e20b4a311"
+    },
+    "employeeLifecyclePeriodImage_": {
+      "file": "EmployeeLifecycleMutation.gs",
+      "line": 83,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "2a67779c810b4bb2cd2e656dc376c91edee6474f57c0e77dfb51db3dc629c08c"
+    },
+    "employeeLifecycleInspectIntent_": {
+      "file": "EmployeeLifecycleMutation.gs",
+      "line": 91,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "dbc70eccadd557ebdf3d68341a37225519e2a90df09823ae149d4e2624c28565"
+    },
+    "employeeLifecycleFinish_": {
+      "file": "EmployeeLifecycleMutation.gs",
+      "line": 111,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "7b284dcfc76293b13df4431a7ebf7233c0ee3ba40861ae110f8994b4e9108228"
+    },
+    "employeeLifecycleMutate_": {
+      "file": "EmployeeLifecycleMutation.gs",
+      "line": 140,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "001f49817a48129b76c075f26ccae2a7d26dfec16ca19e6645a6b149d48b35d5"
+    },
+    "employeeLifecycleScalar_": {
+      "file": "EmployeeLifecycleRead.gs",
+      "line": 2,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "988a479f5867011e36288da82dd355eb0fed457d548eb355850b3b83aad2be0c"
+    },
+    "employeeLifecycleDate_": {
+      "file": "EmployeeLifecycleRead.gs",
+      "line": 5,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a636f242c7853b7e84c7b32e55b91401aab81217ab5599e4c579f0b14eb161c9"
+    },
+    "employeeLifecycleMaster_": {
+      "file": "EmployeeLifecycleRead.gs",
+      "line": 16,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "7e34a5ddd2e180404b0b2f0c8eaa5fe250b073808fcbf747cc553999279ff459"
+    },
+    "employeeLifecyclePeriod_": {
+      "file": "EmployeeLifecycleRead.gs",
+      "line": 25,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "923e7ff633323224c56860b9e0b774cce574b344af4b6799c4018cd9fe8c3680"
+    },
+    "employeeLifecycleBindingActive_": {
+      "file": "EmployeeLifecycleRead.gs",
+      "line": 34,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "005b55d15e89d2bf50164dcea635118a37d9f984dbf42f43297f2476942be3eb"
+    },
+    "employeeLifecycleBusinessValues_": {
+      "file": "EmployeeLifecycleRead.gs",
+      "line": 38,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "cfea86b8a7bf495bead58ea3dc079c5f7febe452a90107fb9d8208d0617c55dc"
+    },
+    "employeeLifecycleProjection_": {
+      "file": "EmployeeLifecycleRead.gs",
+      "line": 61,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "5c8351734977e951f6db5cf8ee214cb7c76d58432869bc84fc627271857bb2fb"
+    },
+    "employeeLifecycleRead_": {
+      "file": "EmployeeLifecycleRead.gs",
+      "line": 116,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "1012b32155542d234bfa41f83bc2d8176322b8f9317751eb44cbb378337041ac"
+    },
+    "EMPLOYEE_TABLES_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 2,
+      "kind": "VariableDeclaration",
+      "sourceHash": "5fb44a435308421d11723b16a254bc80db432c8383e22427748839c52de03892"
+    },
+    "employeeText_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 30,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "3b77fc4538f77f307ac53c365bf15eda13eefcdd2028bb82ef9dd2a58363ea13"
+    },
+    "employeeStoreSheet_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 31,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "3cc6a74cda00da4c98025c28bad3247f3e1522ac7272e300aef4d2a6b155ad9f"
+    },
+    "employeeRowObject_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 41,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "c31c7a96d90161f9a4b41e88aa8d5f7ea2eec56d1a9ed16dc1cf1a2ac42dfb89"
+    },
+    "employeeStoreRows_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 48,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "612170f7544651d22f4e3f6ce342523c7500ff52add025edeed4e80564f410d7"
+    },
+    "employeeLegacyRows_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 55,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "50c07ec47818bd325ddedeed54d4f9752f696d5ed2fff43bcf91a9f426cbdfdb"
+    },
+    "employeeHash_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 67,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "4f75bd1b0a83b467c87d572d21038ca1096244d0937755c9ecdd7f4852c7f660"
+    },
+    "employeeRequestId_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 71,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "1cb938141db98af7ae19ba26abece019567c724a7d547fc81a758b7feab66797"
+    },
+    "employeeWithLock_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 75,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "62e6a151042066273029d8f8b34ffce9bf81280b0920d894b489face35b8e7e4"
+    },
+    "employeeWriteRow_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 81,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "64b566828386951aeec7ad1ee6c1a3ba6d86ffe2abd0671777d72dda6e3e92a3"
+    },
+    "employeeApplicationRowNumber_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 90,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "5c34bb29e76670990273ffa333b44d188e380ca294540ca41f1096e1ca273f64"
+    },
+    "employeeAuditAppend_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 98,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "c835695c367631f1bac41f4210b69e57bdd5c097fdccc26e98401e27591f82d9"
+    },
+    "employeeFinishIntent_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 103,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "3e82be0597f7175a3f4eb50af9200abdffe5a572c2c014207ba73246d24768e3"
+    },
+    "employeeReplay_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 117,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "8c44ab0ae0a584c1fe9f187352572e4006ef31cb5735aa52b55e6812f1726ed5"
+    },
+    "employeeEnsureNoPendingIntent_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 129,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "9dce6c1542da450b0277866235e8113f3105d85f5ddd928d864d6ab077fe2c88"
+    },
+    "employeeMutateApplication_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 135,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "e5466c468e292e86eb1835851ecc0f9fc873941145748bbb0522bff77cbd28a0"
+    },
+    "employeeLifecycleBaselineDryRun_": {
+      "file": "EmployeeLifecycleStore.gs",
+      "line": 147,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "4d9d88147e425e94d4b59b6f02eff7053256cb60cfac8c33bb7e66e89a4ac10d"
+    },
+    "doGet": {
+      "file": "程式碼.gs",
+      "line": 29,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "697d6e0beb9da5449d0f6253a6c2fa425d359ea7f951e75f0fdc2d23dd3be044"
+    },
+    "doPost": {
+      "file": "程式碼.gs",
+      "line": 86,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "5ccde13c098939fe7e182537542226b2861462e68ac2575321645ef6b4397ae0"
+    },
+    "handleBootstrap_": {
+      "file": "程式碼.gs",
+      "line": 440,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "4d904ace0a728edcd7bee799f4e82d8ec2837f529f86d009674b140258b0cd2d"
+    },
+    "handleClock_": {
+      "file": "程式碼.gs",
+      "line": 527,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "d4b6cd23372acb32bab6f400138f53123bb9e0c4a819006aea2fccf1b0e7ef89"
+    },
+    "clockIn_": {
+      "file": "程式碼.gs",
+      "line": 882,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "ce6a826285983b3325adf1085335f919f5befa13a7b40c69acfc8861abb0c8b3"
+    },
+    "clockOut_": {
+      "file": "程式碼.gs",
+      "line": 1046,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "e86e2b610627f90ec6c61afeac9f65b857b9715f6f0bef081a354aa0356e29fe"
+    },
+    "handleAdminOpenSegments_": {
+      "file": "程式碼.gs",
+      "line": 1351,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "25e3f4f1b00fa866fb888ac8e79a1c82c6768c2f86a3a2e5ead8fa31b1288f4e"
+    },
+    "handleAdminMakeup_": {
+      "file": "程式碼.gs",
+      "line": 1437,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "030c559d4ab7b279bdfcc4dc3c3cd605f2e7a149e6c98990819f82077638d06b"
+    },
+    "makeupClockOut_": {
+      "file": "程式碼.gs",
+      "line": 1512,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "9078f99d87b2fce0e7b857fb3e05ada6848cd874a9e378548c64a8156619f454"
+    },
+    "makeupFullSegment_": {
+      "file": "程式碼.gs",
+      "line": 1815,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "aa36b337f05fc116f65992fc2a7ab06108a81700dee733eea5f2ce2319a8461e"
+    },
+    "appendMakeupRecord_": {
+      "file": "程式碼.gs",
+      "line": 2130,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a50a43d2014c97fa809e045f35cf1db7ef0fe8bcbf14292f942f993fcd2da175"
+    },
+    "getOperatorEmployee_": {
+      "file": "程式碼.gs",
+      "line": 2189,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a05a1221d6ffe93cb70d4f5a800dfc84fc88869108a8b00830f2c4694f882914"
+    },
+    "assertAttendanceManager_": {
+      "file": "程式碼.gs",
+      "line": 2238,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "b9340c44581a3ddbce529cd1fb424174b3def0cedb8000a0ef9c47ec4e23be83"
+    },
+    "canManageSite_": {
+      "file": "程式碼.gs",
+      "line": 2276,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "ad1d6492fd539b284ae189ff673d3c3c33943e171b432dd04fac6a471fd0273e"
+    },
+    "assertCanManageSite_": {
+      "file": "程式碼.gs",
+      "line": 2336,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "3cd93d6b19f5d1613d758f6551e66fec4c1c58e0f61af660dc498136985a7fe4"
+    },
+    "listOpenWorkSegments_": {
+      "file": "程式碼.gs",
+      "line": 2361,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "e7c12db77d56802f71adea9a0dc5da7a78b6642277bcc72ef6aaebb420f3ae68"
+    },
+    "getWorkSegmentById_": {
+      "file": "程式碼.gs",
+      "line": 2523,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "eeb39f6ed81044a9c0179c37defe0afbfe80afb379b0625f364af13d23ea5622"
+    },
+    "getEmployeeByEmployeeId_": {
+      "file": "程式碼.gs",
+      "line": 2666,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "81824d9cac191ceb5952f19d1bfbb50c9f0974736e13a475710b72378a2dbe7c"
+    },
+    "getSiteById_": {
+      "file": "程式碼.gs",
+      "line": 2782,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "15ffd3cecd711171b92c6deef5cd1c5e2f62d48ffb516ef2eca898b58a81f6b4"
+    },
+    "findOverlappingWorkSegment_": {
+      "file": "程式碼.gs",
+      "line": 2914,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "bcf6ee6ae5b723148988550ff33e2ec5a8c54d3245ac1bd93a92bef1a9c37b04"
+    },
+    "validateMakeupTimeRange_": {
+      "file": "程式碼.gs",
+      "line": 3061,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "eed1c4f851f5fc9890b9e0e108a1ca8a8262185ed32729e7e1bb537e6c1e3c5d"
+    },
+    "calculateWorkHours_": {
+      "file": "程式碼.gs",
+      "line": 3127,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a0feeb68a05a58e811d68eca1793628ea41b19715ad0e69a0cebf66b37b4a5bd"
+    },
+    "parseLocalDateTime_": {
+      "file": "程式碼.gs",
+      "line": 3160,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "7c96e750cf75f0cda1d39d455ed1d3de0b4a688b4ecc6e4f0095e0082941932e"
+    },
+    "formatDateTime_": {
+      "file": "程式碼.gs",
+      "line": 3283,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "82b7b9527edf701a4dee42c955d46f054b869e68b6c02335ca5a61967431e6e9"
+    },
+    "handleAdminAttendanceReviewRefresh_": {
+      "file": "程式碼.gs",
+      "line": 3344,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "60c342f9f20dddf398a6bf5ac2dd51760b28398a859bcbc6b5bd10160788d85c"
+    },
+    "handleAdminAttendanceReviewList_": {
+      "file": "程式碼.gs",
+      "line": 3427,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "9d96a019649928012e41370b053169a415517c8e626461894b25599b28ac97fd"
+    },
+    "handleAdminAttendanceReviewApprove_": {
+      "file": "程式碼.gs",
+      "line": 3748,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "8f2b448704588e7892d9b691f8148e937419a2a9a24bce30987e94b0ac8b0704"
+    },
+    "syncAttendanceReview_": {
+      "file": "程式碼.gs",
+      "line": 4045,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "5c9547373c2f3a147e42bafbc3b9f1f077e230e92e66b31e9c292db846757411"
+    },
+    "getAttendanceReviewIndex_": {
+      "file": "程式碼.gs",
+      "line": 4438,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "d0c37de086da94639ce764612b797786894744afb9da2515d91d318e94453262"
+    },
+    "getAttendanceReviewById_": {
+      "file": "程式碼.gs",
+      "line": 4551,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "3b98548830b3889732d91afe9d5963970294512a3a189264018785f3b190a428"
+    },
+    "normalizeDateInput_": {
+      "file": "程式碼.gs",
+      "line": 4671,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "c738f6ab908bc057d48efcd967780d426b442caf2687129cf95d8d4583323c00"
+    },
+    "parseDateOnly_": {
+      "file": "程式碼.gs",
+      "line": 4758,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a392424009efa559eeba3a6d1b7232ac808749d7c76e2aa9b42594b147922742"
+    },
+    "assertDailySettlementManager_": {
+      "file": "程式碼.gs",
+      "line": 4825,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "982aecea4eb1245842242ac58f2ff7037428cc36929bfba3d70ba2576ee5a7cb"
+    },
+    "handleAdminDailySettlementRefresh_": {
+      "file": "程式碼.gs",
+      "line": 4864,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a15069e52c764ac7a4cc9a683da1499501c2e542062cb0acc3e665837fca9ddb"
+    },
+    "handleAdminDailySettlementList_": {
+      "file": "程式碼.gs",
+      "line": 4929,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "d4dc2a6b3de0cc2aca3dbea0efafd26b12a6ae73042dd0876076f5fb7fad395b"
+    },
+    "handleAdminDailySettlementFinalize_": {
+      "file": "程式碼.gs",
+      "line": 5194,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "7141048433d2c6ebd0782909e0560334402bde8ed61def915170a456af0708b3"
+    },
+    "syncDailySettlement_": {
+      "file": "程式碼.gs",
+      "line": 5450,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "887d276cfa67aac6cc7dc4c0b104dee60ccd052a74af3faa2e97483760d5ff02"
+    },
+    "getDailySettlementIndex_": {
+      "file": "程式碼.gs",
+      "line": 5969,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "df49f2f97eb055c5e32044d14ec98713391e17332889c953036c1eb11c00a0dc"
+    },
+    "getDailySettlementById_": {
+      "file": "程式碼.gs",
+      "line": 6124,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "81ffb6aec665c8ac804817bc6a04881b2a22ef71e994481507e5a5898084cc88"
+    },
+    "assertPayrollManager_": {
+      "file": "程式碼.gs",
+      "line": 6302,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "d84edb405fb05b1364439914bd37a2a41be08b6aec2039a556d61c523b11cf98"
+    },
+    "handleAdminPayrollRefresh_": {
+      "file": "程式碼.gs",
+      "line": 6335,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "31acb46109564760d9770d9f752b97cf4ee19bf56b06e5ab291756178296879d"
+    },
+    "handleAdminPayrollList_": {
+      "file": "程式碼.gs",
+      "line": 6398,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "7d43955dddf4685a5022fb681b8f4b51529e5e73a275a7ad45bba03b1f35978a"
+    },
+    "handleAdminPayrollFinalize_": {
+      "file": "程式碼.gs",
+      "line": 6642,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "adfd5aad0e30279485c68ed41146134e2c0e607d34d6223d771aa2878656f690"
+    },
+    "handleAdminPayrollReturnForCorrection_": {
+      "file": "程式碼.gs",
+      "line": 6919,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "99158d43ea436fb9cdf59d86777e65de4b411e12cc86be253cc0e2f8bd939e50"
+    },
+    "appendAuditNote_": {
+      "file": "程式碼.gs",
+      "line": 7119,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "bb9ba033abacd634e0899331233d8e8b702ad0ddf73f280ff9a3020b4d513a65"
+    },
+    "syncPayrollSettlement_": {
+      "file": "程式碼.gs",
+      "line": 7170,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "d7764c55d073367860d76bf11175ff760a9271a0dd1273f79d96cff21a411e2f"
+    },
+    "getPayrollSettlementIndex_": {
+      "file": "程式碼.gs",
+      "line": 7654,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "15d94a2003f9508888fdc7b8849caea8396dcea86c4aa1202cebc1e07ed1b2c9"
+    },
+    "getPayrollSettlementById_": {
+      "file": "程式碼.gs",
+      "line": 7826,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "fad2cbf2c19a98696641978769c047658bf5b448fbf12f442410051358bf60d9"
+    },
+    "normalizeMonthInput_": {
+      "file": "程式碼.gs",
+      "line": 7990,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "ff7a75ca3bec53cb9f69e2fd32258c80c8d6187c79a00495efc57317abe35694"
+    },
+    "normalizeStoredMonth_": {
+      "file": "程式碼.gs",
+      "line": 8059,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "73862406bcb0ce19516c06988ab8828be9e5817315e1ac8e52d2aac18b3a2cce"
+    },
+    "parseNonNegativeMoney_": {
+      "file": "程式碼.gs",
+      "line": 8131,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "6619d68d5f3d798a485d172b1b2742ebb68152e915eac968af69a34bc01542e1"
+    },
+    "roundMoney_": {
+      "file": "程式碼.gs",
+      "line": 8179,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "8407bc87700a996eaf39997e78ff86b9b2af4aae7d673c103811f76ffb239546"
+    },
+    "handleDailyReportCreateBatch_": {
+      "file": "程式碼.gs",
+      "line": 8266,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "cb084ec34c91e2b4f477357dd1462964e24d7158c42c6a9e004fcae138070e32"
+    },
+    "handleDailyReportCreate_": {
+      "file": "程式碼.gs",
+      "line": 8390,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "6337ac80613892316614b9c3bc2c9df98f44491349a606f7e4f673220e7d53d5"
+    },
+    "handleDailyReportListOwn_": {
+      "file": "程式碼.gs",
+      "line": 8677,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a54413796d76f7c512257c5e78ac3259090b8542790fb361951bdcced72c1c3d"
+    },
+    "handleDailyReportUpdateReturned_": {
+      "file": "程式碼.gs",
+      "line": 9000,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "972f1d1902a0690218901d7cdf4413f5864f6bbbf624d75830986677edff5d59"
+    },
+    "handleAdminDailyReportReviewList_": {
+      "file": "程式碼.gs",
+      "line": 9254,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "dad3aac62e04e809c89869411abbe30881de83da799fe5073dd8ccb5dfe484fa"
+    },
+    "handleAdminDailyReportReviewAction_": {
+      "file": "程式碼.gs",
+      "line": 9465,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "74c1d70481c0f86416466a6c09faf36750defc6755057b7683e5d3a1b874ba69"
+    },
+    "assertDailyReportManager_": {
+      "file": "程式碼.gs",
+      "line": 9638,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "b7d44415f96eaa4193030ade7be54ab63ee08be794b85f0849dd561dc33d56ce"
+    },
+    "assertCanManageDailyReportSite_": {
+      "file": "程式碼.gs",
+      "line": 9668,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "0f47f9403320a37859f880d2d2c444da37d9d931b8db72525b3a79a2c6a199e5"
+    },
+    "getDailyReportById_": {
+      "file": "程式碼.gs",
+      "line": 9693,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "23ea1030c06ad50e89052c6a8e7e9c9e84c5031aa98ff1928d07f4cee83f9c86"
+    },
+    "dailyReportRowToObject_": {
+      "file": "程式碼.gs",
+      "line": 9794,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a6302220aa50101759f7ab281d8c41dce8bde3baa3b907e4b750990f93fce3d7"
+    },
+    "normalizeReportDate_": {
+      "file": "程式碼.gs",
+      "line": 9848,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "1e73aab8ada95cd6e2a9d20bc7b01cf9f750eb5601cc6c806a3e8f2b9979fe7c"
+    },
+    "normalizeReportDateText_": {
+      "file": "程式碼.gs",
+      "line": 9879,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "674f11b668e638494124f5c66eb4b2c25b49f735567a23a34f037b2586ef993b"
+    },
+    "formatReportDate_": {
+      "file": "程式碼.gs",
+      "line": 9963,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "68232d89ba70b1cf4b7243800a4680e51c51e549aee6efec0c89c9f28fd7afa2"
+    },
+    "formatDateTimeText_": {
+      "file": "程式碼.gs",
+      "line": 10024,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "92c5a4f9d2ac4c083dcbcc352d7e3d77f9d2d4ed705b3764397404280f2a65c8"
+    },
+    "safeText_": {
+      "file": "程式碼.gs",
+      "line": 10051,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "5f7758a030f8ca84bde6cd2e5906e78a4690b269ccfc4ae9638722d35cd0fe0a"
+    },
+    "parseOptionalNonNegativeNumber_": {
+      "file": "程式碼.gs",
+      "line": 10065,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "351c81829549a6835a2e6b78c66adba2733ca1cb40be08464f08fbfa4de1c267"
+    },
+    "parseProgressPercent_": {
+      "file": "程式碼.gs",
+      "line": 10109,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a2c5d00722ea4e23857793dfa9ec7a5e9e0cf6616cbf3df03b640e9f614beba1"
+    },
+    "appendClockRecord_": {
+      "file": "程式碼.gs",
+      "line": 10155,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a80f1c2e9ba6d1ed20c6c7478bfdecdee9d3d80ee2e164650bf35594fe243ecc"
+    },
+    "getEmployeeByLineUid_": {
+      "file": "程式碼.gs",
+      "line": 10231,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "582c0c63eaf9ec5223570efe66eb9550546eaf376a63e5be8fb5e8a687c083c4"
+    },
+    "getActiveSites_": {
+      "file": "程式碼.gs",
+      "line": 10344,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "88bb812ad8f42ba50e5bdee2675530777dd56b6f28cfc1d42c2919a452d25460"
+    },
+    "getSiteForClock_": {
+      "file": "程式碼.gs",
+      "line": 10491,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "98dc3e0caf3e5f32263ab86dc5cb34da8324d8e0ddb1defc9e74a089f7122c25"
+    },
+    "findOpenWorkSegment_": {
+      "file": "程式碼.gs",
+      "line": 10572,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "cf7d5938108a34b9a8e5284e4a1e78acb03c7b5ef353be7c3aeb2d9ac20c15b5"
+    },
+    "getSetting_": {
+      "file": "程式碼.gs",
+      "line": 10702,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "e6bf88df262da3f204eb8ecf6ae03794694f0084c76fcd383ce2bb985910268b"
+    },
+    "normalizeClockType_": {
+      "file": "程式碼.gs",
+      "line": 10789,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "b9588a1dcec0588e8f251b6fc8761d5a323c1de2085e99932b1aa65522b84744"
+    },
+    "calculateDistanceMeters_": {
+      "file": "程式碼.gs",
+      "line": 10840,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "83915f823c2f6bdb69f966cf83cfb61c9948f15998820fb8999454b8af6e86cb"
+    },
+    "degreesToRadians_": {
+      "file": "程式碼.gs",
+      "line": 10908,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "71e73ba75fcb73ed94e75569a097b7aabc39f14e818041083c87bcac569299ba"
+    },
+    "createId_": {
+      "file": "程式碼.gs",
+      "line": 10925,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "416fcbb3c95c5f466386abd9880504f53505dc9c59a213b4ca940ac1d35605da"
+    },
+    "formatDate_": {
+      "file": "程式碼.gs",
+      "line": 10964,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "0a47cc2c97d6850bce00b509f07e5c8e216858881de3957e34a35d7a1036f13a"
+    },
+    "jsonResponse_": {
+      "file": "程式碼.gs",
+      "line": 10979,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "8b2cd688270e98b99d220d92d8e1d611f15d1f85682bbeb3a0aae2316a6b03b9"
+    },
+    "assertSiteDailyReportManager_": {
+      "file": "程式碼.gs",
+      "line": 11007,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "2d6122d9e27ca36dad9bdf906e7e29a6decea3b8a60bd7d19d751882b78f7217"
+    },
+    "handleAdminSiteDailyReportRefresh_": {
+      "file": "程式碼.gs",
+      "line": 11028,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "d95feb06ad5f41f24c6491a83d94af5c6d641b25db30a909a0d077ee2ab11010"
+    },
+    "handleAdminSiteDailyReportList_": {
+      "file": "程式碼.gs",
+      "line": 11410,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "791029472f6cb8abb6109c3aab92c9670c4aa88e35b75ca93bc279774c550b21"
+    },
+    "handleAdminSiteDailyReportFinalize_": {
+      "file": "程式碼.gs",
+      "line": 11480,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "ba80b3cd648b131fc6b34d6d3a360ae3fd2db5bcca8d9f6a71564504622346e6"
+    },
+    "siteDailyReportRowToObject_": {
+      "file": "程式碼.gs",
+      "line": 11557,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "c4fc3db499523fba6bd113bd9c16630473333254e73855cdb6db494308ab7c7b"
+    },
+    "pushUniqueText_": {
+      "file": "程式碼.gs",
+      "line": 11583,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a0b2dbd566854ea63db3d7a2bdd7ce393d4716f647862a66ed3ae5a78baa6aad"
+    },
+    "parseReportDate_": {
+      "file": "程式碼.gs",
+      "line": 11596,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "c7caf168be99b9c191edd0692741f78f8afe5633dbfd35eb0a81cd32cbf178ed"
+    },
+    "formatSiteDailyDateTime_": {
+      "file": "程式碼.gs",
+      "line": 11611,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "640fb938b498e801ff2857da16a783e5871069b25c20cc06d3835d39761461a4"
+    },
+    "ensureDailyReportProgressColumns_": {
+      "file": "程式碼.gs",
+      "line": 11654,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "42d68a74075726e17dce80609abb1b91c7e6914acb9d8d901158d59346516405"
+    },
+    "validateDailyReportProgressLocation_": {
+      "file": "程式碼.gs",
+      "line": 11683,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "27e3d35c64e1f8a15d87e1cd15a74a80a6fd126327bbf3f18fd512df8d2b2f2f"
+    },
+    "validateDailyReportProgressItem_": {
+      "file": "程式碼.gs",
+      "line": 11709,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "bd6a36d0ecb641f1d26072cca542bcfa06b3a0417e054cc6c6de741adf575d41"
+    },
+    "handleDailyReportProgressOptions_": {
+      "file": "程式碼.gs",
+      "line": 11727,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "0e81d5993424236a15a09070fbcc96096ecd074d1df01569ae04b0588ab6bfa3"
+    },
+    "findProgressCurrentRow_": {
+      "file": "程式碼.gs",
+      "line": 11772,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "cf7aeb9675fe5c6244bcf2f33038ea8a54a438b61a7504742b5737eda82d3130"
+    },
+    "syncConfirmedDailyReportToProgress_": {
+      "file": "程式碼.gs",
+      "line": 11800,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "b5bd550f99c892c58999221de1655e5f4d28890e89ff698c1ae125119b17cfcc"
+    },
+    "handleAdminProgressBootstrap_": {
+      "file": "程式碼.gs",
+      "line": 12095,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "b8a785178047beedfa25cb46b606c0f1affd4c081992e7797aee5e066f776aff"
+    },
+    "handleAdminProgressLocationSave_": {
+      "file": "程式碼.gs",
+      "line": 12184,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a52ecd2c6215eb120718d34a13bdc7b238b359c4355baad526fb1b70cb7366bc"
+    },
+    "handleAdminProgressItemSave_": {
+      "file": "程式碼.gs",
+      "line": 12385,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "6372a801b34e4e542f0294b64ab795f68694fe4862e48272c116d66e73f52ad7"
+    },
+    "handleAdminProgressList_": {
+      "file": "程式碼.gs",
+      "line": 12580,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "fd342e4c8fb93c9f28e5007be1a63fe2a62fb01ff95692dbcac760b56a2bbf52"
+    },
+    "handleAdminProgressUpsert_": {
+      "file": "程式碼.gs",
+      "line": 12700,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "b638087deac70af82d7489a2e4ab74ca4923093c8fec3f6b3e0df3155ac4ec22"
+    },
+    "handleAdminProgressConfirm_": {
+      "file": "程式碼.gs",
+      "line": 13233,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "a216ebea677773fd0212490dbaf3f0ebfc82205517223e3ca664f337aec8ef85"
+    },
+    "assertProgressManager_": {
+      "file": "程式碼.gs",
+      "line": 13402,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "e0e2fe5910fb8a3dca84e3676d69a93aa215b7177fedd0bd778172854db0617c"
+    },
+    "assertProgressMasterManager_": {
+      "file": "程式碼.gs",
+      "line": 13433,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "402c8c38430aba6f7af74a9b74402e7f8be263190473e32ad0c7c23b58c73ce7"
+    },
+    "getProgressManageableSites_": {
+      "file": "程式碼.gs",
+      "line": 13463,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "b8836c8d36abd393261485e9836dc2d7517f0ce31a165c90d79baf7c14cb641f"
+    },
+    "getProgressLocations_": {
+      "file": "程式碼.gs",
+      "line": 13550,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "2831df24fe6eb5e719ce9dbc319e9bca38387b7101676a68707d0713384dafc8"
+    },
+    "getProgressItems_": {
+      "file": "程式碼.gs",
+      "line": 13650,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "50247f4d790b877408c79a4601dd200099838d26efc42bd046759f8a4b033137"
+    },
+    "getProgressLocationById_": {
+      "file": "程式碼.gs",
+      "line": 13743,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "09fe49657f6953778b24069c4c27da61d0b25c7bb3187c502376ea71973e7ee6"
+    },
+    "getProgressItemByCode_": {
+      "file": "程式碼.gs",
+      "line": 13782,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "62b38e1c37a968dac5118b64515f503301d7d2a82adc60a010def5c96cb8809c"
+    },
+    "progressRowToObject_": {
+      "file": "程式碼.gs",
+      "line": 13819,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "da2bbd68ff2c1e5e57dde6c4a26116cb072aa702229b39d7f8a1dabddecf4d98"
+    },
+    "appendProgressAudit_": {
+      "file": "程式碼.gs",
+      "line": 13894,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "d211b0f4dad6db97eef1cee5e2a6e394b3441d06e69d2b8401da2e9399c3092b"
+    },
+    "getProgressSheet_": {
+      "file": "程式碼.gs",
+      "line": 13942,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "e2535a3280a07d3c9f3550ac6508a0fcaf0c92116a47fc3a4f989fe1654dd3f8"
+    },
+    "getProgressStatusFromPercent_": {
+      "file": "程式碼.gs",
+      "line": 13971,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "404e642629556370ba70ac1d45da7baf4cc3abc87239336d297be78350165fbb"
+    },
+    "parseProgressNumber_": {
+      "file": "程式碼.gs",
+      "line": 14004,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "5e802b2a471214d512437b18de06b7b1a02ab73d153eb8e37194098d47c38d6c"
+    },
+    "cleanProgressText_": {
+      "file": "程式碼.gs",
+      "line": 14044,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "c2ab841c644aa5caa14eefeab8cfd3a23d6a4b455fb962003ccf97d802ae5539"
+    },
+    "createProgressItemCode_": {
+      "file": "程式碼.gs",
+      "line": 14067,
+      "kind": "FunctionDeclaration",
+      "sourceHash": "0018a8c710963d74acf08088005a7b8de5bd0e6461b1a7c2f88a8f09002cd08e"
+    }
+  },
+  "checks": {
+    "gasSyntax": 9,
+    "htmlInlineSyntax": 1,
+    "manifest": true,
+    "dispatcherUnchanged": true,
+    "maintenanceOnlyPatch": true,
+    "migrationSharedLockPreserved": true,
+    "sourceBundlesUnchanged": true
+  }
+}

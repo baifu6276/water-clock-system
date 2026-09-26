@@ -1,0 +1,203 @@
+{
+  "offlineOnly": true,
+  "frontendCommit": "e6078e4fd12811ed42d48840656c721765c2ede7",
+  "workerCommit": "5e272d981617d5940c88332aa7ba3bdead949b6a",
+  "environment": {
+    "FRONTEND_ROOT": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-frontend",
+    "PLAYWRIGHT_MODULE": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\node_modules\\playwright",
+    "CHROME_PATH": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "ROLLBACK_RELAY": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t3-timing-worker-release\\transport-v2\\worker\\relay.mjs"
+  },
+  "runs": [
+    {
+      "suite": "v44-foundation",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-control-no-flush",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-control-no-flush/tests/deny-network.cjs release-candidates/gas-t4-control-no-flush/tests/v44-foundation.cjs",
+      "exitCode": 0,
+      "counts": {
+        "pass": 89,
+        "fail": 0,
+        "skipped": 0
+      },
+      "outputSha256": "ba2973da8a5a81720b6dda00607c205f521cf78b6197f628093d7556975bad56"
+    },
+    {
+      "suite": "combined-foundation",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-control-no-flush",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-control-no-flush/tests/deny-network.cjs release-candidates/gas-t4-control-no-flush/tests/foundation.test.cjs",
+      "exitCode": 0,
+      "counts": {
+        "pass": 82,
+        "fail": 0,
+        "skipped": 0
+      },
+      "outputSha256": "667d9deaca13a3375894fa9fa1b15667664d6d0de2611b845543abc411514750"
+    },
+    {
+      "suite": "gas-diagnostics",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-control-no-flush",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-control-no-flush/tests/deny-network.cjs --test --test-reporter=tap release-candidates/gas-t4-control-no-flush/tests/gas-diagnostics.test.cjs",
+      "exitCode": 0,
+      "counts": {
+        "tests": 69,
+        "pass": 69,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "cef467b9cb755e28ad89f6cc73fb096e073003838017743f913b8394700530ab"
+    },
+    {
+      "suite": "t4-safety-fixtures",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-control-no-flush",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-control-no-flush/tests/deny-network.cjs --test --test-reporter=tap release-candidates/gas-t4-control-no-flush/tests/t4-gas.test.cjs",
+      "exitCode": 0,
+      "counts": {
+        "tests": 77,
+        "pass": 77,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "539e1c4a9f0d8b8529d33784dd3b9e5b6d5cf405059dd6b10c14a2d356cc7c09"
+    },
+    {
+      "suite": "combined-contract",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-control-no-flush",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-control-no-flush/tests/deny-network.cjs --test --test-reporter=tap release-candidates/gas-t4-control-no-flush/tests/combined-contract.test.cjs",
+      "exitCode": 0,
+      "counts": {
+        "tests": 74,
+        "pass": 74,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "9d09dc11712e9669b65db7c21eecf906ba2f937ebe6b06e32ef31a8668b3983c"
+    },
+    {
+      "suite": "worker-t3-4",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-control-no-flush",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-control-no-flush/tests/deny-network.cjs --test --test-reporter=tap transport-v2/tests/relay.test.mjs",
+      "exitCode": 0,
+      "counts": {
+        "tests": 273,
+        "pass": 273,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "c9d694740f91906fabd04d41ac86089adead5211958353d51ed777b64d93094d"
+    },
+    {
+      "suite": "browser",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-gas-read-frontend",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE transport-v2/tests/live-test.cjs",
+      "exitCode": 0,
+      "counts": {
+        "passLines": 18,
+        "summaries": [
+          "PASS: 14 T1 browser scenarios",
+          "PASS: 38 T3 browser scenarios",
+          "PASS: 9 permanent LIFF init diagnostic scenarios",
+          "PASS: 24 timeout-stage browser scenarios",
+          "PASS: 31 main status browser scenarios",
+          "PASS: 42 redirect diagnostic browser scenarios",
+          "PASS: 50 timing diagnostic browser scenarios (HTML/static included)",
+          "PASS: 20 timing/version compatibility and permission browser scenarios",
+          "PASS: 33 GAS timing browser scenarios",
+          "PASS: offline cross-branch identity",
+          "PASS: offline cross-branch dry-run",
+          "PASS: offline cross-branch status",
+          "PASS: offline cross-branch timing-multihop",
+          "PASS: offline cross-branch malformed-timing",
+          "PASS: offline cross-branch timeout",
+          "PASS: offline cross-branch redirect-denied",
+          "PASS: offline cross-branch rollback",
+          "PASS: 8 cross-branch contract scenarios; Worker SHA-256 fe10facd68adac7e801041a4216603fc0f26e8412cb3d26c40ef95aa6827c99a"
+        ],
+        "browserPass": 261,
+        "crossBranchPass": 8,
+        "fail": 0,
+        "skipped": 0
+      },
+      "outputSha256": "83779c3b1e7a30f21bd9adaf4e296ca6f280d0bbef87e32cee3dfc3ded7d4fde"
+    },
+    {
+      "suite": "cross-artifact",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-control-no-flush",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE release-candidates/gas-t4-control-no-flush/tests/cross-artifact.cjs",
+      "exitCode": 0,
+      "counts": {
+        "passLines": 15,
+        "summaries": [
+          "CROSS_ARTIFACT passed=15 failed=0 skipped=0"
+        ]
+      },
+      "outputSha256": "ebb95468390e0d244444a1e8c7ecf7620079bcca26cbb4e52540e5b894f34d4c"
+    },
+    {
+      "suite": "maintenance",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-control-no-flush",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-control-no-flush/tests/deny-network.cjs --test --test-reporter=tap release-candidates/gas-t4-control-no-flush/tests/maintenance.test.cjs",
+      "exitCode": 0,
+      "counts": {
+        "tests": 29,
+        "pass": 29,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "39c1b91ac6d8f593643aa1a4fd7661996803082cab4d51371ecd59ce84c59cbe"
+    },
+    {
+      "suite": "wrapper",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-control-no-flush",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/gas-t4-control-no-flush/tests/deny-network.cjs --test --test-reporter=tap experiments/t4-initial-prepare-wrapper/wrapper.test.cjs",
+      "exitCode": 0,
+      "counts": {
+        "tests": 47,
+        "pass": 47,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "3ad038f406b37f5a4635bb85d3953b9d6354bfd8138b8540218d38c4c21e60ce"
+    },
+    {
+      "suite": "static",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-control-no-flush",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE release-candidates/gas-t4-control-no-flush/tests/static.cjs",
+      "exitCode": 0,
+      "counts": {},
+      "outputSha256": "148b31b081e172e1c783f79fb3dcca87176ef0ea7461f27ca789f9db9a4942a9"
+    },
+    {
+      "suite": "diff-check",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-control-no-flush",
+      "command": "git diff --check",
+      "exitCode": 0,
+      "counts": {},
+      "outputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "artifact": {
+    "baseCommit": "5e272d981617d5940c88332aa7ba3bdead949b6a",
+    "baseCandidateSha256": "279af27a24eeeffebc7114cea795bdf9a0bef682cf2c2721d18ad94e50817449",
+    "candidateSha256": "df1fb07687cd7ed2c3fb66a9bd1ee0a65107050b3e5211c12ac99f62beaa81b5",
+    "controlSha256": "46a1e243c0c1eb788137f8300e7beb8b864a7341ac4dc3d8344b652f4a0789e9"
+  },
+  "totals": {
+    "pass": 1024,
+    "fail": 0,
+    "skipped": 0,
+    "existingRegression": 948,
+    "maintenance": 29,
+    "wrapper": 47
+  },
+  "developmentCorrections": [
+    "New BUSY assertion corrected to actual employeeCode field; runtime unchanged.",
+    "New migration differential assertion corrected to all existing checkpoint flushes plus shared finally, not one flush. Exact old/new trace, result, data and property comparison passes.",
+    "Worker static artifact check compares unchanged Git LF bytes; Windows CRLF checkout is not a runtime change."
+  ]
+}

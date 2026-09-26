@@ -1,0 +1,33 @@
+--- V47/EmployeeBaselineControl.gs
++++ V48/EmployeeBaselineControl.gs
+@@ -83,13 +83,20 @@
+   employeeBaselineControlPersist_(c); // Durable claim/read-back BEFORE any Sheet write.
+   return c;
+ }
++// Script-property maintenance only; migration keeps its existing flush/checkpoints.
++function employeeBaselineControlWithLock_(work) {
++  var lock = LockService.getScriptLock();
++  if (!lock.tryLock(5000)) employeeFailure_('BUSY', '目前忙碌中，請稍後重試。');
++  try { return work(); }
++  finally { lock.releaseLock(); }
++}
+ // Editor-only operational authorization. Deployment maintainer records an explicit
+ // OWNER/ADMIN approval reference. This is NOT a LINE-authenticated approval API.
+ function employeeBaselineControlPrepare_(plan) {
+   var keys = ['operatorId', 'approvedBy', 'approvalReference', 'requestId', 'expectedSnapshotVersion', 'reason', 'mode'];
+   if (!plan || Array.isArray(plan) || Object.keys(plan).length !== keys.length || keys.some(function(k) { return !Object.prototype.hasOwnProperty.call(plan, k); }) ||
+       !employeeBaselineApprovalRef_(plan.approvalReference) || ['INITIAL', 'RECOVER_ORIGINAL'].indexOf(plan.mode) < 0) employeeBaselineDenied_();
+-  return employeeWithLock_(function() {
++  return employeeBaselineControlWithLock_(function() {
+     var channel = PropertiesService.getScriptProperties().getProperty('LINE_LOGIN_CHANNEL_ID');
+     var actor = employeeBaselineEditorActor_(plan.operatorId, channel);
+     employeeBaselineEditorActor_(plan.approvedBy, channel);
+@@ -130,7 +137,7 @@
+ }
+ function employeeBaselineControlClose_(requestId, approvalReference) {
+   if (!employeeBaselineApprovalRef_(approvalReference)) employeeBaselineDenied_();
+-  return employeeWithLock_(function() {
++  return employeeBaselineControlWithLock_(function() {
+     var c = employeeBaselineControlRead_();
+     if (!c || c.requestId !== requestId || c.state === 'CLOSED') employeeBaselineDenied_();
+     // Closing only removes authority; never deletes evidence or rolls back rows.

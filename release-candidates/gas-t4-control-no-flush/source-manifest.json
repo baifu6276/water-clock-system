@@ -1,0 +1,134 @@
+{
+  "status": "OFFLINE_MICRO_PATCH_CANDIDATE",
+  "migration": "HOLD",
+  "baseCommit": "5e272d981617d5940c88332aa7ba3bdead949b6a",
+  "baseCandidateSha256": "279af27a24eeeffebc7114cea795bdf9a0bef682cf2c2721d18ad94e50817449",
+  "candidateSha256": "df1fb07687cd7ed2c3fb66a9bd1ee0a65107050b3e5211c12ac99f62beaa81b5",
+  "controlSha256": "46a1e243c0c1eb788137f8300e7beb8b864a7341ac4dc3d8344b652f4a0789e9",
+  "algorithm": "SHA-256(sorted UTF-8 relative filename + NUL + ASCII byteLength + NUL + exact bytes). Candidate covers sources/11 files; evidence covers exactly evidenceFiles under evidence/. No circular self-hash.",
+  "matrix": [
+    {
+      "file": "EmployeeApplication.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "aea7cfecb4ec247ba8b14aaa1d356014bf1066633598f392a01024ae0d31b0fb",
+      "candidateSha256": "aea7cfecb4ec247ba8b14aaa1d356014bf1066633598f392a01024ae0d31b0fb",
+      "size": 13438,
+      "lines": 214
+    },
+    {
+      "file": "EmployeeApplicationAdmin.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "b5761d9ab6c5027766955f96bfb2765d0d84e6348b97b160d361bba277e4ca46",
+      "candidateSha256": "b5761d9ab6c5027766955f96bfb2765d0d84e6348b97b160d361bba277e4ca46",
+      "size": 16421,
+      "lines": 246
+    },
+    {
+      "file": "EmployeeBaselineControl.gs",
+      "status": "MODIFIED",
+      "baseSha256": "413e7834b104793a6534ea52fb56d445c9046b0e62e65c90a79ccca781a3ad9e",
+      "candidateSha256": "46a1e243c0c1eb788137f8300e7beb8b864a7341ac4dc3d8344b652f4a0789e9",
+      "size": 10645,
+      "lines": 148
+    },
+    {
+      "file": "EmployeeIdentity.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "c6d8dad46ee6e0b5ed31408b6f6a80144f8e017d623b06100fca3b21a3ee74cf",
+      "candidateSha256": "c6d8dad46ee6e0b5ed31408b6f6a80144f8e017d623b06100fca3b21a3ee74cf",
+      "size": 9931,
+      "lines": 215
+    },
+    {
+      "file": "EmployeeLifecycleBaseline.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "1f0de28ab189b68b7f9758fd430b5c648ce3d8f2a0ff407e492b43a33a0b875e",
+      "candidateSha256": "1f0de28ab189b68b7f9758fd430b5c648ce3d8f2a0ff407e492b43a33a0b875e",
+      "size": 19285,
+      "lines": 235
+    },
+    {
+      "file": "EmployeeLifecycleMutation.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "7d3c454f37f9f0e1d60eaaa0415ae7c10f2fa1f44834fe571f3bc5199ecaf083",
+      "candidateSha256": "7d3c454f37f9f0e1d60eaaa0415ae7c10f2fa1f44834fe571f3bc5199ecaf083",
+      "size": 14548,
+      "lines": 196
+    },
+    {
+      "file": "EmployeeLifecycleRead.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "602a7157ed5e9756947aa14ae546263b5593fed420f74b04e5a8e99c8cb3a56d",
+      "candidateSha256": "602a7157ed5e9756947aa14ae546263b5593fed420f74b04e5a8e99c8cb3a56d",
+      "size": 11207,
+      "lines": 132
+    },
+    {
+      "file": "EmployeeLifecycleStore.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "40990ea7487a3588ee91b937b62ca91f4d461a51c3acb2de5893e015f171b951",
+      "candidateSha256": "40990ea7487a3588ee91b937b62ca91f4d461a51c3acb2de5893e015f171b951",
+      "size": 12077,
+      "lines": 179
+    },
+    {
+      "file": "appsscript.json",
+      "status": "UNCHANGED",
+      "baseSha256": "788d42fd367f154e0fc730f8953b842365de440f58560dc4333f723e0c8b44f3",
+      "candidateSha256": "788d42fd367f154e0fc730f8953b842365de440f58560dc4333f723e0c8b44f3",
+      "size": 353,
+      "lines": 14
+    },
+    {
+      "file": "index.html",
+      "status": "UNCHANGED",
+      "baseSha256": "523048d4eae2135528794580ca57bdf93bddefcf550caf9fdeb0f9f650c63ff2",
+      "candidateSha256": "523048d4eae2135528794580ca57bdf93bddefcf550caf9fdeb0f9f650c63ff2",
+      "size": 2576,
+      "lines": 142
+    },
+    {
+      "file": "程式碼.gs",
+      "status": "UNCHANGED",
+      "baseSha256": "7382764a0446a8937913789623516257ccb26c5162c155838be8d3d867fd1651",
+      "candidateSha256": "7382764a0446a8937913789623516257ccb26c5162c155838be8d3d867fd1651",
+      "size": 217032,
+      "lines": 14110
+    }
+  ],
+  "evidenceSha256": "6ebc80d24c14b1e6ca4cf73cc9893019f209f46dd8dbf0a7bbc0e091b773ed23",
+  "evidenceFiles": {
+    "EmployeeBaselineControl.before.gs": {
+      "sha256": "413e7834b104793a6534ea52fb56d445c9046b0e62e65c90a79ccca781a3ad9e",
+      "size": 10284
+    },
+    "control.patch": {
+      "sha256": "b6ae6ab65c913e6f30289e1819a1c4b47d4155796be697b270ef2aadb939d6ac",
+      "size": 2015
+    },
+    "dependency-closure.json": {
+      "sha256": "720a49fb742f037d4362a16b3bfb20f6618e807417912ce553d54a54381e201f",
+      "size": 56288
+    },
+    "test-inputs.json": {
+      "sha256": "fd342d315a13f2496b085161ef17d3df25dc3c305aac0706c4e075195383df82",
+      "size": 3252
+    },
+    "test-provenance.json": {
+      "sha256": "3f4719c4a48982e445cf382ef732c3fd3b806c64aebe31567f9494fbdf7745b2",
+      "size": 4516
+    },
+    "test-results.json": {
+      "sha256": "d8b05fdac6282415e794e797dfaf47c7008c9010927134240df43fb575a41ad1",
+      "size": 9859
+    }
+  },
+  "testTotals": {
+    "pass": 1024,
+    "fail": 0,
+    "skipped": 0,
+    "existingRegression": 948,
+    "maintenance": 29,
+    "wrapper": 47
+  }
+}
