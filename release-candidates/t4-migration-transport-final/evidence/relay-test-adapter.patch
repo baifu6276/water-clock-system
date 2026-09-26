@@ -1,0 +1,27 @@
+--- before/relay-test-adapter.patch
++++ after/relay-test-adapter.patch
+@@ -427,7 +427,7 @@
+   const h = timed(t); await h.respond(json()); const r = await h.finish();
+   assert.deepEqual(r.body, good);
+   assert.deepEqual(timingOf(r.result), { v:'1', rr:'LT_100', ph:'LT_100', g1:'NOT_RUN', g2:'NOT_RUN', g3:'NOT_RUN', fb:'LT_100', tot:'LT_100', cur:'DONE', hops:'0' });
+-  assert.equal(r.result.headers.get('x-transport-version'), 't3-4-gas-read-diag');
++  assert.equal(r.result.headers.get('x-transport-version'), 't4-safety-2-gas-read-diag');
+   assert.equal(r.result.headers.get('access-control-expose-headers'), 'X-Transport-Version, X-Correlation-Id, X-Transport-Timing');
+   assert.equal(r.result.headers.get('timing-allow-origin'), null);
+ });
+@@ -575,11 +575,11 @@
+     assert(![...r.result.headers].flat().join('').includes(sentinel)); assert.equal(h.calls.length, 1);
+   });
+ }
+-test('timing exact readonly release routes / no T4 artifact / config unchanged', async () => {
++test('timing combined routes / opt-in default deny / config unchanged', async () => {
+   const source = readFileSync(new URL('../worker/relay.mjs', import.meta.url), 'utf8');
+-  assert.equal(VERSION, 't3-4-gas-read-diag');
+-  assert.deepEqual([...source.matchAll(/'(\/[^']+)'\s*:\s*\{ action:/g)].map(m => m[1]), ['/identity','/employee-read','/employee-operation-status']);
+-  assert(!/T4_|employee-baseline-migrate|employeeLifecycleBaselineMigrate|Date\.now|console\./.test(source));
++  assert.equal(VERSION, 't4-safety-2-gas-read-diag');
++  assert.deepEqual([...source.matchAll(/'(\/[^']+)'\s*:\s*\{ action:/g)].map(m => m[1]), ['/identity','/employee-read','/employee-operation-status','/employee-baseline-migrate']);
++  assert(!/Date\.now|console\./.test(source));
+   assert(source.includes('timeoutMs = 20000, now = () => performance.now()'));
+   assert(source.includes('fetch: (request, env) => handle(request, env)'));
+   const r = await run(request(input, {}, '/employee-baseline-migrate'), []);

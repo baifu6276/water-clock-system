@@ -1,0 +1,35 @@
+// Read-only local checks. No service execution or external requests.
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),vm=require('node:vm'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
+const root=path.resolve(__dirname,'..'),repo=path.resolve(root,'../..'),runner=path.join(repo,'transport-v2/t4-migration-runner');
+const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
+const git=(...a)=>execFileSync('git',a,{cwd:repo});
+const blob=(ref,file)=>git('show',ref+':'+file);
+const base='08359639eda194a2c6183e715d6d5bb44878c086';
+assert.equal(git('rev-parse','HEAD').toString().trim(),base);
+assert.equal(git('branch','--show-current').toString().trim(),'codex/t4-migration-transport-final');
+assert.equal(git('diff','--name-only').length,0);assert.equal(git('diff','--cached','--name-only').length,0);
+const files=git('ls-files','--others','--exclude-standard','-z').toString().split('\0').filter(Boolean);
+assert(files.every(n=>n.startsWith('release-candidates/t4-migration-transport-final/')||n.startsWith('transport-v2/t4-migration-runner/')));
+for(const [local,ref,file]of [['evidence/t3-4-relay.mjs','6f3921f2bbea6d175c8bcac3888b09e231f44774','transport-v2/worker/relay.mjs'],['evidence/t4-reference-relay.mjs','4319d3e9518ca4c4cbb83fd27d2ee9b148d43ff4','transport-v2/worker/relay.mjs'],...['client.js','index.html','config.js'].map(n=>['evidence/frontend-'+n,'e6078e4fd12811ed42d48840656c721765c2ede7','transport-v2/live-test/'+n])])assert.deepEqual(fs.readFileSync(path.join(root,local)),blob(ref,file));
+const oldClient=fs.readFileSync(path.join(root,'evidence/frontend-client.js'),'utf8');
+const expected=oldClient.replace("  const GAS_TIMING_VERSION = 't3-4-gas-read-diag';","  const GAS_TIMING_VERSION = 't3-4-gas-read-diag';\n  const T4_TIMING_VERSION = 't4-safety-2-gas-read-diag';").replaceAll('TIMING_VERSION, GAS_TIMING_VERSION].includes(version)','TIMING_VERSION, GAS_TIMING_VERSION, T4_TIMING_VERSION].includes(version)');
+assert.equal(fs.readFileSync(path.join(root,'live-test/client.js'),'utf8'),expected);
+assert.equal(fs.readFileSync(path.join(root,'live-test/index.html'),'utf8'),fs.readFileSync(path.join(root,'evidence/frontend-index.html'),'utf8').replace('client.js?v=t3-4-gas-read-diag','client.js?v=t4-safety-2-read-compat'));
+assert.deepEqual(fs.readFileSync(path.join(root,'live-test/config.js')),blob('e6078e4fd12811ed42d48840656c721765c2ede7','transport-v2/live-test/config.js'));
+const run=fs.readFileSync(path.join(runner,'client.js'),'utf8');
+assert(!/console\.|Logger|localStorage|sessionStorage|indexedDB|document\.cookie|innerHTML|location\.|URLSearchParams|script\.google|EmployeeBaselineControl|employeeBaselineControl/.test(run));
+assert(run.includes("liff.init({ liffId: LIFF_ID })"));
+assert(run.includes("const LIFF_ID = '2011467618-R76314It'"));
+assert(run.includes("const RELAY = 'https://employee-identity-transport-t1.baifu6276.workers.dev'"));
+assert.equal((run.match(/await request\('employeeLifecycleBaselineMigrate'\)/g)||[]).length,1);
+assert.equal((run.match(/attempted = false/g)||[]).length,1);
+assert(!/setInterval|requestAnimationFrame|randomUUID|setProperty|\.login\(/.test(run));
+assert(run.includes("attempted = true; busy = true; preflight = false;"));
+let syntax=0;
+for(const file of files.filter(n=>n.endsWith('.cjs')||n.endsWith('.js'))){new vm.Script(fs.readFileSync(path.join(repo,file),'utf8'),{filename:file});syntax++;}
+const gasDir=path.join(repo,'release-candidates/gas-t4-control-no-flush/sources');
+const names=fs.readdirSync(gasDir).sort();assert.equal(names.length,11);
+const bytes=Buffer.concat(names.flatMap(n=>{const b=fs.readFileSync(path.join(gasDir,n));assert.deepEqual(b,blob(base,'release-candidates/gas-t4-control-no-flush/sources/'+n));return[Buffer.from(n+'\0'+b.length+'\0'),b];}));
+assert.equal(sha(bytes),'df1fb07687cd7ed2c3fb66a9bd1ee0a65107050b3e5211c12ac99f62beaa81b5');
+git('diff','--check');
+console.log('STATIC PASS '+JSON.stringify({base,trackedChanges:0,staged:0,gasFilesUnchanged:11,jsSyntaxFiles:syntax,scope:files.length,privacy:true,exactFrontendPatch:true}));

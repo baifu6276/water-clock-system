@@ -1,0 +1,118 @@
+{
+  "status": "OFFLINE_CANDIDATE_FOR_HUMAN_REVIEW",
+  "migration": "HOLD",
+  "provenance": {
+    "baseCommit": "08359639eda194a2c6183e715d6d5bb44878c086",
+    "workerSourceCommit": "6f3921f2bbea6d175c8bcac3888b09e231f44774",
+    "t4DesignReferenceCommit": "4319d3e9518ca4c4cbb83fd27d2ee9b148d43ff4",
+    "frontendSourceCommit": "e6078e4fd12811ed42d48840656c721765c2ede7",
+    "version": "t4-safety-2-gas-read-diag",
+    "gasCandidateSha256": "df1fb07687cd7ed2c3fb66a9bd1ee0a65107050b3e5211c12ac99f62beaa81b5",
+    "workerBaseSha256": "172353c88ff9ed6b41b0640f5536b3a792ba9f8f1fbb22e1ad69131eb696bf68",
+    "offlineOnly": true,
+    "migration": "HOLD"
+  },
+  "hashes": {
+    "worker": "38e0dfaac30467bc829dcb75310e56518d34726aa7700549757fdbe42b217271",
+    "runner": "1f5e781a6a3f40df100a33926a97327ea60f571d15a9ee876a2009dda5e6ad1b",
+    "readFrontend": "fd9fc54d94f7154dc5d0ac8f2742a402cf48f4e8e8b05c5c48a832fee172f013",
+    "workerFile": "7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c61c7600"
+  },
+  "evidenceSha256": "309662cecf1c2cdf02b086c6b9a5fda971cc4f5a82b2a45d8116476257b38036",
+  "totals": {
+    "pass": 686,
+    "fail": 0,
+    "skipped": 0
+  },
+  "algorithm": "Bundle SHA-256: sorted relative UTF-8 filename + NUL + ASCII byteLength + NUL + exact bytes. No circular manifest hash.",
+  "files": {
+    "worker": {
+      "relay.mjs": {
+        "sha256": "7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c61c7600",
+        "bytes": 15270
+      }
+    },
+    "runner": {
+      "client.js": {
+        "sha256": "9935881ed8a34a8d4a4e9e24f104132422daa3b2589e268628a08b6f1e2c1f34",
+        "bytes": 10876
+      },
+      "index.html": {
+        "sha256": "285d55f83788249c5626e28f4c620494384c0929f8f99253a355e3de1461036a",
+        "bytes": 2257
+      }
+    },
+    "readFrontend": {
+      "client.js": {
+        "sha256": "355ea12bc0b17260b19e8b410bc8e9d7d8ebe6b3ce02e4de7cd9b0500fd770a9",
+        "bytes": 21945
+      },
+      "config.js": {
+        "sha256": "c398e5ad04bd2be0ca595751424e1a5666e007840e2edcbc7aabc36dfff5b31a",
+        "bytes": 266
+      },
+      "index.html": {
+        "sha256": "4ed855881a5fc55ad9fcee7094892542ebdc7d2d86d4107b136f0e008267deb3",
+        "bytes": 4050
+      }
+    }
+  },
+  "evidenceFiles": {
+    "browser-test-adapter.patch": {
+      "sha256": "cbb254f2527fd5b69ee3dd591c56a1e7f204af8896458cf4bdfe1c0c400e613b",
+      "bytes": 1541
+    },
+    "frontend-client.js": {
+      "sha256": "8733312acbb6011ab86f1958ed62ea7885ab12a81365f8e180205d5a9ec923e8",
+      "bytes": 21850
+    },
+    "frontend-client.js.patch": {
+      "sha256": "ee798f144ed293feeed84594b692f2f78692a7d2f3f194539a628330a5484665",
+      "bytes": 1517
+    },
+    "frontend-config.js": {
+      "sha256": "c398e5ad04bd2be0ca595751424e1a5666e007840e2edcbc7aabc36dfff5b31a",
+      "bytes": 266
+    },
+    "frontend-config.js.patch": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "frontend-index.html": {
+      "sha256": "618ac06cdf55d614fe1c2da46cdad8557b0b29dd027a172e6429c20ba47b5955",
+      "bytes": 4045
+    },
+    "frontend-index.html.patch": {
+      "sha256": "489427b66a219f0b6a3bf6869c44482c71b2d62148782ee9dd435d9df5e91517",
+      "bytes": 614
+    },
+    "relay-test-adapter.patch": {
+      "sha256": "4d9f60520420432ca3922bdd7ad84984752a135289c73a2535b784126251e049",
+      "bytes": 1991
+    },
+    "relay-test.before.mjs": {
+      "sha256": "aabbd3ea0eb27da0a692d5d4e173ed48a76cc2253aeed6c49af1de7713aa3f4c",
+      "bytes": 45529
+    },
+    "t3-4-relay.mjs": {
+      "sha256": "172353c88ff9ed6b41b0640f5536b3a792ba9f8f1fbb22e1ad69131eb696bf68",
+      "bytes": 14105
+    },
+    "t4-reference-relay.mjs": {
+      "sha256": "f1196a2c23085fbdbf76ae1e9d53d954db507085e813b518dbef886d87db7cdd",
+      "bytes": 10613
+    },
+    "test-inputs.json": {
+      "sha256": "44ee830a8ed4473cb79a01d3bb561ed7f8641e6551c2c40f0764b2c9d2b6015e",
+      "bytes": 2069
+    },
+    "test-results.json": {
+      "sha256": "52eeb5fcf10b3823f9d3bf02228943a72393e1e9e0360ebcc90b8ae0f58236bb",
+      "bytes": 5051
+    },
+    "worker.patch": {
+      "sha256": "02412ec3100755eba460570f026f0b06f09d6d241fc4969ae55d4c4d983dfde3",
+      "bytes": 4409
+    }
+  }
+}

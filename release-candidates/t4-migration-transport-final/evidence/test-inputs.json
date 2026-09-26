@@ -1,0 +1,46 @@
+{
+  "release-candidates/t4-migration-transport-final/tests/assemble.py": {
+    "sha256": "8067caab5c19f1b9ab170e81ddffb91fec54f07349f6c164c6f2094b700aaee3",
+    "bytes": 6054
+  },
+  "release-candidates/t4-migration-transport-final/tests/deny-network.cjs": {
+    "sha256": "ea4acc5d276adc273930e95aba32cd8e9ac416ce4bab9ed4ece3bd4c1d125825",
+    "bytes": 399
+  },
+  "release-candidates/t4-migration-transport-final/tests/finalize.py": {
+    "sha256": "5de548453a993ecd155e9533f7b8a796ff7c6494061c9ee217714690c2a34840",
+    "bytes": 4791
+  },
+  "release-candidates/t4-migration-transport-final/tests/gas-contract.test.cjs": {
+    "sha256": "35235be02a2c916a080bcf9b5cb7a8b69dacff588c9f5b18ba149c677b09cf22",
+    "bytes": 3166
+  },
+  "release-candidates/t4-migration-transport-final/tests/migration-relay.test.mjs": {
+    "sha256": "f3f3ca3e098474cd38f0b10da68d087ac275f24c0013fdd99d5daac714b7de5e",
+    "bytes": 11291
+  },
+  "release-candidates/t4-migration-transport-final/tests/read-browser.cjs": {
+    "sha256": "de40825eef631059d3e15ea2110187dc70b8564afb9d464861ae03813161c72e",
+    "bytes": 66345
+  },
+  "release-candidates/t4-migration-transport-final/tests/read-compatibility.cjs": {
+    "sha256": "47d98eedc22ce3403c198714f961e1233cf16c8d29ac5f9a5a55f7f9bc0c1000",
+    "bytes": 6421
+  },
+  "release-candidates/t4-migration-transport-final/tests/relay-regression.test.mjs": {
+    "sha256": "d4e3b41389f6b2d0750178b70de318d612f7b95edc57fd65bda34c448ff9cefe",
+    "bytes": 45500
+  },
+  "release-candidates/t4-migration-transport-final/tests/run.py": {
+    "sha256": "1945f4b49472339a8cd61c02b700050b9864d0b6331380a54843d92b871b757a",
+    "bytes": 2569
+  },
+  "release-candidates/t4-migration-transport-final/tests/runner-browser.cjs": {
+    "sha256": "d748f6d9b10fe4a3969aee6d81e4a47d2ace3cc1ee8ee75094ae5c4bc48d2301",
+    "bytes": 15196
+  },
+  "release-candidates/t4-migration-transport-final/tests/static.cjs": {
+    "sha256": "010c6784da6c42df05764d0748b8c870b4fb64db28fb494e9cc0bf732a650f58",
+    "bytes": 4147
+  }
+}

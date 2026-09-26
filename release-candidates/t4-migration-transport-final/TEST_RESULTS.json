@@ -1,0 +1,109 @@
+{
+  "offlineOnly": true,
+  "environment": {
+    "PLAYWRIGHT_MODULE": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\node_modules\\playwright",
+    "CHROME_PATH": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "ROLLBACK_RELAY": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t3-timing-worker-release\\transport-v2\\worker\\relay.mjs"
+  },
+  "runs": [
+    {
+      "suite": "relay-regression",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/t4-migration-transport-final/tests/deny-network.cjs --test --test-reporter=tap release-candidates/t4-migration-transport-final/tests/relay-regression.test.mjs",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-migration-transport-final",
+      "exitCode": 0,
+      "counts": {
+        "tests": 273,
+        "pass": 273,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "3a44c72983dcd995547b7ad2a8c3f66dcb0bece4efb8314cb33f7fae3caaed5b"
+    },
+    {
+      "suite": "migration-relay",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/t4-migration-transport-final/tests/deny-network.cjs --test --test-reporter=tap release-candidates/t4-migration-transport-final/tests/migration-relay.test.mjs",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-migration-transport-final",
+      "exitCode": 0,
+      "counts": {
+        "tests": 71,
+        "pass": 71,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "40d3ec161be93374879dedb8b9400146ad070de56912893f0fdcd8c8ec6ca624"
+    },
+    {
+      "suite": "read-browser",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE release-candidates/t4-migration-transport-final/tests/read-browser.cjs",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-migration-transport-final",
+      "exitCode": 0,
+      "counts": {
+        "pass": 269,
+        "fail": 0,
+        "skipped": 0
+      },
+      "outputSha256": "83779c3b1e7a30f21bd9adaf4e296ca6f280d0bbef87e32cee3dfc3ded7d4fde"
+    },
+    {
+      "suite": "runner-browser",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE release-candidates/t4-migration-transport-final/tests/runner-browser.cjs",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-migration-transport-final",
+      "exitCode": 0,
+      "counts": {
+        "pass": 56,
+        "fail": 0,
+        "skipped": 0
+      },
+      "outputSha256": "fd097e75118d2b26c48e78084173ad64e321dab8d78dde02b1e62557330e1883"
+    },
+    {
+      "suite": "read-compatibility",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE release-candidates/t4-migration-transport-final/tests/read-compatibility.cjs",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-migration-transport-final",
+      "exitCode": 0,
+      "counts": {
+        "pass": 10,
+        "fail": 0,
+        "skipped": 0
+      },
+      "outputSha256": "ce66b6ff752852c7c92a59c67c30d3756dd781670be18ee56ff118900f271628"
+    },
+    {
+      "suite": "gas-contract",
+      "command": "C:\\Users\\User\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.EXE --require ./release-candidates/t4-migration-transport-final/tests/deny-network.cjs --test --test-reporter=tap release-candidates/t4-migration-transport-final/tests/gas-contract.test.cjs",
+      "cwd": "C:\\Users\\User\\AppData\\Local\\Temp\\water-clock-t4-migration-transport-final",
+      "exitCode": 0,
+      "counts": {
+        "tests": 7,
+        "pass": 7,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "b9ff51a4a5ef8f58e32b27aee139016dd4748a725d335e09e613e759b4a4f529"
+    }
+  ],
+  "artifactHashes": {
+    "worker": "38e0dfaac30467bc829dcb75310e56518d34726aa7700549757fdbe42b217271",
+    "runner": "1f5e781a6a3f40df100a33926a97327ea60f571d15a9ee876a2009dda5e6ad1b",
+    "readFrontend": "fd9fc54d94f7154dc5d0ac8f2742a402cf48f4e8e8b05c5c48a832fee172f013",
+    "workerFile": "7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c61c7600"
+  },
+  "totals": {
+    "pass": 686,
+    "fail": 0,
+    "skipped": 0
+  },
+  "checks": {
+    "static": true,
+    "jsSyntax": true,
+    "pythonSyntax": true,
+    "htmlStructure": true,
+    "sourceScope": true,
+    "gas11Unchanged": true,
+    "gitDiffCheck": true
+  },
+  "developmentCorrection": "Test expected visible PATH_DENIED on flag-off; retained existing gate-before-CORS and asserted Worker PATH_DENIED/upstream zero plus browser fail-closed version diagnostic instead. No runtime relaxation."
+}

@@ -1,0 +1,11 @@
+{
+  "baseCommit": "08359639eda194a2c6183e715d6d5bb44878c086",
+  "workerSourceCommit": "6f3921f2bbea6d175c8bcac3888b09e231f44774",
+  "t4DesignReferenceCommit": "4319d3e9518ca4c4cbb83fd27d2ee9b148d43ff4",
+  "frontendSourceCommit": "e6078e4fd12811ed42d48840656c721765c2ede7",
+  "version": "t4-safety-2-gas-read-diag",
+  "gasCandidateSha256": "df1fb07687cd7ed2c3fb66a9bd1ee0a65107050b3e5211c12ac99f62beaa81b5",
+  "workerBaseSha256": "172353c88ff9ed6b41b0640f5536b3a792ba9f8f1fbb22e1ad69131eb696bf68",
+  "offlineOnly": true,
+  "migration": "HOLD"
+}

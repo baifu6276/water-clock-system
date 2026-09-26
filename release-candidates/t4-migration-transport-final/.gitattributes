@@ -1,0 +1,3 @@
+worker/** -text
+evidence/** -text
+live-test/** -text

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>EMP001 單次 Migration 人工操作候選</title>
+  <style>
+    body{font-family:system-ui;line-height:1.6;max-width:640px;margin:20px auto;padding:0 16px}
+    dd{margin:0 0 12px;overflow-wrap:anywhere}dt{font-weight:bold}
+    button,input{font:inherit;padding:12px;box-sizing:border-box;max-width:100%}
+    button{display:block;margin:12px 0}input{width:100%}.notice{border:2px solid #ad4d00;padding:12px}
+  </style>
+  <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script defer src="client.js?v=t4-one-operation-1"></script>
+</head>
+<body>
+  <h1>EMP001 單次 Migration 人工操作候選</h1>
+  <p class="notice">僅供另行批准的一次操作。人工 Migration 批准前不得按送出。確認文字只防誤觸，不代表後端授權。</p>
+  <dl>
+    <dt>LIFF 初始化</dt><dd id="init">尚未開始</dd>
+    <dt>在 LINE 內</dt><dd id="inLine">未確認</dd>
+    <dt>ID token 可取得</dt><dd id="token">未確認</dd>
+    <dt>狀態</dt><dd id="state">PRECHECK</dd>
+    <dt>身分檢查</dt><dd id="identity">尚未檢查</dd>
+    <dt>Transport 版本</dt><dd id="version">—</dd>
+    <dt>安全錯誤碼</dt><dd id="error">無</dd>
+    <dt>固定 requestId</dt><dd id="requestId">—</dd>
+    <dt>固定 snapshotVersion</dt><dd id="snapshot">—</dd>
+    <dt>固定原因</dt><dd id="reason">—</dd>
+  </dl>
+  <button id="precheck" disabled>驗證身分與基線（唯讀）</button>
+  <label for="confirmation">取得最終人工批准後，輸入 MIGRATE EMP001</label>
+  <input id="confirmation" autocomplete="off" spellcheck="false" disabled>
+  <button id="migrate" disabled>送出唯一一次 EMP001 Migration</button>
+  <button id="statusCheck" disabled>查詢原請求狀態（唯讀）</button>
+  <p id="message" role="status">尚未發出 API 請求。</p>
+  <p>送出後不論結果，本頁不再提供寫入。不得重新整理、重開頁面或另開分頁嘗試重送。若結果未知，只查原 requestId；關閉頁面後仍應使用唯讀測試頁核對原請求。</p>
+</body>
+</html>

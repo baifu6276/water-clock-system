@@ -1,0 +1,20 @@
+--- before/browser-test-adapter.patch
++++ after/browser-test-adapter.patch
+@@ -218,7 +218,7 @@
+         'window.liff={init:async()=>{},isLoggedIn:()=>true,isInClient:()=>true,getIDToken:()=>"PRIVATE_TOKEN",login:()=>{}};' });
+       if (url.hostname === 'test.example') {
+         const file = url.pathname.slice(1); assert(['index.html', 'client.js', 'config.js'].includes(file));
+-        if (file === 'client.js') assert.equal(url.search, '?v=t3-4-gas-read-diag');
++        if (file === 'client.js') assert.equal(url.search, '?v=t4-safety-2-read-compat');
+         return route.fulfill({ contentType: file.endsWith('.js') ? 'text/javascript' : 'text/html', body: file === 'config.js' ?
+           'window.TransportT1Config={liffId:"offline",relayEndpoint:"https://relay.example/identity"};' : fs.readFileSync(path.join(root, file), 'utf8') });
+       }
+@@ -516,7 +516,7 @@
+         ids:[...document.querySelectorAll('[id]')].map(e=>e.id),scripts:[...document.scripts].map(s=>s.getAttribute('src')),
+         fits:document.documentElement.scrollWidth<=innerWidth}));
+       assert.equal(markup.doctype,'html');assert.equal(markup.lang,'zh-Hant');assert.equal(new Set(markup.ids).size,markup.ids.length);assert(markup.fits);
+-      assert.deepEqual(markup.scripts,['https://static.line-scdn.net/liff/edge/2/sdk.js','config.js','client.js?v=t3-4-gas-read-diag']);
++      assert.deepEqual(markup.scripts,['https://static.line-scdn.net/liff/edge/2/sdk.js','config.js','client.js?v=t4-safety-2-read-compat']);
+     }
+     await p.close();
+   }

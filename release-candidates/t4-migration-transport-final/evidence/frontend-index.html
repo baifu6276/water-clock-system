@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Transport V2 T1／T3 隔離測試</title>
+  <style>body{font-family:system-ui;margin:20px auto;padding:0 16px;max-width:600px;line-height:1.6}button{padding:12px;font:inherit}dd{margin:0 0 12px;overflow-wrap:anywhere}dt{font-weight:bold}</style>
+  <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script defer src="config.js"></script>
+  <script defer src="client.js?v=t3-4-gas-read-diag"></script>
+</head>
+<body>
+  <h1>Transport V2 T1／T3 隔離測試</h1>
+  <p>僅供身分、基線預覽與原請求狀態查詢，不提供建立基線、重送或復原寫入。</p>
+  <dl>
+    <dt>LIFF 初始化</dt><dd id="init">尚未開始</dd>
+    <dt>在 LINE 內</dt><dd id="inLine">未確認</dd>
+    <dt>ID token 可取得</dt><dd id="token">未確認</dd>
+    <dt>Transport 版本</dt><dd id="version">未確認</dd>
+    <dt>HTTP／結果</dt><dd id="http">未執行</dd>
+    <dt>身分狀態</dt><dd id="state">未確認</dd>
+    <dt>員工</dt><dd id="employee">—</dd>
+    <dt>安全錯誤碼</dt><dd id="error">無</dd>
+    <dt>Transport 階段</dt><dd id="transportStage">—</dd>
+    <dt>Redirect 診斷</dt><dd id="redirectDiagnostic">—</dd>
+    <dt>Correlation ID</dt><dd id="correlation">—</dd>
+  </dl>
+  <section aria-labelledby="timingTitle">
+    <h2 id="timingTitle">Transport timing</h2>
+    <p id="timingAvailability" role="status">尚未取得</p>
+    <dl>
+      <dt>總耗時</dt><dd id="timingTotal">—</dd>
+      <dt>目前階段</dt><dd id="timingCurrentStage">—</dd>
+      <dt>Redirect hops</dt><dd id="timingHops">—</dd>
+      <dt>POST 等候</dt><dd id="timingPostHeaders">—</dd>
+      <dt>最後一次 GET 等候</dt><dd id="timingLastGet">—</dd>
+    </dl>
+    <p>逾時表示共用 20 秒期限到達，不代表單一步驟耗時 20 秒。</p>
+  </section>
+  <section aria-labelledby="gasTimingTitle">
+    <h2 id="gasTimingTitle">GAS timing</h2>
+    <p id="gasTimingAvailability" role="status">無法取得</p>
+    <dl>
+      <dt>GAS 總耗時（量測範圍）</dt><dd id="gasTimingTotal">—</dd>
+      <dt>LINE verify</dt><dd id="gasVerifyLine">—</dd>
+      <dt>員工資料解析</dt><dd id="gasEmployeeContext">—</dd>
+      <dt>Action read</dt><dd id="gasActionRead">—</dd>
+      <dt>Lock wait</dt><dd id="gasLockWait">—</dd>
+      <dt>Response prep</dt><dd id="gasResponsePrep">—</dd>
+    </dl>
+    <p>不含前置解析、診斷開關讀取、最終序列化、平台傳送及 redirect GET。</p>
+  </section>
+  <button id="login" hidden>登入 LINE</button>
+  <button id="check" disabled>檢查身分（唯讀）</button>
+  <section id="baselineSection" hidden>
+    <h2>Legacy Baseline 唯讀預覽</h2>
+    <button id="baselineCheck" disabled>檢查 EMP001 Legacy Baseline（唯讀）</button>
+    <p id="baselineStatus" role="status">尚未執行</p>
+    <dl id="baselineFields"></dl>
+  </section>
+  <section id="operationStatusSection" hidden>
+    <h2>EMP001 原請求狀態（唯讀）</h2>
+    <p id="operationStatusHint">需先完成身分驗證。</p>
+    <label for="operationRequestId">原請求編號（requestId，不是 Correlation ID）</label>
+    <input id="operationRequestId" type="text" maxlength="100" autocomplete="off" spellcheck="false" disabled
+      aria-describedby="operationStatusHint" style="display:block;width:100%;box-sizing:border-box;padding:12px;font:inherit;margin:8px 0">
+    <button id="operationStatusProbe" disabled>建立唯讀測試編號（不寫資料）</button>
+    <button id="operationStatusCheck" disabled>查詢原請求狀態（唯讀）</button>
+    <p id="operationStatusMessage" role="status">尚未查詢</p>
+    <dl id="operationStatusFields"></dl>
+    <p>尚未進行 Migration 時，可使用唯讀測試編號驗證查詢路徑。NOT_OBSERVED 不代表允許新寫入。</p>
+  </section>
+</body>
+</html>
