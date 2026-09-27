@@ -1,0 +1,57 @@
+{
+  "migration": "HOLD",
+  "base": "b9ad9f57f435e6780d465f5480b71dc24354d991",
+  "reviewed": "53c60bdb2e0bc89d49ab02fd2221725e76f38adf",
+  "runtime": [
+    {
+      "path": "transport-v2/worker/relay.mjs",
+      "sha256": "7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c61c7600",
+      "bytes": 15270,
+      "kind": "MODIFIED"
+    },
+    {
+      "path": "transport-v2/live-test/client.js",
+      "sha256": "355ea12bc0b17260b19e8b410bc8e9d7d8ebe6b3ce02e4de7cd9b0500fd770a9",
+      "bytes": 21945,
+      "kind": "MODIFIED"
+    },
+    {
+      "path": "transport-v2/live-test/index.html",
+      "sha256": "4ed855881a5fc55ad9fcee7094892542ebdc7d2d86d4107b136f0e008267deb3",
+      "bytes": 4050,
+      "kind": "MODIFIED"
+    },
+    {
+      "path": "transport-v2/t4-migration-runner/client.js",
+      "sha256": "62184dba6260c0e18aa1119420faec83dcee41f02911724fbbc3ac7bdb80e375",
+      "bytes": 10876,
+      "kind": "ADDED"
+    },
+    {
+      "path": "transport-v2/t4-migration-runner/index.html",
+      "sha256": "285d55f83788249c5626e28f4c620494384c0929f8f99253a355e3de1461036a",
+      "bytes": 2257,
+      "kind": "ADDED"
+    }
+  ],
+  "hashes": {
+    "workerFile": "7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c61c7600",
+    "workerBundle": "38e0dfaac30467bc829dcb75310e56518d34726aa7700549757fdbe42b217271",
+    "readFrontend": "fd9fc54d94f7154dc5d0ac8f2742a402cf48f4e8e8b05c5c48a832fee172f013",
+    "runner": "7a1d87607720c8f8c853a62aa8a6f3e9e19a28db0e11bc63bf98d07988ecf431",
+    "gas": "df1fb07687cd7ed2c3fb66a9bd1ee0a65107050b3e5211c12ac99f62beaa81b5",
+    "rollback": "172353c88ff9ed6b41b0640f5536b3a792ba9f8f1fbb22e1ad69131eb696bf68"
+  },
+  "configZeroDiff": true,
+  "tests": {
+    "pass": 2972,
+    "fail": 0,
+    "skipped": 0
+  },
+  "preflightCompatibility": {
+    "preCommit": true,
+    "postCommit": true,
+    "cases": 18,
+    "disposableRemoved": true
+  }
+}

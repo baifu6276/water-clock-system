@@ -1,0 +1,379 @@
+--- a/transport-v2/worker/relay.mjs
++++ b/transport-v2/worker/relay.mjs
+@@ -1,2 +1,2 @@
+-// T1/T3 reads; opt-in EMP001 T4 route. GAS alone authorizes business writes.
+-export const VERSION = 't3-2-status-only';
++// T3-4 reads plus one opt-in EMP001 operation. GAS remains the write authority.
++export const VERSION = 't4-safety-2-gas-read-diag';
+@@ -11,0 +12,16 @@
++// Reconstruct diagnostics from a fixed schema; never forward the upstream object.
++function gasReadDiagnostics(value, correlationId) {
++  const stageKeys = ['VERIFY_LINE', 'EMPLOYEE_CONTEXT', 'ACTION_READ', 'LOCK_WAIT', 'RESPONSE_PREP'];
++  const buckets = ['LT_100', 'MS_100_499', 'MS_500_1999', 'MS_2000_4999', 'MS_5000_9999', 'MS_10000_19999', 'MS_GE_20000'];
++  const exact = (object, keys) => object && typeof object === 'object' && !Array.isArray(object) &&
++    Object.keys(object).length === keys.length && keys.every(key => Object.hasOwn(object, key));
++  try {
++    if (!exact(value, ['version', 'transportTraceId', 'total', 'stages']) || value.version !== 1 ||
++        typeof value.transportTraceId !== 'string' ||
++        !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value.transportTraceId) ||
++        value.transportTraceId !== correlationId || !buckets.includes(value.total) ||
++        !exact(value.stages, stageKeys) || stageKeys.some(key => value.stages[key] !== 'NOT_RUN' && !buckets.includes(value.stages[key]))) return;
++    return { version: 1, transportTraceId: correlationId, total: value.total,
++      stages: Object.fromEntries(stageKeys.map(key => [key, value.stages[key]])) };
++  } catch { return; }
++}
+@@ -19 +35,54 @@
+-async function limitedText(message, limit, code) {
++// Request-local diagnostics only. A clock/formatting failure never changes transport.
++function timingDiagnostics(now) {
++  const values = { rr: 'NOT_RUN', ph: 'NOT_RUN', g1: 'NOT_RUN', g2: 'NOT_RUN', g3: 'NOT_RUN', fb: 'NOT_RUN' };
++  let available = true, started = false, closed = false, last, start, entered;
++  let active = 'rr', currentStage = 'READ_REQUEST', hops = 0, header;
++  function read() {
++    if (!available) return 0;
++    try {
++      const value = now();
++      if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || (last !== undefined && value < last)) throw new Error();
++      last = value;
++      return value;
++    } catch { available = false; return 0; }
++  }
++  function bucket(duration) {
++    if (duration < 100) return 'LT_100';
++    if (duration < 500) return 'MS_100_499';
++    if (duration < 2000) return 'MS_500_1999';
++    if (duration < 5000) return 'MS_2000_4999';
++    if (duration < 10000) return 'MS_5000_9999';
++    if (duration < 20000) return 'MS_10000_19999';
++    return 'MS_GE_20000';
++  }
++  return {
++    start() {
++      if (closed || started) return;
++      started = true;
++      start = entered = read();
++    },
++    enter(key, stage, hop = hops) {
++      if (closed || !started) return;
++      const time = read();
++      values[active] = bucket(time - entered);
++      active = key; currentStage = stage; hops = hop; entered = time;
++    },
++    close(timeout, done = false) {
++      if (closed) return;
++      closed = true;
++      if (!started) return;
++      try {
++        const time = timeout ? 0 : read();
++        const snapshot = Object.freeze({ ...values,
++          [active]: timeout ? 'TIMEOUT' : bucket(time - entered),
++          tot: timeout ? 'TIMEOUT' : bucket(time - start), cur: done ? 'DONE' : currentStage, hops });
++        if (available) header = 'v=1;rr=' + snapshot.rr + ';ph=' + snapshot.ph + ';g1=' + snapshot.g1 +
++          ';g2=' + snapshot.g2 + ';g3=' + snapshot.g3 + ';fb=' + snapshot.fb +
++          ';tot=' + snapshot.tot + ';cur=' + snapshot.cur + ';hops=' + snapshot.hops;
++      } catch { header = undefined; }
++    },
++    header: () => header
++  };
++}
++
++async function limitedText(message, limit, code, ensureOpen) {
+@@ -26,0 +96 @@
++      ensureOpen();
+@@ -56 +126 @@
+-export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 20000 } = {}) {
++export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 20000, now = () => performance.now() } = {}) {
+@@ -57,0 +128 @@
++  const timing = timingDiagnostics(now);
+@@ -62 +133,3 @@
+-      'X-Transport-Version': env.T4_CONTROLLED_MIGRATION_ENABLED === 'true' ? 't4-safety-1' : VERSION, 'X-Correlation-Id': correlationId };
++      'X-Transport-Version': VERSION, 'X-Correlation-Id': correlationId };
++    const timingHeader = timing.header();
++    if (timingHeader !== undefined) headers['X-Transport-Timing'] = timingHeader;
+@@ -65 +138 @@
+-      'Access-Control-Expose-Headers': 'X-Transport-Version, X-Correlation-Id' });
++      'Access-Control-Expose-Headers': 'X-Transport-Version, X-Correlation-Id, X-Transport-Timing' });
+@@ -68,0 +142,2 @@
++  let closed = false;
++  const ensureOpen = () => { if (closed) fail('UPSTREAM_TIMEOUT'); };
+@@ -90,0 +166 @@
++    timing.start();
+@@ -92 +168,7 @@
+-      timer = setTimeout(() => { controller.abort(); reject(new Error('UPSTREAM_TIMEOUT')); }, timeoutMs);
++      timer = setTimeout(() => {
++        if (closed) return;
++        closed = true; // Block abort callbacks and late continuations before freezing.
++        controller.abort();
++        timing.close(true);
++        reject(new Error('UPSTREAM_TIMEOUT'));
++      }, timeoutMs);
+@@ -97 +179,2 @@
+-      const text = await limitedText(request, 16384, 'REQUEST_TOO_LARGE');
++      const text = await limitedText(request, 16384, 'REQUEST_TOO_LARGE', ensureOpen);
++      ensureOpen();
+@@ -99,0 +183,6 @@
++      if (controlled && (Object.keys(data).length !== route.keys.length || route.keys.some(key => !Object.hasOwn(data, key)) ||
++          data.action !== route.action || data.employeeId !== 'EMP001' ||
++          data.requestId !== 'c9f21cdc-6da2-4a92-8fbb-06ffaa0d32ab' ||
++          data.expectedSnapshotVersion !== 'f9088e67ce48da2c79f7a76db16850105cfbb1d6f5fc5ebffc80a63f3a13dedd' ||
++          data.reason !== '建立 EMP001 Legacy Baseline，補建任職與 LINE 綁定基線；到職日未知維持空白。' ||
++          data.confirmed !== true)) fail('REQUEST_INVALID');
+@@ -102,4 +190,0 @@
+-      if (controlled && (route.keys.some(key => !Object.hasOwn(data, key)) ||
+-          typeof data.requestId !== 'string' || !/^[A-Za-z0-9_-]{16,100}$/.test(data.requestId) || /^status-probe-/.test(data.requestId) ||
+-          typeof data.expectedSnapshotVersion !== 'string' || !/^[a-f0-9]{64}$/.test(data.expectedSnapshotVersion) ||
+-          typeof data.reason !== 'string' || !data.reason.trim() || data.reason.length > 1000 || data.confirmed !== true)) fail('REQUEST_INVALID');
+@@ -114 +199,2 @@
+-        body: JSON.stringify(url.pathname === '/identity' ? { action: route.action, idToken: data.idToken } :
++        body: JSON.stringify(controlled ? { action: route.action, idToken: data.idToken, employeeId: 'EMP001',
++          requestId: data.requestId, expectedSnapshotVersion: data.expectedSnapshotVersion, reason: data.reason, confirmed: true } : { ...(url.pathname === '/identity' ? { action: route.action, idToken: data.idToken } :
+@@ -116,2 +202,2 @@
+-            ...(url.pathname === '/employee-operation-status' || controlled ? { requestId: data.requestId } : {}),
+-            ...(controlled ? { expectedSnapshotVersion: data.expectedSnapshotVersion, reason: data.reason, confirmed: true } : {}) }) };
++            ...(url.pathname === '/employee-operation-status' ? { requestId: data.requestId } : {}) }),
++          _transportDiagnostics: { version: 1, traceId: correlationId } }) };
+@@ -122,0 +209 @@
++          timing.enter(options.method === 'POST' ? 'ph' : 'g' + redirects, stage, redirects);
+@@ -124,0 +212 @@
++          ensureOpen();
+@@ -143 +231,3 @@
+-        const body = await limitedText(response, 65536, 'UPSTREAM_RESPONSE_TOO_LARGE');
++        timing.enter('fb', stage);
++        const body = await limitedText(response, 65536, 'UPSTREAM_RESPONSE_TOO_LARGE', ensureOpen);
++        ensureOpen();
+@@ -147 +237,6 @@
+-        // Preserve GAS business JSON; headers carry transport metadata separately.
++        const safeDiagnostics = controlled ? undefined : gasReadDiagnostics(result._gasReadDiagnostics, correlationId);
++        delete result._gasReadDiagnostics;
++        if (safeDiagnostics) result._gasReadDiagnostics = safeDiagnostics;
++        // Preserve other GAS business fields. Only reconstructed diagnostics cross.
++        closed = true;
++        timing.close(false, true);
+@@ -153,0 +249 @@
++    if (!closed) { closed = true; timing.close(false); }
+--- a/transport-v2/live-test/client.js
++++ b/transport-v2/live-test/client.js
+@@ -10 +10,2 @@
+-  const statusCapable = version => [STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION].includes(version);
++  const T4_TIMING_VERSION = 't4-safety-2-gas-read-diag';
++  const statusCapable = version => [STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION, T4_TIMING_VERSION].includes(version);
+@@ -163 +164 @@
+-      lastTransportVersion = ['t1-1', 't3-1', STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION].includes(version) ? version : null;
++      lastTransportVersion = ['t1-1', 't3-1', STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION, T4_TIMING_VERSION].includes(version) ? version : null;
+--- a/transport-v2/live-test/index.html
++++ b/transport-v2/live-test/index.html
+@@ -11 +11 @@
+-  <script defer src="client.js?v=t3-4-gas-read-diag"></script>
++  <script defer src="client.js?v=t4-safety-2-read-compat"></script>
+--- a/transport-v2/t4-migration-runner/client.js
++++ b/transport-v2/t4-migration-runner/client.js
+@@ -0,0 +1,166 @@
++(() => {
++  'use strict';
++  // One reviewed operation, fixed in source. Never derive values from DOM/URL.
++  const EXPECTED_VERSION = 't4-safety-2-gas-read-diag';
++  const LIFF_ID = '2011467618-QZYsTwb9';
++  const RELAY = 'https://employee-identity-transport-t1.baifu6276.workers.dev';
++  const EMPLOYEE = 'EMP001';
++  const REQUEST_ID = 'c9f21cdc-6da2-4a92-8fbb-06ffaa0d32ab';
++  const SNAPSHOT = 'f9088e67ce48da2c79f7a76db16850105cfbb1d6f5fc5ebffc80a63f3a13dedd';
++  const REASON = '建立 EMP001 Legacy Baseline，補建任職與 LINE 綁定基線；到職日未知維持空白。';
++  const routes = Object.freeze({
++    identityBootstrap: '/identity', employeeLifecycleBaselineDryRun: '/employee-read',
++    employeeLifecycleBaselineMigrate: '/employee-baseline-migrate',
++    employeeLifecycleBaselineRequestStatus: '/employee-operation-status'
++  });
++  const safeCodes = new Set(['LIFF_INIT_ERROR', 'LINE_REQUIRED', 'TOKEN_REQUIRED', 'IDENTITY_DENIED',
++    'BASELINE_NOT_READY', 'TRANSPORT_VERSION_REQUIRED', 'RESPONSE_INVALID', 'NETWORK_ERROR', 'HTTP_ERROR',
++    'UPSTREAM_TIMEOUT', 'UPSTREAM_NETWORK_ERROR', 'UPSTREAM_HTTP_ERROR', 'UPSTREAM_REDIRECT_DENIED',
++    'UPSTREAM_REDIRECT_LIMIT', 'UPSTREAM_JSON_INVALID', 'UPSTREAM_RESPONSE_TOO_LARGE', 'PATH_DENIED',
++    'AUTH_ERROR', 'FORBIDDEN', 'VERSION_CONFLICT', 'REQUEST_CONFLICT', 'RECOVERY_REQUIRED',
++    'CONTROLLED_MIGRATION_DENIED', 'VALIDATION_ERROR', 'BUSY', 'SCHEMA_ERROR', 'IDENTITY_CONFLICT', 'OPERATION_ERROR']);
++  const $ = id => document.getElementById(id);
++  const set = (id, text) => { $(id).textContent = text; };
++  const fail = code => { const error = new Error(); error.safeCode = code; throw error; };
++  const errorCode = error => safeCodes.has(error?.safeCode) ? error.safeCode : 'RESPONSE_INVALID';
++  let state = 'PRECHECK', initialized = false, busy = false, authorized = false, preflight = false, attempted = false;
++  function render() {
++    set('state', state);
++    $('precheck').disabled = !initialized || busy || attempted;
++    $('confirmation').disabled = !preflight || busy || attempted;
++    $('migrate').disabled = state !== 'READY' || !authorized || !preflight || busy || attempted || $('confirmation').value !== 'MIGRATE EMP001';
++    $('statusCheck').disabled = !initialized || !authorized || busy || !attempted;
++  }
++  function transition(next, message) {
++    // The write latch never resets, including after unknown/status outcomes.
++    if (attempted && (next === 'READY' || next === 'PRECHECK')) return;
++    state = next; set('message', message); render();
++  }
++  function liveToken() {
++    try {
++      if (!liff.isInClient() || !liff.isLoggedIn()) fail('LINE_REQUIRED');
++      const token = liff.getIDToken();
++      if (typeof token !== 'string' || !token.trim() || token.length > 12000) fail('TOKEN_REQUIRED');
++      return token;
++    } catch (error) { fail(safeCodes.has(error?.safeCode) ? error.safeCode : 'TOKEN_REQUIRED'); }
++  }
++  async function request(action) {
++    if (!Object.hasOwn(routes, action)) fail('RESPONSE_INVALID');
++    const idToken = liveToken();
++    const payload = action === 'identityBootstrap' ? { action, idToken } :
++      action === 'employeeLifecycleBaselineDryRun' ? { action, idToken, employeeId: EMPLOYEE } :
++      action === 'employeeLifecycleBaselineRequestStatus' ? { action, idToken, employeeId: EMPLOYEE, requestId: REQUEST_ID } :
++      { action, idToken, employeeId: EMPLOYEE, requestId: REQUEST_ID, expectedSnapshotVersion: SNAPSHOT, reason: REASON, confirmed: true };
++    const controller = new AbortController(); let timer, closed = false;
++    try {
++      const timeout = new Promise((_, reject) => {
++        timer = setTimeout(() => { closed = true; controller.abort(); const error = new Error(); error.safeCode = 'UPSTREAM_TIMEOUT'; reject(error); }, 20000);
++      });
++      const operation = async () => {
++        let response;
++        try {
++          response = await fetch(RELAY + routes[action], { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
++            body: JSON.stringify(payload), redirect: 'error', credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', signal: controller.signal });
++        } catch { fail('NETWORK_ERROR'); }
++        if (closed) fail('UPSTREAM_TIMEOUT');
++        const version = response.headers.get('x-transport-version');
++        const allowed = action === 'employeeLifecycleBaselineRequestStatus' ? [EXPECTED_VERSION, 't3-4-gas-read-diag'] : [EXPECTED_VERSION];
++        set('version', allowed.includes(version) ? version : '未識別');
++        if (!allowed.includes(version)) fail('TRANSPORT_VERSION_REQUIRED');
++        let result;
++        try { result = await response.json(); } catch { fail('RESPONSE_INVALID'); }
++        if (closed) fail('UPSTREAM_TIMEOUT');
++        if (!result || Array.isArray(result) || typeof result !== 'object' || typeof result.success !== 'boolean') fail('RESPONSE_INVALID');
++        if (!response.ok || !result.success) {
++          const code = result.transportError || result.code;
++          fail(safeCodes.has(code) ? code : !response.ok ? 'HTTP_ERROR' : 'RESPONSE_INVALID');
++        }
++        return result;
++      };
++      return await Promise.race([operation(), timeout]);
++    } finally { closed = true; clearTimeout(timer); }
++  }
++  function validIdentity(result) {
++    return result.success === true && result.state === 'ACTIVE_EMPLOYEE' && result.employee?.employeeId === EMPLOYEE &&
++      ['OWNER', 'ADMIN'].includes(result.employee?.permission);
++  }
++  function validPreview(result) {
++    return result.success === true && result.dryRun === true && result.employeeId === EMPLOYEE &&
++      result.baselineState === 'LEGACY_NOT_BASELINED' && result.eligible === true && result.snapshotVersion === SNAPSHOT;
++  }
++  function validSuccess(result) {
++    const keys = ['success', 'employeeId', 'requestId', 'baselineState', 'version', 'recoveryStatus'];
++    return Object.keys(result).length === keys.length && keys.every(key => Object.hasOwn(result, key)) &&
++      result.success === true && result.employeeId === EMPLOYEE && result.requestId === REQUEST_ID &&
++      result.baselineState === 'RECORDED' && result.version === 1 && result.recoveryStatus === 'COMPLETED';
++  }
++  $('confirmation').addEventListener('input', render);
++  $('precheck').addEventListener('click', async () => {
++    if (!initialized || busy || attempted) return;
++    busy = true; authorized = false; preflight = false; set('error', '無'); set('identity', '尚未確認');
++    transition('PRECHECK', '讀取身分與基線；不寫入。');
++    try {
++      if (!validIdentity(await request('identityBootstrap'))) fail('IDENTITY_DENIED');
++      authorized = true; set('identity', 'ACTIVE_EMPLOYEE / EMP001 / 管理權限符合');
++      if (!validPreview(await request('employeeLifecycleBaselineDryRun'))) fail('BASELINE_NOT_READY');
++      preflight = true;
++      transition('READY', '唯讀檢查符合固定操作。請先取得最終人工 Migration 批准，再輸入確認文字。');
++    } catch (error) {
++      authorized = false; preflight = false; set('error', errorCode(error));
++      transition('PRECHECK', '檢查未通過，禁止寫入。');
++    } finally { busy = false; render(); }
++  });
++  $('migrate').addEventListener('click', async () => {
++    if (!initialized || busy || attempted || state !== 'READY' || !authorized || !preflight || $('confirmation').value !== 'MIGRATE EMP001') return;
++    attempted = true; busy = true; preflight = false; // Set BEFORE any await/token/fetch.
++    set('error', '無'); transition('SUBMITTING', '已封鎖第二次寫入；等待此原請求結果。');
++    try {
++      const result = await request('employeeLifecycleBaselineMigrate');
++      if (!validSuccess(result)) fail('RESPONSE_INVALID');
++      transition('SUCCESS', '收到 RECORDED / COMPLETED 成功回應。停止寫入；人工關閉 Worker flag，再查原請求狀態。');
++    } catch (error) {
++      set('error', errorCode(error));
++      transition('WRITE_RESULT_UNKNOWN', '結果未知，僅能查原請求狀態。不得重送；由人工決定並關閉 Worker flag。');
++    } finally { busy = false; render(); }
++  });
++  function statusState(result) {
++    if (result.employeeId !== EMPLOYEE || result.requestId !== REQUEST_ID || result.action !== 'employeeLifecycleBaselineMigrate' ||
++        result.recoveryAllowed !== false || result.newRequestAllowed !== false) fail('RESPONSE_INVALID');
++    const h = result.historicalCompletion, c = result.currentConsistency;
++    if (result.requestStatus === 'COMPLETED' && h === true && c === 'MATCHED') return 'STATUS_COMPLETED';
++    if (result.requestStatus === 'STARTED' && h === false && ['ABSENT', 'PARTIAL', 'MATCHED'].includes(c)) return 'STATUS_STARTED';
++    if (result.requestStatus === 'NOT_OBSERVED' && h === false && c === 'UNKNOWN') return 'STATUS_NOT_OBSERVED';
++    if (result.requestStatus === 'UNKNOWN' && h === null && c === 'UNKNOWN') return 'WRITE_RESULT_UNKNOWN';
++    if (result.requestStatus === 'RECOVERY_REQUIRED' && [null, false, true].includes(h) && c === 'CONFLICT') return 'STATUS_RECOVERY_REQUIRED';
++    fail('RESPONSE_INVALID');
++  }
++  const statusMessages = Object.freeze({
++    STATUS_COMPLETED: '原請求 COMPLETED + MATCHED：具有完成證據。停止寫入；另行人工核對 Sheets、audit 與 property。',
++    STATUS_STARTED: '原請求 STARTED：部分或進行中證據。STOP，不續寫，交由人工核對。',
++    STATUS_NOT_OBSERVED: '未觀察到 receipt。STOP，不代表可以重送。',
++    STATUS_RECOVERY_REQUIRED: 'RECOVERY_REQUIRED / CONFLICT。STOP，需另行批准人工 recovery。',
++    WRITE_RESULT_UNKNOWN: '結果未知，僅能查原請求狀態。STOP，不得重送。'
++  });
++  $('statusCheck').addEventListener('click', async () => {
++    if (!initialized || busy || !authorized || !attempted) return;
++    busy = true; set('error', '無'); transition('STATUS_CHECKING', '唯讀查詢固定原 requestId；不會觸發寫入。');
++    try {
++      const next = statusState(await request('employeeLifecycleBaselineRequestStatus'));
++      transition(next, statusMessages[next]);
++    } catch (error) {
++      set('error', errorCode(error)); transition('WRITE_RESULT_UNKNOWN', statusMessages.WRITE_RESULT_UNKNOWN);
++    } finally { busy = false; render(); }
++  });
++  set('requestId', REQUEST_ID); set('snapshot', SNAPSHOT); set('reason', REASON); render();
++  (async () => {
++    try {
++      await liff.init({ liffId: LIFF_ID }); set('init', '成功');
++      set('inLine', liff.isInClient() ? '是' : '否');
++      liveToken(); set('token', '是'); initialized = true; render();
++    } catch (error) {
++      set('error', safeCodes.has(error?.safeCode) ? error.safeCode : 'LIFF_INIT_ERROR');
++      if ($('init').textContent !== '成功') set('init', '失敗');
++      set('message', '初始化或 LINE 身分條件未通過，禁止操作。');
++    }
++  })();
++})();
+--- a/transport-v2/t4-migration-runner/index.html
++++ b/transport-v2/t4-migration-runner/index.html
+@@ -0,0 +1,40 @@
++<!doctype html>
++<html lang="zh-Hant">
++<head>
++  <meta charset="utf-8">
++  <meta name="viewport" content="width=device-width,initial-scale=1">
++  <meta name="referrer" content="no-referrer">
++  <title>EMP001 單次 Migration 人工操作候選</title>
++  <style>
++    body{font-family:system-ui;line-height:1.6;max-width:640px;margin:20px auto;padding:0 16px}
++    dd{margin:0 0 12px;overflow-wrap:anywhere}dt{font-weight:bold}
++    button,input{font:inherit;padding:12px;box-sizing:border-box;max-width:100%}
++    button{display:block;margin:12px 0}input{width:100%}.notice{border:2px solid #ad4d00;padding:12px}
++  </style>
++  <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
++  <script defer src="client.js?v=t4-one-operation-1"></script>
++</head>
++<body>
++  <h1>EMP001 單次 Migration 人工操作候選</h1>
++  <p class="notice">僅供另行批准的一次操作。人工 Migration 批准前不得按送出。確認文字只防誤觸，不代表後端授權。</p>
++  <dl>
++    <dt>LIFF 初始化</dt><dd id="init">尚未開始</dd>
++    <dt>在 LINE 內</dt><dd id="inLine">未確認</dd>
++    <dt>ID token 可取得</dt><dd id="token">未確認</dd>
++    <dt>狀態</dt><dd id="state">PRECHECK</dd>
++    <dt>身分檢查</dt><dd id="identity">尚未檢查</dd>
++    <dt>Transport 版本</dt><dd id="version">—</dd>
++    <dt>安全錯誤碼</dt><dd id="error">無</dd>
++    <dt>固定 requestId</dt><dd id="requestId">—</dd>
++    <dt>固定 snapshotVersion</dt><dd id="snapshot">—</dd>
++    <dt>固定原因</dt><dd id="reason">—</dd>
++  </dl>
++  <button id="precheck" disabled>驗證身分與基線（唯讀）</button>
++  <label for="confirmation">取得最終人工批准後，輸入 MIGRATE EMP001</label>
++  <input id="confirmation" autocomplete="off" spellcheck="false" disabled>
++  <button id="migrate" disabled>送出唯一一次 EMP001 Migration</button>
++  <button id="statusCheck" disabled>查詢原請求狀態（唯讀）</button>
++  <p id="message" role="status">尚未發出 API 請求。</p>
++  <p>送出後不論結果，本頁不再提供寫入。不得重新整理、重開頁面或另開分頁嘗試重送。若結果未知，只查原 requestId；關閉頁面後仍應使用唯讀測試頁核對原請求。</p>
++</body>
++</html>

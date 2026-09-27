@@ -1,0 +1,109 @@
+{
+  "offlineOnly": true,
+  "migration": "HOLD",
+  "checks": [
+    {
+      "name": "base ancestry",
+      "pass": true
+    },
+    {
+      "name": "exact five reviewed runtime blobs",
+      "pass": true
+    },
+    {
+      "name": "config unchanged and exact",
+      "pass": true
+    },
+    {
+      "name": "runtime hash gates",
+      "pass": true
+    },
+    {
+      "name": "LIFF separation",
+      "pass": true
+    },
+    {
+      "name": "fixed operation/version and runner safety",
+      "pass": true
+    },
+    {
+      "name": "four routes and default deny",
+      "pass": true
+    },
+    {
+      "name": "no enabled committed deployment configuration",
+      "pass": true
+    },
+    {
+      "name": "exact snapshot scope",
+      "pass": true
+    },
+    {
+      "name": "syntax",
+      "pass": true
+    },
+    {
+      "name": "all tests PASS and match inputs",
+      "pass": true
+    },
+    {
+      "name": "git diff check",
+      "pass": true
+    }
+  ],
+  "success": true,
+  "baseIsAncestor": true,
+  "snapshotMode": "UNCOMMITTED_OVERLAY",
+  "changedFileCount": 23,
+  "runtimeFiles": [
+    "transport-v2/live-test/client.js",
+    "transport-v2/live-test/index.html",
+    "transport-v2/t4-migration-runner/client.js",
+    "transport-v2/t4-migration-runner/index.html",
+    "transport-v2/worker/relay.mjs"
+  ],
+  "testFiles": [
+    "transport-v2/tests/live-test.cjs",
+    "transport-v2/tests/relay.test.mjs",
+    "transport-v2/tests/staging-fixture.cjs",
+    "transport-v2/tests/staging-model.test.cjs",
+    "transport-v2/tests/staging-pages.cjs",
+    "transport-v2/tests/staging-worker.test.mjs"
+  ],
+  "reviewFiles": [
+    "release-candidates/t4-release-staging/FILES.json",
+    "release-candidates/t4-release-staging/FINDINGS.md",
+    "release-candidates/t4-release-staging/MANIFEST.json",
+    "release-candidates/t4-release-staging/PREFLIGHT.json",
+    "release-candidates/t4-release-staging/RELEASE_RUNBOOK.md",
+    "release-candidates/t4-release-staging/REVIEW.md",
+    "release-candidates/t4-release-staging/ROLLBACK.json",
+    "release-candidates/t4-release-staging/RUNTIME.diff",
+    "release-candidates/t4-release-staging/TEST_RESULTS.json",
+    "release-candidates/t4-release-staging/TEST_STRATEGY.md",
+    "release-candidates/t4-release-staging/preflight.cjs",
+    "release-candidates/t4-release-staging/run.py"
+  ],
+  "configUnchanged": true,
+  "runtimeHashesPass": true,
+  "liffIsolationPass": true,
+  "fixedOperationPass": true,
+  "defaultDenySourcePass": true,
+  "testsEvidencePass": true,
+  "diffCheckPass": true,
+  "baseSha": "b9ad9f57f435e6780d465f5480b71dc24354d991",
+  "headSha": "b9ad9f57f435e6780d465f5480b71dc24354d991",
+  "branch": "codex/t4-release-staging",
+  "hashes": {
+    "workerFile": "7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c61c7600",
+    "workerBundle": "38e0dfaac30467bc829dcb75310e56518d34726aa7700549757fdbe42b217271",
+    "readFrontend": "fd9fc54d94f7154dc5d0ac8f2742a402cf48f4e8e8b05c5c48a832fee172f013",
+    "runner": "7a1d87607720c8f8c853a62aa8a6f3e9e19a28db0e11bc63bf98d07988ecf431",
+    "gas": "df1fb07687cd7ed2c3fb66a9bd1ee0a65107050b3e5211c12ac99f62beaa81b5",
+    "rollback": "172353c88ff9ed6b41b0640f5536b3a792ba9f8f1fbb22e1ad69131eb696bf68"
+  },
+  "compatibilityEvidencePresent": true,
+  "pass": true,
+  "base": "b9ad9f57f435e6780d465f5480b71dc24354d991",
+  "reviewed": "53c60bdb2e0bc89d49ab02fd2221725e76f38adf"
+}
