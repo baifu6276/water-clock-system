@@ -1,0 +1,39 @@
+{
+  "runtime": [
+    "transport-v2/worker/relay.mjs",
+    "transport-v2/live-test/client.js",
+    "transport-v2/live-test/index.html",
+    "transport-v2/t4-migration-runner/client.js",
+    "transport-v2/t4-migration-runner/index.html"
+  ],
+  "permanentTests": [
+    "transport-v2/tests/relay.test.mjs",
+    "transport-v2/tests/live-test.cjs",
+    "transport-v2/tests/staging-fixture.cjs",
+    "transport-v2/tests/staging-worker.test.mjs",
+    "transport-v2/tests/staging-model.test.cjs",
+    "transport-v2/tests/staging-pages.cjs"
+  ],
+  "reviewPackage": [
+    "release-candidates/t4-release-staging/REVIEW.md",
+    "release-candidates/t4-release-staging/FILES.json",
+    "release-candidates/t4-release-staging/FINDINGS.md",
+    "release-candidates/t4-release-staging/MANIFEST.json",
+    "release-candidates/t4-release-staging/PREFLIGHT.json",
+    "release-candidates/t4-release-staging/RELEASE_RUNBOOK.md",
+    "release-candidates/t4-release-staging/ROLLBACK.json",
+    "release-candidates/t4-release-staging/RUNTIME.diff",
+    "release-candidates/t4-release-staging/TEST_RESULTS.json",
+    "release-candidates/t4-release-staging/TEST_STRATEGY.md",
+    "release-candidates/t4-release-staging/preflight.cjs",
+    "release-candidates/t4-release-staging/run.py"
+  ],
+  "counts": {
+    "runtime": 5,
+    "tests": 6,
+    "reviewPackage": 12,
+    "total": 23
+  },
+  "configSourceDiff": "ZERO",
+  "staged": false
+}

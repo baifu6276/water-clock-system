@@ -1,0 +1,21 @@
+{
+  "offlineOnly": true,
+  "executedInProduction": false,
+  "sourceCommit": "6f3921f2bbea6d175c8bcac3888b09e231f44774",
+  "sourcePath": "transport-v2/worker/relay.mjs",
+  "version": "t3-4-gas-read-diag",
+  "fileSha256": "172353c88ff9ed6b41b0640f5536b3a792ba9f8f1fbb22e1ad69131eb696bf68",
+  "routes": [
+    "/identity",
+    "/employee-read",
+    "/employee-operation-status"
+  ],
+  "steps": [
+    "manual flag OFF approval",
+    "separate manual rollback approval",
+    "deploy exact reviewed rollback artifact",
+    "read status with ORIGINAL requestId only",
+    "no retry/no new requestId/no GAS rollback/no permit reset"
+  ],
+  "warning": "Worker rollback != GAS did not execute"
+}
