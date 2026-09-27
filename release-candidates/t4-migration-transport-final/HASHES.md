@@ -4,16 +4,16 @@ Worker file SHA-256: `7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c6
 
 Worker bundle SHA-256: `38e0dfaac30467bc829dcb75310e56518d34726aa7700549757fdbe42b217271`
 
-Runner bundle SHA-256: `1f5e781a6a3f40df100a33926a97327ea60f571d15a9ee876a2009dda5e6ad1b`
+Runner bundle SHA-256: `7a1d87607720c8f8c853a62aa8a6f3e9e19a28db0e11bc63bf98d07988ecf431`
 
 Read frontend bundle SHA-256: `fd9fc54d94f7154dc5d0ac8f2742a402cf48f4e8e8b05c5c48a832fee172f013`
 
-Evidence bundle SHA-256: `6622d7bba214fcc75489f0c5228c82cb7abafcf5bba521472e45630fa3c5b25f`
+Evidence bundle SHA-256: `9468ddd56d77723c485f2a50524f32413d88c0b3f4e35e9741ad0a02b341e362`
 
 | Artifact | File | SHA-256 |
 |---|---|---|
 | worker | relay.mjs | 7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c61c7600 |
-| runner | client.js | 9935881ed8a34a8d4a4e9e24f104132422daa3b2589e268628a08b6f1e2c1f34 |
+| runner | client.js | 62184dba6260c0e18aa1119420faec83dcee41f02911724fbbc3ac7bdb80e375 |
 | runner | index.html | 285d55f83788249c5626e28f4c620494384c0929f8f99253a355e3de1461036a |
 | readFrontend | client.js | 355ea12bc0b17260b19e8b410bc8e9d7d8ebe6b3ce02e4de7cd9b0500fd770a9 |
 | readFrontend | config.js | c398e5ad04bd2be0ca595751424e1a5666e007840e2edcbc7aabc36dfff5b31a |

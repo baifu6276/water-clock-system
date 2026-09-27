@@ -2,7 +2,7 @@
   'use strict';
   // One reviewed operation, fixed in source. Never derive values from DOM/URL.
   const EXPECTED_VERSION = 't4-safety-2-gas-read-diag';
-  const LIFF_ID = '2011467618-R76314It';
+  const LIFF_ID = '2011467618-QZYsTwb9';
   const RELAY = 'https://employee-identity-transport-t1.baifu6276.workers.dev';
   const EMPLOYEE = 'EMP001';
   const REQUEST_ID = 'c9f21cdc-6da2-4a92-8fbb-06ffaa0d32ab';

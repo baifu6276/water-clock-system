@@ -24,10 +24,10 @@
     "release-candidates/t4-migration-transport-final/tests/read-compatibility.cjs": "47d98eedc22ce3403c198714f961e1233cf16c8d29ac5f9a5a55f7f9bc0c1000",
     "release-candidates/t4-migration-transport-final/tests/relay-regression.test.mjs": "d4e3b41389f6b2d0750178b70de318d612f7b95edc57fd65bda34c448ff9cefe",
     "release-candidates/t4-migration-transport-final/tests/run.py": "d869a76f885b790c5550ce626998b4e9f78ee666a921b2dcb545da9cebb9edc2",
-    "release-candidates/t4-migration-transport-final/tests/runner-browser.cjs": "d748f6d9b10fe4a3969aee6d81e4a47d2ace3cc1ee8ee75094ae5c4bc48d2301",
-    "release-candidates/t4-migration-transport-final/tests/static.cjs": "4770bb493e4cb481c9d9e46f823f013d6c6d6411b22df6dd1b0428b1a84abd50",
+    "release-candidates/t4-migration-transport-final/tests/runner-browser.cjs": "27d63909cce79c701210526f45da3e0d1c50977eaeef03bc9e4cd75bc8eb5ddc",
+    "release-candidates/t4-migration-transport-final/tests/static.cjs": "6fb61360f5b7cbe22400da3610ff89861e76dbe33acc213d7c807599d589d644",
     "release-candidates/t4-migration-transport-final/worker/relay.mjs": "7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c61c7600",
-    "transport-v2/t4-migration-runner/client.js": "9935881ed8a34a8d4a4e9e24f104132422daa3b2589e268628a08b6f1e2c1f34",
+    "transport-v2/t4-migration-runner/client.js": "62184dba6260c0e18aa1119420faec83dcee41f02911724fbbc3ac7bdb80e375",
     "transport-v2/t4-migration-runner/index.html": "285d55f83788249c5626e28f4c620494384c0929f8f99253a355e3de1461036a",
     "ROLLBACK_RELAY": "fe10facd68adac7e801041a4216603fc0f26e8412cb3d26c40ef95aa6827c99a"
   },
@@ -49,7 +49,7 @@
         "skipped": 0,
         "cancelled": 0
       },
-      "outputSha256": "db09dfb5da52a483e9d6ba673432ac8087f6546ef4c7810b386ebb52e1b614b5"
+      "outputSha256": "8054e3a6c9757a18b8961c42e03f71705942324daf7a4e352de154bd62894fcb"
     },
     {
       "suite": "migration-relay",
@@ -63,7 +63,7 @@
         "skipped": 0,
         "cancelled": 0
       },
-      "outputSha256": "65ec35620a4a0d289bc7b5157b2bcc192883a41ee3b82ab74df89e7c854fd9ff"
+      "outputSha256": "9afa24cf77deccf91d58b426a7b235d1fe44f2d756b69a6735288967e6594be7"
     },
     {
       "suite": "read-browser",
@@ -113,12 +113,12 @@
         "skipped": 0,
         "cancelled": 0
       },
-      "outputSha256": "3b439efcfc63c68f63b5cd6d7d004bf6792cebb3abafca433a8367be9698d040"
+      "outputSha256": "a8859cbbea3634b75070daedd28de8fe195f2ba7536afa4b41021cd8106c6dca"
     }
   ],
   "artifactHashes": {
     "worker": "38e0dfaac30467bc829dcb75310e56518d34726aa7700549757fdbe42b217271",
-    "runner": "1f5e781a6a3f40df100a33926a97327ea60f571d15a9ee876a2009dda5e6ad1b",
+    "runner": "7a1d87607720c8f8c853a62aa8a6f3e9e19a28db0e11bc63bf98d07988ecf431",
     "readFrontend": "fd9fc54d94f7154dc5d0ac8f2742a402cf48f4e8e8b05c5c48a832fee172f013",
     "workerFile": "7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c61c7600"
   },

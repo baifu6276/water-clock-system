@@ -36,11 +36,11 @@
     "bytes": 3359
   },
   "release-candidates/t4-migration-transport-final/tests/runner-browser.cjs": {
-    "sha256": "d748f6d9b10fe4a3969aee6d81e4a47d2ace3cc1ee8ee75094ae5c4bc48d2301",
-    "bytes": 15196
+    "sha256": "27d63909cce79c701210526f45da3e0d1c50977eaeef03bc9e4cd75bc8eb5ddc",
+    "bytes": 15338
   },
   "release-candidates/t4-migration-transport-final/tests/static.cjs": {
-    "sha256": "4770bb493e4cb481c9d9e46f823f013d6c6d6411b22df6dd1b0428b1a84abd50",
-    "bytes": 5546
+    "sha256": "6fb61360f5b7cbe22400da3610ff89861e76dbe33acc213d7c807599d589d644",
+    "bytes": 6148
   }
 }

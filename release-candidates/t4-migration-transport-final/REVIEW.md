@@ -63,7 +63,7 @@ Diff 見 `evidence/frontend-client.js.patch`、`evidence/frontend-index.html.pat
 
 ## G–I. Runner state machine / unknown outcome / status
 
-獨立 runner：`transport-v2/t4-migration-runner/index.html` + `client.js`。重用既有 dedicated T1 LIFF ID `2011467618-R76314It` 與固定 Worker origin；沒有 direct GAS URL、URL/query/input config、storage/cookie/log。
+獨立 runner：`transport-v2/t4-migration-runner/index.html` + `client.js`。使用人工建立的 dedicated Migration Runner LIFF ID `2011467618-QZYsTwb9` 與固定 Worker origin；沒有 direct GAS URL、URL/query/input config、storage/cookie/log。
 
 LIFF 初始化本身不發業務 API。人按「驗證身分與基線」後：
 
@@ -173,3 +173,11 @@ Migration HOLD；本次沒有處理 LIFF Endpoint 或任何 Production gate。
 零 stage / commit / push / PR / merge / deploy；零 Production request；零 GAS / Cloudflare / LINE / Sheets / Script Properties / permit 操作；Migration HOLD。
 
 READY FOR HUMAN CODE REVIEW
+
+## Dedicated runner LIFF micro-patch
+
+人工已建立並確認「T4 EMP001 Migration Runner」：LIFF ID `2011467618-QZYsTwb9`，Endpoint `https://baifu6276.github.io/water-clock-system/transport-v2/t4-migration-runner/index.html`，openid only。這是人工提供的平台設定，本輪沒有向 LINE 驗證。
+
+此次 runtime 僅將 runner LIFF ID 替換為新 ID；原 read-only LIFF 保持 `2011467618-R76314It`。static 同時核對兩個 read config 與 ID 不相同，並逐位元核對 runner 等於上一 commit 的單一字串替換。既有 browser fixture 直接驗證 liff.init 收到新 ID，不增加或刪除案例，總數仍為 686。
+
+尚未實際開啟新 LIFF，尚未 Production deploy。Worker / read frontend / V48 GAS 不變。Migration HOLD。

@@ -24,7 +24,7 @@ async function fixture(browser,opt={}){
  });
  await context.route('**/*',async route=>{
   const request=route.request(),url=new URL(request.url());
-  if(url.hostname==='static.line-scdn.net')return route.fulfill({contentType:'text/javascript',body:`window.liff={init:async()=>{${opt.initFail?'throw Error("PRIVATE_EXCEPTION")':''}},isInClient:()=>${!opt.outside},isLoggedIn:()=>true,getIDToken:()=>${opt.noToken?'null':'"PRIVATE_TOKEN"'}};`});
+  if(url.hostname==='static.line-scdn.net')return route.fulfill({contentType:'text/javascript',body:`window.liff={init:async(options)=>{window.__liffInitOptions=options;${opt.initFail?'throw Error("PRIVATE_EXCEPTION")':''}},isInClient:()=>${!opt.outside},isLoggedIn:()=>true,getIDToken:()=>${opt.noToken?'null':'"PRIVATE_TOKEN"'}};`});
   if(url.hostname==='test.example'){
    const name=url.pathname.split('/').pop()||'index.html';assert(['index.html','client.js'].includes(name));
    return route.fulfill({contentType:name.endsWith('js')?'text/javascript':'text/html',body:fs.readFileSync(path.join(root,name),'utf8')});
@@ -63,6 +63,7 @@ async function fixture(browser,opt={}){
  });
  await page.goto('https://test.example/index.html');
  await page.waitForFunction(()=>document.getElementById('init').textContent!=='尚未開始');
+ assert.deepEqual(await page.evaluate(()=>window.__liffInitOptions),{liffId:'2011467618-QZYsTwb9'});
  assert.equal(calls.length,0);
  const force=async name=>page.evaluate(n=>{const b=document.getElementById(n);b.disabled=false;b.click();},name);
  const check=async()=>{await force('precheck');await page.waitForFunction(()=>!document.getElementById('precheck').disabled||document.getElementById('error').textContent!=='無');};

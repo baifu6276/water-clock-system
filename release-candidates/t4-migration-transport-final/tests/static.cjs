@@ -14,7 +14,7 @@ const untracked=namesFrom(git('ls-files','--others','--exclude-standard','-z'));
 for(const n of [...namesFrom(git('diff','--name-only','-z',base)),...namesFrom(git('diff','--cached','--name-only','-z')), ...untracked])assert(allowed(n),'Unexpected drift: '+n);
 const files=[...new Set([...namesFrom(git('ls-files','-z')), ...untracked])].filter(allowed);
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'MANIFEST.json'),'utf8'));
-const pinned={workerFile:'7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c61c7600',runner:'1f5e781a6a3f40df100a33926a97327ea60f571d15a9ee876a2009dda5e6ad1b',readFrontend:'fd9fc54d94f7154dc5d0ac8f2742a402cf48f4e8e8b05c5c48a832fee172f013'};
+const pinned={workerFile:'7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c61c7600',runner:'7a1d87607720c8f8c853a62aa8a6f3e9e19a28db0e11bc63bf98d07988ecf431',readFrontend:'fd9fc54d94f7154dc5d0ac8f2742a402cf48f4e8e8b05c5c48a832fee172f013'};
 assert.equal(sha(fs.readFileSync(path.join(root,'worker/relay.mjs'))),pinned.workerFile);
 for(const [group,dir] of [['worker',path.join(root,'worker')],['runner',runner],['readFrontend',path.join(root,'live-test')]]){
  const names=fs.readdirSync(dir).sort();assert.deepEqual(names,Object.keys(manifest.files[group]).sort());
@@ -31,7 +31,14 @@ assert.deepEqual(fs.readFileSync(path.join(root,'live-test/config.js')),blob('e6
 const run=fs.readFileSync(path.join(runner,'client.js'),'utf8');
 assert(!/console\.|Logger|localStorage|sessionStorage|indexedDB|document\.cookie|innerHTML|location\.|URLSearchParams|script\.google|EmployeeBaselineControl|employeeBaselineControl/.test(run));
 assert(run.includes("liff.init({ liffId: LIFF_ID })"));
-assert(run.includes("const LIFF_ID = '2011467618-R76314It'"));
+assert(run.includes("const LIFF_ID = '2011467618-QZYsTwb9'"));
+const runnerLiff=run.match(/const LIFF_ID = '([^']+)'/)[1];
+for(const config of [path.join(root,'live-test/config.js'),path.join(repo,'transport-v2/live-test/config.js')]){
+ const readLiff=fs.readFileSync(config,'utf8').match(/liffId: '([^']+)'/)[1];
+ assert.equal(readLiff,'2011467618-R76314It');assert.notEqual(runnerLiff,readLiff);
+}
+const priorRunner=blob('6b286827ffc75827776a0bd36e4f05741f7fc60d','transport-v2/t4-migration-runner/client.js');
+assert.deepEqual(fs.readFileSync(path.join(runner,'client.js')),Buffer.from(priorRunner.toString('utf8').replace("const LIFF_ID = '2011467618-R76314It';","const LIFF_ID = '2011467618-QZYsTwb9';")));
 assert(run.includes("const RELAY = 'https://employee-identity-transport-t1.baifu6276.workers.dev'"));
 assert.equal((run.match(/await request\('employeeLifecycleBaselineMigrate'\)/g)||[]).length,1);
 assert.equal((run.match(/attempted = false/g)||[]).length,1);
