@@ -1,0 +1,26 @@
+{
+  "result": "PASS",
+  "hashBasis": "Existing artifact hashes use pinned Git blobs; local checkout hashes separately recorded and match Git checkout filters.",
+  "checkoutHashes": {
+    "workerFile": "0194db52ae907608dc2dc145c21cd843c09f49a41770253d4e0ff23edde9ab1f",
+    "migrationRunner": "9e992926d771a6932850caf799c2fb767dd70f76f84c698b4ef9279c31530d19",
+    "liveTest": "05c082b1227779f896cb14f8594781abd4ccf5115d3ff25cd4adf5be8f5416b9"
+  },
+  "base": "34e1cb77a972b1a600d0ea5eed60927fcef15059",
+  "v50Provenance": "7bb207e6e14c1471198bc06a596b4d4805346b04",
+  "protectedFiles": 8,
+  "hashes": {
+    "workerFile": "7f5994d15bf732b53f4566c3594ebb7e3707d1a9cb2115a032c04cb6c61c7600",
+    "migrationRunner": "7a1d87607720c8f8c853a62aa8a6f3e9e19a28db0e11bc63bf98d07988ecf431",
+    "liveTest": "fd9fc54d94f7154dc5d0ac8f2742a402cf48f4e8e8b05c5c48a832fee172f013",
+    "recoveryRunner": "2a8f32c2a40e5586fb93508c687cf5107ebc0955fd4e5bf196a05f79a7a4dbc6",
+    "v50": "05d7ecc706de930c262663e9dd8b33ce1988811f36186a96750331c01940e0f1"
+  },
+  "scope": "PASS",
+  "backendContract": "PASS",
+  "workerContract": "PASS",
+  "syntax": "PASS",
+  "privacy": "PASS",
+  "htmlStatic": "PASS",
+  "diffCheck": "PASS"
+}
