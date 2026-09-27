@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>EMP001 原請求續作（RECOVER_ORIGINAL）</title>
+  <style>
+    body{overflow-wrap:anywhere;font-family:system-ui;line-height:1.6;max-width:640px;margin:20px auto;padding:0 16px}
+    dd{margin:0 0 12px;overflow-wrap:anywhere}dt{font-weight:bold}
+    button,input{font:inherit;padding:12px;box-sizing:border-box;max-width:100%}
+    button{display:block;margin:12px 0}input{width:100%}.notice{border:2px solid #ad4d00;padding:12px}
+  </style>
+  <script defer src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script defer src="client.js?v=t4-recovery-original-1"></script>
+</head>
+<body>
+  <h1>EMP001 原請求續作（RECOVER_ORIGINAL）</h1>
+  <p class="notice">正式續作仍 HOLD。僅供另行批准的 RECOVER_ORIGINAL generation 2，沿用固定原 requestId，不建立新請求。後端 generation-2 Permit 才是授權依據；確認文字僅防誤觸。</p>
+  <dl>
+    <dt>LIFF 初始化</dt><dd id="init">尚未開始</dd>
+    <dt>在 LINE 內</dt><dd id="inLine">未確認</dd>
+    <dt>ID token 可取得</dt><dd id="token">未確認</dd>
+    <dt>狀態</dt><dd id="state">PRECHECK</dd>
+    <dt>身分檢查</dt><dd id="identity">尚未檢查</dd>
+    <dt>Transport 版本</dt><dd id="version">—</dd>
+    <dt>安全錯誤碼</dt><dd id="error">無</dd>
+    <dt>固定 requestId</dt><dd id="requestId">—</dd>
+    <dt>固定 snapshotVersion</dt><dd id="snapshot">—</dd>
+    <dt>固定原因</dt><dd id="reason">—</dd>
+  </dl>
+  <button id="precheck" disabled>檢查身分與原請求（唯讀）</button>
+  <label for="confirmation">取得最終人工續作批准後，精確輸入 RECOVER EMP001</label>
+  <input id="confirmation" autocomplete="off" spellcheck="false" disabled>
+  <button id="recover" disabled>續作原請求一次（RECOVER_ORIGINAL）</button>
+  <button id="statusCheck" disabled>查詢原請求狀態（唯讀）</button>
+  <p id="message" role="status">尚未發出 API 請求。</p>
+  <p>Worker flag 必須另行人工批准才可啟用；按下 RECOVER 後須由人工關閉。按下即鎖定本頁一次機會，即使重新驗證失敗也不可重送。不得重新整理、重開頁面或另開分頁；結果未知只能唯讀查詢同一原 requestId，停止並交由人工調查。</p>
+</body>
+</html>

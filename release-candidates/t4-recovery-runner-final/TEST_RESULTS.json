@@ -1,0 +1,262 @@
+{
+  "offlineOnly": true,
+  "baseCommit": "34e1cb77a972b1a600d0ea5eed60927fcef15059",
+  "v50Provenance": "7bb207e6e14c1471198bc06a596b4d4805346b04",
+  "inputSha256": "f303696b2f348bf15837f939c312edc88b0cd769e11d36bbe9ced8a5df28998b",
+  "modelSeed": "0x52560001",
+  "counting": "Executed cases/groups across explicitly named independent suites. Static not added to case count.",
+  "outputDigest": "Remove only TAP durations, Node PID and checkout prefix. Preserve statuses/assertions.",
+  "totals": {
+    "pass": 4183,
+    "fail": 0,
+    "skipped": 0
+  },
+  "runs": [
+    {
+      "suite": "Recovery unit",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "release-candidates/t4-recovery-runner-final/tests/runner.test.cjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "pass": 175,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "normalizedOutputSha256": "530fca192f8769ce94a835294d02a40fa600514d4c41f034771a12b94d616cb5"
+    },
+    {
+      "suite": "Recovery model",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "release-candidates/t4-recovery-runner-final/tests/model.test.cjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "pass": 1000,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "normalizedOutputSha256": "190b5e77a7cf5df2f0a4d3e70d4843fee3901d0266745c51c351c4278b293c52"
+    },
+    {
+      "suite": "Real Worker contract",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "release-candidates/t4-recovery-runner-final/tests/contract.test.mjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "pass": 19,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "normalizedOutputSha256": "0cf7599a219db08dc5afcaa68004e640416402f6cb8118c16aa584df6c9ce9e1"
+    },
+    {
+      "suite": "Recovery Chromium",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "release-candidates/t4-recovery-runner-final/tests/browser.cjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "pass": 35,
+        "fail": 0,
+        "skipped": 0
+      },
+      "normalizedOutputSha256": "4b1736bbf1dc1cf6a0a0f45b5d6e2e65de4036122bfc26b63ace1cc986da10c6"
+    },
+    {
+      "suite": "Static/provenance",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "release-candidates/t4-recovery-runner-final/tests/static.cjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "checks": "PASS"
+      },
+      "normalizedOutputSha256": "594cee315aca392f7b090a621c31b83bd426da7e01cedd1e84ffce9f659f61b6"
+    },
+    {
+      "suite": "Existing Relay",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "transport-v2/tests/relay.test.mjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "pass": 273,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "normalizedOutputSha256": "104142de998ba359e34131bd0fb3607c21cf3edd2b4e1d44ce90130f1694040e"
+    },
+    {
+      "suite": "Existing read browser",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "transport-v2/tests/live-test.cjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "pass": 269,
+        "fail": 0,
+        "skipped": 0
+      },
+      "normalizedOutputSha256": "4cbf3039b9fda9f2583aa63ad6ebdb888b04f7410ac98a82a8c495e3237ef1bc"
+    },
+    {
+      "suite": "Existing Worker hardening",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "transport-v2/tests/staging-worker.test.mjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "pass": 1256,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "normalizedOutputSha256": "5e3a4f8541de1f913b0dec9dcb9bb93011221244a535574efea86ca0ede213e2"
+    },
+    {
+      "suite": "Existing runner model",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "transport-v2/tests/staging-model.test.cjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "pass": 1000,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "normalizedOutputSha256": "6c9f754583e3bf0365471eb985c163cf3d77291ad73228c66d13781adbef57fc"
+    },
+    {
+      "suite": "Existing Pages/rollback",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "transport-v2/tests/staging-pages.cjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "pass": 12,
+        "fail": 0,
+        "skipped": 0
+      },
+      "normalizedOutputSha256": "c7ebdb2b850ec5fb2148cdb01356f430544981d22aa60880d76eee3f786b8ded"
+    },
+    {
+      "suite": "Pinned existing migration-relay.test.mjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\migration-relay.test.mjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "pass": 71,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "normalizedOutputSha256": "de58170df6b66e76ae47f990d3f24ef5660d21321081dd7a74c9bd12e9017a3d"
+    },
+    {
+      "suite": "Pinned existing runner-browser.cjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\runner-browser.cjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "pass": 56,
+        "fail": 0,
+        "skipped": 0
+      },
+      "normalizedOutputSha256": "fd097e75118d2b26c48e78084173ad64e321dab8d78dde02b1e62557330e1883"
+    },
+    {
+      "suite": "Pinned existing read-compatibility.cjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\read-compatibility.cjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "pass": 10,
+        "fail": 0,
+        "skipped": 0
+      },
+      "normalizedOutputSha256": "ce66b6ff752852c7c92a59c67c30d3756dd781670be18ee56ff118900f271628"
+    },
+    {
+      "suite": "Pinned existing gas-contract.test.cjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "${PINNED_TEMP}\\release-candidates\\t4-migration-transport-final\\tests\\gas-contract.test.cjs"
+      ],
+      "exitCode": 0,
+      "counts": {
+        "pass": 7,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "normalizedOutputSha256": "5071b2a7fc1cc5b5ea95941aa197d991e59837d661e0280f3ae000fc5bcc59d2"
+    }
+  ]
+}
