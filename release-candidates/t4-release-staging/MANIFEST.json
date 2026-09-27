@@ -44,14 +44,16 @@
   },
   "configZeroDiff": true,
   "tests": {
-    "pass": 2972,
+    "pass": 2973,
     "fail": 0,
     "skipped": 0
   },
   "preflightCompatibility": {
-    "preCommit": true,
-    "postCommit": true,
-    "cases": 18,
+    "sourceCommittedCandidate": true,
+    "disposablePreCommit": true,
+    "disposableCommittedDescendant": true,
+    "cases": 19,
+    "negativeCases": 14,
     "disposableRemoved": true
   }
 }

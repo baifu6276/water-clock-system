@@ -6,11 +6,11 @@
 
 - Branch：codex/t4-release-staging
 - Worktree：C:/Users/User/.codex/worktrees/t4-release-staging/water-clock-system
-- Base / unchanged HEAD：b9ad9f57f435e6780d465f5480b71dc24354d991
+- Fixed BASE：b9ad9f57f435e6780d465f5480b71dc24354d991。Release branch 必須是此 BASE 的 descendant；exact current commit 由 Git history 取得。
 - Reviewed artifact source：53c60bdb2e0bc89d49ab02fd2221725e76f38adf
 - Runtime 五檔直接取固定 Git blobs，沒有為測試修改 runtime bytes。
 - config.js 與 base Git blob exact byte-identical、git diff 為空；Windows checkout EOL stat 標記已刷新，未 stage 內容。
-- 原 candidate branch 沒有修改。未 stage / commit / push / PR / merge / deploy。
+- Release commit/push 歷史以 Git 為準；此文件不硬寫 current HEAD，也不宣稱 branch 尚未提交。Evidence 不內嵌其 own containing commit SHA。
 - 沒有正式 Cloudflare/GAS/LINE/Pages/Sheets/Script Properties/permit/migration request。
 - 指定 main base 原先不在本機，只有取得该 Git commit 的 source fetch；測試 runner 自身完全離線、不 fetch。
 
@@ -86,7 +86,7 @@ run.py及preflight均可在本機重新執行；沒有平台操作指令。
 
 - Source provenance + exact runtime bytes + all hashes + LIFF separation + flag default deny + fixed contract + scope + syntax + test input provenance + git diff --check：由PREFLIGHT.json列出。
 - JS已由node/VM語法解析及實際browser執行；HTML由browser解析、既有markup/static checks及Pages路徑模擬驗證，不宣稱W3C validator。
-- Worktree預期dirty，保留23個content changes供review；staged檔案數0。config不在content changes中。
+- 相對固定 BASE 的 exact release snapshot 是23檔；working tree 可為 clean committed descendant 或合法review overlay。即時 staged/dirty 狀態由 Git 判定，不由 committed evidence 宣稱。config不在content changes中。
 - 既有tracked diff用git diff --check；新增文字另檢查trailing whitespace與conflict markers。
 
 ## Findings / release decision
@@ -96,45 +96,39 @@ P1 runtime：本輪離線測試未發現新的runtime blocker。
 P1 release gates：真實Pages artifact、dedicated LIFF載入、Worker flag ABSENT部署、V48/permit/私人approval/備份證據仍需未來人工批准後驗收。不能現在release或migration。
 P2：JSON重複key最後一值、business JSON passthrough、timer回呼順序、one-shot非跨document鎖、歷史controlled-test入口、外部Pages設定與cache限制；詳見FINDINGS.md。
 
-最小PR候選已可人工review，未獲准commit/PR/merge/deploy。完整未來A–N流程在RELEASE_RUNBOOK.md；三條禁止推論：NOT_OBSERVED != safe to retry、timeout != failed write、Worker rollback != GAS did not execute。
+本候選供人工review；PR/merge/deploy仍需另行明確批准。完整未來A–N流程在RELEASE_RUNBOOK.md；三條禁止推論：NOT_OBSERVED != safe to retry、timeout != failed write、Worker rollback != GAS did not execute。
 
 READY FOR HUMAN REVIEW
 
-## Preflight commit-state compatibility revision
+## Release evidence reproducibility
 
-本輪只修 review/test/evidence；五個 runtime bytes、6 個既有測試 bytes 與 config 都不改，FILES.json 仍精確23檔。
+原始 evidence P1 有三個來源：run.py compatibility 將 source HEAD 限制為固定 BASE；finalize 將當時 preflight JSON 直接放在 PREFLIGHT.json 頂層；文件把過去 precommit 狀態描述成當前狀態。這不影響已審查 runtime，卻使 committed checkout 無法完整重跑且容易誤讀證據。
 
-原問題：HEAD == BASE 使commit後必敗；scope只列3個modified runtime，漏掉2個新增runner；local main落後不能當offline failure。
-新版以固定BASE作ancestry anchor，執行git merge-base --is-ancestor BASE HEAD。不以main/origin/main作判定。
-BASE→working snapshot = git diff --name-only -z BASE -- 與 git ls-files --others --exclude-standard -z 的排序去重union。
-5 runtime與6 tests均hard-coded精確allowlist，另12個inventory路徑限定review目錄。inventory不能加入第6個runtime或任意test路徑；actual set必須完全相等。
-同時拒絕重複/不正規路徑、symlink、缺檔、額外檔與被working copy掩蓋的staged drift。
+preflight 的安全 invariant 維持：固定 BASE ancestry、5 runtime / 6 permanent tests hard-coded allowlist、其餘12檔在review目錄、exact23 scope、六項hash、config ZERO DIFF、LIFF分離、固定operation與default deny。FILES.json只作inventory，不能擴張allowlist；staged drift不能被working bytes掩蓋。
 
-同一preflight輸出UNCOMMITTED_OVERLAY、COMMITTED_DESCENDANT或COMMITTED_WITH_OVERLAY；允許HEAD != BASE，仍維持exact source/hash、LIFF、固定operation、default deny等檢查。
-本輪新增18個compatibility cases（4正向、14負向），與原2954項全套重跑；最終結果以TEST_RESULTS.json為準。
-兩種核心snapshot比較runtimeFiles/testFiles/reviewFiles/changedFileCount/hashes/configUnchanged；不將暫存commit SHA放入被測source hash，避免循環。
+run.py 的 source可為BASE overlay、clean committed descendant或合法committed overlay；compatibility一律先要求source preflight全數PASS，再複製exact23 snapshot至BASE disposable，驗證precommit、local fixture commit後clean descendant、working/staged overlay及14項負向。Actual source HEAD/index不可變；fixture commit僅供離線測試。
 
-### Evidence generation order / finalize
-1. 固定code/runtime inputs，原9 suites全跑，保存2954結果與精確input hashes。
-2. 用同一preflight先驗actual overlay，再複製23檔到BASE disposable worktree；只有disposable branch可stage/local commit。
-3. 在clean committed descendant及隔離負向fixtures執行同一preflight，保存18項結果、pre/post JSON與input hashes。兼容性結果尚未產生時，preflight明確輸出compatibilityEvidencePresent=false；不假造已執行結果。
-4. 恢復disposable到乾淨fixture commit，移除該worktree與local temp branch。
-5. run.py --finalize必須證明temp已移除、input hashes未變；更新TEST_RESULTS / PREFLIGHT / MANIFEST。finalize後compatibilityEvidencePresent必須true。
-6. 不hash TEST_RESULTS/PREFLIGHT/FILES自身；它們只保存inventory、被測code/runtime hashes及結果，沒有self-reference。
+### Clean committed source 與新版 harness 的分離
 
-remote main == b9ad9f57f435e6780d465f5480b71dc24354d991 是未來人工online release gate，不是本機offline判定。本輪不查遠端；如未來remote main前進，STOP / rebase-review。
-actual branch不stage、不commit、不push。暫存commit仅test fixture，不能當發布commit。Migration HOLD。
+本次無actual commit授權。為同時保留clean source與測試新版harness，先在外部暫存目錄執行新版run.py，透過 --source-root 指向乾淨已提交source、--output-dir 將結果寫在source外。所有runtime/tests/config/preflight從source讀取；executor的SHA-256與externalToSource另列，並不假稱舊commit內的run.py已修改。
 
-實際post-commit驗證另外發現舊RUNTIME.diff有兩行只含空白的context line；本輪將此evidence改為zero-context unified diff，保留相同五檔差異，不修改runtime，沒有略過git diff --check。Windows CRLF fixture狀態處理亦只影響disposable測試index。
+TEST_RESULTS.json 的 committedSourceReproduction 保存該完整重跑的command、inputs、executor hash、source前後COMMITTED_DESCENDANT證據、fixture結果與finalize結果。完成後才把相同新版harness放回actual branch，再全跑一次驗證最終review overlay。兩次各自完整執行，不把測試數相加、不沿用先前2972結果。固定clean-source capture是歷史實證，不是文件所在commit的current HEAD。
 
-## 本輪最終實測結果
+新版harness日後正常commit後，直接在該checkout執行run.py即可；不需external mode、不需退回BASE。執行開頭先capture source preflight，產生測試結果可能讓review evidence變dirty，compatibility仍驗證合法snapshot，不把預期evidence更新誤判成祖先錯誤。
 
-完整九組runtime回歸2954 PASS，加上18項preflight compatibility tests，合計2972 PASS / 0 FAIL / 0 SKIP。
-Actual UNCOMMITTED_OVERLAY與disposable COMMITTED_DESCENDANT皆12/12 PASS，23 scope / 5 runtime / 6 tests / 12 review、config ZERO DIFF、六組hash完全一致。
-暫存驗證commit：0d82362ef86795a7cbca10bf4beab21d3297c3a2；暫存worktree已透過Codex archive移除，local temp branch已刪除（歸檔可恢復snapshot不屬於發布branch）。
-finalize PASS；actual HEAD仍為BASE、staged 0，沒有actual commit或push。
-開發過程fixture曾因Windows EOL stat及正向overlay加入EOF空白中止；最終修正後從完整九組回歸重新執行，未放寬任何gate。
-本輪改動只在review目錄9個既有檔案：preflight.cjs、run.py、REVIEW.md、TEST_STRATEGY.md、RELEASE_RUNBOOK.md、RUNTIME.diff、TEST_RESULTS.json、PREFLIGHT.json、MANIFEST.json。
-沒有runtime或六個permanent tests改動；FILES.json仍是原23檔inventory。
+### Evidence schema / generation order
+
+1. 先capture source狀態；若只是新改harness導致既有input evidence過期，必須完整重跑9 suites才能進compatibility，其他gate不可失敗。
+2. 9 suites共2954項，保存完整commands、exit codes、input hashes；再執行19 compatibility cases（5正向、14負向）。
+3. 複製source exact23檔到BASE disposable；先UNCOMMITTED_OVERLAY，再local fixture commit後COMMITTED_DESCENDANT。另測working/staged overlay、所有負向並恢復乾淨。
+4. 移除disposable worktree/local branch後才finalize；驗證source HEAD未動、inputs/executor未變、temp已移除。External source全程保持clean。
+5. PREFLIGHT.json為OFFLINE_PREFLIGHT_COMPATIBILITY_EVIDENCE，頂層無headSha/snapshotMode。sourceInitialValidation、sourceBeforeCompatibility、sourceCommittedCandidate、preCommitFixture、committedDescendantFixture、finalizedSnapshotValidation均為明確historical capture，使用capturedHeadSha/capturedSnapshotMode。
+6. MANIFEST的sourceCommittedCandidate與disposableCommittedDescendant分開；不再用含糊postCommit。TEST_RESULTS保留兩次執行的來源與inputs，不hash evidence自身，避免self-reference。
+
+本輪預期/驗收總数：2954 + 19 = 2973 PASS / 0 FAIL / 0 SKIP；實際機器結果以TEST_RESULTS.json與PREFLIGHT.json為準。Preflight的12 checks另列，不能當額外suite增加PASS數。
+
+remote main等於固定BASE仍是獨立online人工release gate，不是offline判定。本輪不查遠端；未來main前進必須STOP / rebase-review。
+
+本輪只修改review package。五個runtime、六個permanent tests、config bytes不變；不改actual branch index/history、不push，不操作任何Production/platform。Disposable local commit允許且僅測試用途；Migration HOLD。
 
 READY FOR HUMAN REVIEW

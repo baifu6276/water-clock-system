@@ -39,14 +39,37 @@ Node fetch/http/https/net/tls/dgram 由 deny-network guard 阻擋（browser IPC 
 
 ## Preflight compatibility tests (run.py)
 
-不新增第24檔；18項新增tests放在既有run.py。只有傳入已建立且乾淨、HEAD==BASE的disposable worktree，才可建立codex/t4-preflight-verify-local暫存branch/commit。
-命令：python release-candidates/t4-release-staging/run.py --verification-worktree <disposable-worktree-absolute-path>
-必須完整跑原2954 tests，不能以partial rerun執行compatibility。
-移除disposable worktree及local temp branch後：python release-candidates/t4-release-staging/run.py --finalize
-preflight不依賴當前branch名稱或main/origin/main；範圍來自固定allowlist + BASE ancestry + exact snapshot union。
+不新增第24檔；19項compatibility tests放在既有run.py。Source ROOT允許三種模式：BASE overlay、clean committed descendant、合法committed overlay，必須通過同一preflight。只有disposable要求初始乾淨且HEAD為BASE；actual ROOT不需等於BASE，不變更actual index/history。
 
-4個正向：actual precommit、clean committed descendant、committed working overlay、committed staged overlay。
-14個負向：非BASE後代、第6runtime、config異動、runner client缺失、runner index缺失、inventory自行放行production、runtime hash drift、錯誤dedicated LIFF、錯誤read LIFF、default write flag true、重複inventory、第24個review檔、stale evidence input hash、被working copy隱藏的staged config drift。
-fixture mutations均只在disposable；actual code/runtime不被negative tests改寫。
+在候選checkout中完整重跑：
+```
+python release-candidates/t4-release-staging/run.py --verification-worktree <clean-disposable-at-BASE>
+```
+9 suites全跑後驗source，複製exact23 source snapshot至disposable，先驗precommit再stage/local fixture commit。Cleanup disposable worktree與codex/t4-preflight-verify-local後：
+```
+python release-candidates/t4-release-staging/run.py --finalize
+```
+不得以partial suite results執行compatibility。19項＝source snapshot gate + 原4正向/14負向；原precommit案例現在明確驗disposable precommit，不再假定source必為precommit。
 
-預期總數2972 PASS / 0 FAIL / 0 SKIP；實際以TEST_RESULTS.json核對。preflight的12 checks不是額外計入2954/18測試總數。
+5正向：source valid、disposable precommit、disposable clean committed descendant、committed working overlay、committed staged overlay。
+14負向：非BASE後代、第6runtime、config異動、runner client缺失、runner index缺失、inventory自行放行production、runtime hash drift、錯誤dedicated LIFF、錯誤read LIFF、default write flag true、重複inventory、第24個review檔、stale evidence input hash、被working copy隱藏的staged config drift。
+
+### 本輪clean-source驗證方式（無actual commit）
+
+先將新版run.py放在repo外，執行：
+```
+python <external-run.py> --source-root <clean-committed-checkout> --output-dir <external-evidence> --verification-worktree <clean-disposable-at-BASE>
+python <external-run.py> --source-root <clean-committed-checkout> --output-dir <external-evidence> --finalize
+```
+中間同樣必須移除disposable worktree/branch。External evidence不可位於source內；source必須始終COMMITTED_DESCENDANT且clean。runtime/permanent tests/preflight讀取clean source，source舊run.py hash與实际executor新run.py hash分列，不混為同一artifact。
+
+再將同一executor放回actual review package，重新完整執行：
+```
+python release-candidates/t4-release-staging/run.py --committed-source-evidence <external-evidence/TEST_RESULTS.json> --verification-worktree <clean-disposable-at-BASE>
+python release-candidates/t4-release-staging/run.py --finalize
+```
+帶入的歷史證據必須完整9 suites/19 cases/finalize PASS、clean source、同一executor；除source舊run.py外所有code inputs逐檔相同。最後一次仍完整重跑，歷史證據不代替測試、也不double count。
+
+PREFLIGHT.json只保存命名captures及aggregate gates；頂層不聲稱當前Git HEAD。MANIFEST區分sourceCommittedCandidate與disposableCommittedDescendant。即時狀態應重新執行node preflight.cjs，而不是把committed evidence當現況。
+
+總數2973 PASS / 0 FAIL / 0 SKIP；實際以TEST_RESULTS.json核對。Preflight12 checks不重複計入總數。未來正常commit後可直接從該branch內完整重跑，不需外部harness。
