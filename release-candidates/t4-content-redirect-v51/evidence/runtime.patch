@@ -1,0 +1,42 @@
+--- base/transport-v2/worker/relay.mjs
++++ transport-v2/worker/relay.mjs
+@@ -2 +2,5 @@
+-export const VERSION = 't4-safety-2-gas-read-diag';
++export const VERSION = 't4-safety-3-content-redirect';
++// Parsed hostname only; never trust arbitrary googleusercontent subdomains.
++function isContentServiceHost(hostname) {
++  return hostname === 'script.googleusercontent.com' || /^n-[a-z0-9-]+-script\.googleusercontent\.com$/.test(hostname);
++}
+@@ -222,2 +226,2 @@
+-          if (next.hostname !== 'script.googleusercontent.com') denyRedirect('REDIRECT_HOST_DENIED');
+-          if (next.port || next.username || next.password || next.hash) denyRedirect('REDIRECT_URL_COMPONENT_DENIED');
++          if (!isContentServiceHost(next.hostname)) denyRedirect('REDIRECT_HOST_DENIED');
++          if (next.port || next.username || next.password || next.hash || next.pathname !== '/macros/echo') denyRedirect('REDIRECT_URL_COMPONENT_DENIED');
+--- base/transport-v2/live-test/client.js
++++ transport-v2/live-test/client.js
+@@ -11 +11,2 @@
+-  const statusCapable = version => [STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION, T4_TIMING_VERSION].includes(version);
++  const T4_CONTENT_VERSION = 't4-safety-3-content-redirect';
++  const statusCapable = version => [STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION, T4_TIMING_VERSION, T4_CONTENT_VERSION].includes(version);
+@@ -164 +165 @@
+-      lastTransportVersion = ['t1-1', 't3-1', STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION, T4_TIMING_VERSION].includes(version) ? version : null;
++      lastTransportVersion = ['t1-1', 't3-1', STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION, T4_TIMING_VERSION, T4_CONTENT_VERSION].includes(version) ? version : null;
+--- base/transport-v2/live-test/index.html
++++ transport-v2/live-test/index.html
+@@ -11 +11 @@
+-  <script defer src="client.js?v=t4-safety-2-read-compat"></script>
++  <script defer src="client.js?v=t4-safety-3-content-redirect"></script>
+--- base/transport-v2/t4-recovery-runner/client.js
++++ transport-v2/t4-recovery-runner/client.js
+@@ -4 +4 @@
+-  const EXPECTED_VERSION = 't4-safety-2-gas-read-diag';
++  const EXPECTED_VERSION = 't4-safety-3-content-redirect';
+@@ -138 +138,2 @@
+-      transition('WRITE_RESULT_UNKNOWN', '結果未知，僅能查原請求狀態。不得重送；由人工決定並關閉 Worker flag。');
++      if (!writeSent) transition('PREWRITE_STOP', '續作寫入尚未送出；本頁已鎖定，請停止並交由管理員核對。不得在本頁重送。');
++      else transition('WRITE_RESULT_UNKNOWN', '結果未知，僅能查原請求狀態。不得重送；由人工決定並關閉 Worker flag。');
+--- base/transport-v2/t4-recovery-runner/index.html
++++ transport-v2/t4-recovery-runner/index.html
+@@ -15 +15 @@
+-  <script defer src="client.js?v=t4-recovery-original-1"></script>
++  <script defer src="client.js?v=t4-recovery-content-redirect-1"></script>

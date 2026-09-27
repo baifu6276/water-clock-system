@@ -1,5 +1,9 @@
 // T3-4 reads plus one opt-in EMP001 operation. GAS remains the write authority.
-export const VERSION = 't4-safety-2-gas-read-diag';
+export const VERSION = 't4-safety-3-content-redirect';
+// Parsed hostname only; never trust arbitrary googleusercontent subdomains.
+function isContentServiceHost(hostname) {
+  return hostname === 'script.googleusercontent.com' || /^n-[a-z0-9-]+-script\.googleusercontent\.com$/.test(hostname);
+}
 const routes = Object.freeze({
   '/identity': { action: 'identityBootstrap', keys: ['action', 'idToken'] },
   '/employee-read': { action: 'employeeLifecycleBaselineDryRun', keys: ['action', 'idToken', 'employeeId'] },
@@ -219,8 +223,8 @@ export async function handle(request, env, { fetchImpl = fetch, timeoutMs = 2000
           let next;
           try { next = new URL(response.headers.get('location')); } catch { denyRedirect('REDIRECT_LOCATION_INVALID'); }
           if (next.protocol !== 'https:') denyRedirect('REDIRECT_SCHEME_DENIED');
-          if (next.hostname !== 'script.googleusercontent.com') denyRedirect('REDIRECT_HOST_DENIED');
-          if (next.port || next.username || next.password || next.hash) denyRedirect('REDIRECT_URL_COMPONENT_DENIED');
+          if (!isContentServiceHost(next.hostname)) denyRedirect('REDIRECT_HOST_DENIED');
+          if (next.port || next.username || next.password || next.hash || next.pathname !== '/macros/echo') denyRedirect('REDIRECT_URL_COMPONENT_DENIED');
           target = next.href;
           // ContentService retrieval is GET: never resend the token/body/cookies.
           options = { method: 'GET' };

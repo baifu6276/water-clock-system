@@ -8,7 +8,8 @@
   const TIMING_VERSION = 't3-3-timing-diag';
   const GAS_TIMING_VERSION = 't3-4-gas-read-diag';
   const T4_TIMING_VERSION = 't4-safety-2-gas-read-diag';
-  const statusCapable = version => [STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION, T4_TIMING_VERSION].includes(version);
+  const T4_CONTENT_VERSION = 't4-safety-3-content-redirect';
+  const statusCapable = version => [STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION, T4_TIMING_VERSION, T4_CONTENT_VERSION].includes(version);
   const statusButton = document.getElementById('operationStatusCheck');
   const probeButton = document.getElementById('operationStatusProbe');
   const requestIdInput = document.getElementById('operationRequestId');
@@ -161,7 +162,7 @@
       set('http', String(response.status));
       showTiming(response);
       const version = response.headers.get('x-transport-version');
-      lastTransportVersion = ['t1-1', 't3-1', STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION, T4_TIMING_VERSION].includes(version) ? version : null;
+      lastTransportVersion = ['t1-1', 't3-1', STATUS_VERSION, 't4-safety-1', TIMING_VERSION, GAS_TIMING_VERSION, T4_TIMING_VERSION, T4_CONTENT_VERSION].includes(version) ? version : null;
       set('version', lastTransportVersion || '未識別');
       if (action === 'employeeLifecycleBaselineRequestStatus' && !statusCapable(version)) throw new Error('STATUS_VERSION_REQUIRED');
       const correlation = response.headers.get('x-correlation-id');

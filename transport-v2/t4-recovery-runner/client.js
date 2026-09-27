@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   // One reviewed operation, fixed in source. Never derive values from DOM/URL.
-  const EXPECTED_VERSION = 't4-safety-2-gas-read-diag';
+  const EXPECTED_VERSION = 't4-safety-3-content-redirect';
   const LIFF_ID = '2011467618-QZYsTwb9';
   const RELAY = 'https://employee-identity-transport-t1.baifu6276.workers.dev';
   const EMPLOYEE = 'EMP001';
@@ -135,7 +135,8 @@
       transition('SUCCESS', '收到 RECORDED / COMPLETED 成功回應。停止寫入；人工關閉 Worker flag，再查原請求狀態。');
     } catch (error) {
       set('error', errorCode(error));
-      transition('WRITE_RESULT_UNKNOWN', '結果未知，僅能查原請求狀態。不得重送；由人工決定並關閉 Worker flag。');
+      if (!writeSent) transition('PREWRITE_STOP', '續作寫入尚未送出；本頁已鎖定，請停止並交由管理員核對。不得在本頁重送。');
+      else transition('WRITE_RESULT_UNKNOWN', '結果未知，僅能查原請求狀態。不得重送；由人工決定並關閉 Worker flag。');
     } finally { busy = false; render(); }
   });
   function statusState(result) {
