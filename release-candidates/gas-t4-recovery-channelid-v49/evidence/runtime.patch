@@ -1,0 +1,17 @@
+--- V48/EmployeeLifecycleBaseline.gs
++++ V49/EmployeeLifecycleBaseline.gs
+@@ -41,0 +42,9 @@
++// Comparison image only: preserve every field/type except a Sheets numeric channelId.
++// Do not trim/parse strings or mutate persisted rows or the audit intent.
++function employeeBaselineBindingImage_(binding) {
++  var image = Object.assign({}, binding);
++  if (typeof image.channelId === 'number' && Number.isSafeInteger(image.channelId) && image.channelId > 0) {
++    image.channelId = String(image.channelId);
++  }
++  return image;
++}
+@@ -52 +61,3 @@
+-      (b.length && !employeeReviewSame_(b[0], bundle.binding)) || (b.length && !p.length)) employeeReviewRecovery_();
++      (b.length && !(bundle.format === 4
++        ? employeeReviewSame_(employeeBaselineBindingImage_(b[0]), employeeBaselineBindingImage_(bundle.binding))
++        : employeeReviewSame_(b[0], bundle.binding))) || (b.length && !p.length)) employeeReviewRecovery_();

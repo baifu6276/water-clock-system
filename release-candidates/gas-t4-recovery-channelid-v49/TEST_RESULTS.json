@@ -1,0 +1,308 @@
+{
+  "offlineOnly": true,
+  "productionReplay": false,
+  "syntheticInternallyConsistentHashes": true,
+  "baseCommit": "08359639eda194a2c6183e715d6d5bb44878c086",
+  "baseBundleSha256": "df1fb07687cd7ed2c3fb66a9bd1ee0a65107050b3e5211c12ac99f62beaa81b5",
+  "candidateBundleSha256": "57e8a16ec0088d1bd4c024a453b60f3365b70c4c47247ec925c933117ba49cc0",
+  "testInputsSha256": "ba02e5972213c2953af3000fb5f33c9c5a071c558eb4b0f0bdb6ec83aec39376",
+  "counting": "Executed assertions/groups per suite; original V48 control runs and V49 candidate runs listed separately. Imported reference-suite groups are not double-counted within TAP totals.",
+  "totals": {
+    "pass": 867,
+    "fail": 0,
+    "skipped": 0
+  },
+  "runs": [
+    {
+      "suite": "V44-pinned-reference",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\v44-foundation.cjs"
+      ],
+      "cwd": "${PINNED_TEMP_ROOT}",
+      "exitCode": 0,
+      "counts": {
+        "pass": 89,
+        "fail": 0,
+        "skipped": 0
+      },
+      "outputSha256": "ba2973da8a5a81720b6dda00607c205f521cf78b6197f628093d7556975bad56"
+    },
+    {
+      "suite": "V48-wrapper-pinned-hash",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "${PINNED_TEMP_ROOT}\\experiments\\t4-initial-prepare-wrapper\\wrapper.test.cjs"
+      ],
+      "cwd": "${PINNED_TEMP_ROOT}",
+      "exitCode": 0,
+      "counts": {
+        "tests": 47,
+        "pass": 47,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "14bdf102d4dc5c2b9cd17ec080694c96cef851c6de0b7828313d820046fc8837"
+    },
+    {
+      "suite": "V48-foundation.test.cjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\foundation.test.cjs"
+      ],
+      "cwd": "${PINNED_TEMP_ROOT}",
+      "exitCode": 0,
+      "counts": {
+        "pass": 82,
+        "fail": 0,
+        "skipped": 0
+      },
+      "outputSha256": "667d9deaca13a3375894fa9fa1b15667664d6d0de2611b845543abc411514750"
+    },
+    {
+      "suite": "V48-gas-diagnostics.test.cjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\gas-diagnostics.test.cjs"
+      ],
+      "cwd": "${PINNED_TEMP_ROOT}",
+      "exitCode": 0,
+      "counts": {
+        "tests": 69,
+        "pass": 69,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "9c19c61e30dc3fcca08f9d74d4a661a63079cb990a02665cc9185ce635c52174"
+    },
+    {
+      "suite": "V48-t4-gas.test.cjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\t4-gas.test.cjs"
+      ],
+      "cwd": "${PINNED_TEMP_ROOT}",
+      "exitCode": 0,
+      "counts": {
+        "tests": 77,
+        "pass": 77,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "b8a6331b93e10b0975b787f01fc58e0f1e62928a0be677ba88658a96118e9d22"
+    },
+    {
+      "suite": "V48-combined-contract.test.cjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\combined-contract.test.cjs"
+      ],
+      "cwd": "${PINNED_TEMP_ROOT}",
+      "exitCode": 0,
+      "counts": {
+        "tests": 74,
+        "pass": 74,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "49ada37ced52bc60a37dae1ee231bb0fe3aaad977f880dde390bab8a076be266"
+    },
+    {
+      "suite": "V48-maintenance.test.cjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\maintenance.test.cjs"
+      ],
+      "cwd": "${PINNED_TEMP_ROOT}",
+      "exitCode": 0,
+      "counts": {
+        "tests": 29,
+        "pass": 29,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "ca36f9426df598c82b83d5006c53d89f89300d8fcde0ecf8bad7f5b190aadd7e"
+    },
+    {
+      "suite": "V48-to-V49-channel-recovery",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "${REPO}\\release-candidates\\gas-t4-recovery-channelid-v49\\tests\\recovery.test.cjs"
+      ],
+      "cwd": "${PINNED_TEMP_ROOT}",
+      "exitCode": 0,
+      "counts": {
+        "tests": 69,
+        "pass": 69,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "9a6eb9aa7a4f7274b06f4da8762140b1cca14c365ba88927ef3392e6b4e9c1f8"
+    },
+    {
+      "suite": "V49-foundation.test.cjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\foundation.test.cjs"
+      ],
+      "cwd": "${PINNED_TEMP_ROOT}",
+      "exitCode": 0,
+      "counts": {
+        "pass": 82,
+        "fail": 0,
+        "skipped": 0
+      },
+      "outputSha256": "667d9deaca13a3375894fa9fa1b15667664d6d0de2611b845543abc411514750"
+    },
+    {
+      "suite": "V49-gas-diagnostics.test.cjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\gas-diagnostics.test.cjs"
+      ],
+      "cwd": "${PINNED_TEMP_ROOT}",
+      "exitCode": 0,
+      "counts": {
+        "tests": 69,
+        "pass": 69,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "f6e25c8ada15315ae80f300d3104a18e85305c3e3d434b08bf9d965d097a6e80"
+    },
+    {
+      "suite": "V49-t4-gas.test.cjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\t4-gas.test.cjs"
+      ],
+      "cwd": "${PINNED_TEMP_ROOT}",
+      "exitCode": 0,
+      "counts": {
+        "tests": 77,
+        "pass": 77,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "53edd0c49c8462c13adef03100fcb987e662c55a4ba9afd66c3b784d081dbd3a"
+    },
+    {
+      "suite": "V49-combined-contract.test.cjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\combined-contract.test.cjs"
+      ],
+      "cwd": "${PINNED_TEMP_ROOT}",
+      "exitCode": 0,
+      "counts": {
+        "tests": 74,
+        "pass": 74,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "d9267ebf76603a56855fd23b30bf7b7087b664c661aec9f99935e0e1978096c8"
+    },
+    {
+      "suite": "V49-maintenance.test.cjs",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "--test",
+        "--test-reporter=tap",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\maintenance.test.cjs"
+      ],
+      "cwd": "${PINNED_TEMP_ROOT}",
+      "exitCode": 0,
+      "counts": {
+        "tests": 29,
+        "pass": 29,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "outputSha256": "5fcf01aca2a5f761f642761662c12fdef61aa0e9e8a986224c059da0e48c521b"
+    },
+    {
+      "suite": "candidate-static",
+      "command": [
+        "node",
+        "--require",
+        "${PINNED_TEMP_ROOT}\\release-candidates\\gas-t4-control-no-flush\\tests\\deny-network.cjs",
+        "${REPO}\\release-candidates\\gas-t4-recovery-channelid-v49\\tests\\static.cjs"
+      ],
+      "cwd": "${REPO}",
+      "exitCode": 0,
+      "counts": {
+        "checks": "PASS"
+      },
+      "outputSha256": "af42a757252d34d26ea5c6e013fffd659f3a9914ba1a2b5773275df7516691af",
+      "checkResult": {
+        "result": "PASS",
+        "sourceFiles": 11,
+        "unchangedFiles": 10,
+        "modifiedFiles": [
+          "EmployeeLifecycleBaseline.gs"
+        ],
+        "gasSyntax": 9,
+        "htmlInlineSyntax": 1,
+        "testSyntax": 3,
+        "jsonSyntax": "PASS",
+        "scope": "PASS",
+        "diffCheck": "PASS",
+        "candidateBundleSha256": "57e8a16ec0088d1bd4c024a453b60f3365b70c4c47247ec925c933117ba49cc0"
+      }
+    }
+  ]
+}

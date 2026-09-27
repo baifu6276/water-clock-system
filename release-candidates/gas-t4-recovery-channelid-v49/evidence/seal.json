@@ -1,0 +1,26 @@
+{
+  "algorithm": "SHA256(sorted UTF8 relative name + NUL + ASCII byte length + NUL + exact bytes)",
+  "evidenceSha256": "20fae94b834d861c0ab5dea97f2c3f9bfa6ea83c9ca4777283266869a89c0218",
+  "files": [
+    {
+      "file": "runtime.patch",
+      "bytes": 935,
+      "sha256": "629814a22ca9f3d3e5e91daba2549f11218339ec7ac1e4a1fae4079dbba4a322"
+    },
+    {
+      "file": "test-inputs.json",
+      "bytes": 14625,
+      "sha256": "ba02e5972213c2953af3000fb5f33c9c5a071c558eb4b0f0bdb6ec83aec39376"
+    },
+    {
+      "file": "test-results.json",
+      "bytes": 9859,
+      "sha256": "6f9231209537cc3b01d352b572e0ccfab9b82bd01fafa94beee19c7446da8501"
+    },
+    {
+      "file": "validation-history.json",
+      "bytes": 1509,
+      "sha256": "a6f609ea8793aadb1f758d039b1c6a5f771d204e992f495fef7149cdd61397f6"
+    }
+  ]
+}

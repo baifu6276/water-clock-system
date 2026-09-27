@@ -1,0 +1,41 @@
+{
+  "scope": "Local test-harness development only; no runtime change was made to accommodate test results.",
+  "resolvedIssues": [
+    {
+      "category": "GIT_QUOTED_NON_ASCII_PATH",
+      "result": "Initial V44 export could not find Chinese source filename. Fixed ls-tree to NUL-separated UTF-8; pinned source bytes/tests unchanged."
+    },
+    {
+      "category": "STATIC_EXPECTED_NEWLINE",
+      "result": "Static expected-patch string had one extra newline; corrected to actual reviewed narrow patch, no runtime edit."
+    },
+    {
+      "category": "LOCAL_ENCODING",
+      "result": "One helper edit failed because Python defaulted to cp950. Explicit UTF-8 used; no partial source mutation."
+    },
+    {
+      "category": "SANDBOX_GIT_CHILD_PROCESS",
+      "result": "Read-only static Git child process required local command escalation; no network."
+    },
+    {
+      "category": "GIT_NO_INDEX_AND_ATTRIBUTES",
+      "result": "New .gitattributes normalized to LF; no-index checks use per-command autocrlf=false and accept exit 1 only with empty diagnostics."
+    }
+  ],
+  "supersededAttemptRecords": [
+    {
+      "suite": "V44-pinned-reference",
+      "exitCode": 1,
+      "counts": {},
+      "outputSha256": "8659f2ebaabf854ef8dcdc4b7888275ad85b8575881bb0438df04039f06ae847"
+    },
+    {
+      "suite": "candidate-static",
+      "exitCode": 1,
+      "counts": {
+        "checks": "FAIL"
+      },
+      "outputSha256": "a13c5bebaa1b307226a4c44427aec66979f9d9217ffb58a19a1198b28e7d5ac4"
+    }
+  ]
+}
