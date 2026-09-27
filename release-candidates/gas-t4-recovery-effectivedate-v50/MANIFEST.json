@@ -1,0 +1,59 @@
+{
+  "sourceManifestSha256": "5ef7e456a4aaeade7d1c956542cf3de89d4dc14db278e556a7f04348d0113e5b",
+  "candidateBundleSha256": "05d7ecc706de930c262663e9dd8b33ce1988811f36186a96750331c01940e0f1",
+  "baselineSha256": "5d47e0336cc2e57819cd8bda3b6be76f5d3905de3b4748e0776ecc75c9e8258b",
+  "evidenceAlgorithm": "SHA256(sorted UTF8 relative filename + NUL + ASCII byte length + NUL + bytes)",
+  "evidenceSha256": "f25bf72cbc98c20a0ff7575eb4bb60ec7849250c8516f8be8cb184f16811bbd3",
+  "evidenceFiles": [
+    {
+      "path": "forensic-test-results.json",
+      "bytes": 4181,
+      "sha256": "b3b1c22e2e5fe2acc7aa0e7f918e220306e1befe029362251c674d3ea9c07e7b"
+    },
+    {
+      "path": "pre-approval/REVIEW.md",
+      "bytes": 5620,
+      "sha256": "cc001f2bcf97ef25549cdaec295fe870c193409302c3d8e2570853b9c2ee17bb"
+    },
+    {
+      "path": "pre-approval/forensic.test.cjs",
+      "bytes": 2759,
+      "sha256": "c4288012ecfe2edaecf0bb7a280f1d583cd9b67f0bd3e8fc5dfcd0c007bab7b9"
+    },
+    {
+      "path": "provenance.json",
+      "bytes": 2056,
+      "sha256": "3eb2baef188a5c692199c7b8f387af35fd6b79de915eb03cd9a9bd0df19e8b14"
+    },
+    {
+      "path": "seal.json",
+      "bytes": 562,
+      "sha256": "3599234730a64c78dd652541a80cc7d3b5b3d2800fbdeb44f622566568becd6c"
+    },
+    {
+      "path": "v49-forensic.json",
+      "bytes": 19206,
+      "sha256": "6c8cf9bdc4bbca9ad5de72d2337304e996f28ce8f2d1d4638d804c660fafb850"
+    },
+    {
+      "path": "v50/forensic-recovery.json",
+      "bytes": 27649,
+      "sha256": "c5452145836bce2c97f44615e6da03c33ead10466526937c3ed5cee37fb786e6"
+    },
+    {
+      "path": "v50/runtime.patch",
+      "bytes": 1226,
+      "sha256": "cd8572bfb06692ef544d53589fe8fda912039b23ae6b5c84ad263a8345d9fb20"
+    },
+    {
+      "path": "v50/test-inputs.json",
+      "bytes": 17919,
+      "sha256": "4da06d48cfbb824e2a6f8facab88adb48d066571e2507fcb21dc983334852774"
+    },
+    {
+      "path": "v50/test-results.json",
+      "bytes": 16118,
+      "sha256": "ae6f7fff5b2b6ceb174a563362060a98a7720f920b1bbb9c402c4f0a50bf30e4"
+    }
+  ]
+}

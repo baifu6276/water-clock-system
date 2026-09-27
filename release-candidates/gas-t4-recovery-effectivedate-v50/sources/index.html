@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+  <base target="_top">
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>LIFF 測試</title>
+
+</head>
+
+
+<body>
+
+  <h2 id="title">LIFF 測試中...</h2>
+
+  <p id="status">開始...</p>
+
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+
+  <script>
+
+    window.onload = function () {
+
+      console.log("① 網頁啟動");
+
+      document.getElementById("status").innerText =
+        "① 網頁已啟動";
+
+
+      // ------------------------------
+      // 檢查 LIFF SDK
+      // ------------------------------
+
+      if (typeof liff === "undefined") {
+
+        console.error("② LIFF SDK 不存在");
+
+        document.getElementById("status").innerText =
+          "❌ LIFF SDK 載入失敗";
+
+        return;
+
+      }
+
+
+      console.log("② LIFF SDK 已載入");
+
+      document.getElementById("status").innerText =
+        "② LIFF SDK 已載入";
+
+
+      // ------------------------------
+      // 開始 LIFF 初始化
+      // ------------------------------
+
+      console.log("③ 開始 liff.init()");
+
+      document.getElementById("status").innerText =
+        "③ 正在執行 liff.init()";
+
+
+      liff.init({
+
+        liffId: "2011467618-lNiVqxsV"
+
+      })
+
+      .then(function () {
+
+        console.log("④ liff.init 成功");
+
+        document.getElementById("title").innerText =
+          "✅ LIFF 初始化成功";
+
+        document.getElementById("status").innerText =
+          "④ liff.init 成功";
+
+
+        // ------------------------------
+        // 檢查是否在 LINE 裡
+        // ------------------------------
+
+        console.log(
+          "⑤ liff.isInClient = ",
+          liff.isInClient()
+        );
+
+
+        document.getElementById("status").innerText +=
+          "\n⑤ liff.isInClient = " +
+          liff.isInClient();
+
+      })
+
+      .catch(function (err) {
+
+        console.error("❌ LIFF INIT ERROR", err);
+
+        document.getElementById("title").innerText =
+          "❌ LIFF 初始化失敗";
+
+        document.getElementById("status").innerText =
+          "錯誤：" +
+          (err.message || err);
+
+      });
+
+
+      // ------------------------------
+      // 10 秒計時
+      // ------------------------------
+
+      setTimeout(function () {
+
+        console.log(
+          "⑥ 10 秒到了"
+        );
+
+
+        document.getElementById("status").innerText +=
+          "\n\n⚠️ 已經等待超過 10 秒";
+
+      }, 10000);
+
+
+    };
+
+  </script>
+
+</body>
+
+</html>

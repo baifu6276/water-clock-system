@@ -1,0 +1,28 @@
+{
+  "baseCommit": "0f3b154cff1e4788afb61c9684d792b2fb02531c",
+  "sourcePath": "release-candidates/gas-t4-recovery-channelid-v49/sources/",
+  "sourceBundleSha256": "57e8a16ec0088d1bd4c024a453b60f3365b70c4c47247ec925c933117ba49cc0",
+  "sources": {
+    "EmployeeApplication.gs": "aea7cfecb4ec247ba8b14aaa1d356014bf1066633598f392a01024ae0d31b0fb",
+    "EmployeeApplicationAdmin.gs": "b5761d9ab6c5027766955f96bfb2765d0d84e6348b97b160d361bba277e4ca46",
+    "EmployeeBaselineControl.gs": "46a1e243c0c1eb788137f8300e7beb8b864a7341ac4dc3d8344b652f4a0789e9",
+    "EmployeeIdentity.gs": "c6d8dad46ee6e0b5ed31408b6f6a80144f8e017d623b06100fca3b21a3ee74cf",
+    "EmployeeLifecycleBaseline.gs": "d8151afe57bb85b9a3c3e9c31c833d38b8d8b0382e094754722a4951f7c89c2b",
+    "EmployeeLifecycleMutation.gs": "7d3c454f37f9f0e1d60eaaa0415ae7c10f2fa1f44834fe571f3bc5199ecaf083",
+    "EmployeeLifecycleRead.gs": "602a7157ed5e9756947aa14ae546263b5593fed420f74b04e5a8e99c8cb3a56d",
+    "EmployeeLifecycleStore.gs": "40990ea7487a3588ee91b937b62ca91f4d461a51c3acb2de5893e015f171b951",
+    "appsscript.json": "788d42fd367f154e0fc730f8953b842365de440f58560dc4333f723e0c8b44f3",
+    "index.html": "523048d4eae2135528794580ca57bdf93bddefcf550caf9fdeb0f9f650c63ff2",
+    "程式碼.gs": "7382764a0446a8937913789623516257ccb26c5162c155838be8d3d867fd1651"
+  },
+  "testInputs": {
+    "tests/fixture.cjs": "ae0e5e67db82cd684c36e6618b5d0192457d481bb0e8b9cf3a21cffb3d6b4d35",
+    "tests/forensic.cjs": "07e56a1608d451c5b2a92f054ac14bd3cbde0c09c5864110258e2cedda90ab2c",
+    "tests/forensic.test.cjs": "c4288012ecfe2edaecf0bb7a280f1d583cd9b67f0bd3e8fc5dfcd0c007bab7b9",
+    "tests/predicate-trace.cjs": "8999eb717b917df213b819b83520791c4e4f0042229628935accf2ca67ee4d3d"
+  },
+  "fixtureProvenance": {
+    "release-candidates/gas-t4-recovery-channelid-v49/tests/recovery-fixture.cjs": "8105897106183ac5f00f94ddbc956bdbcd48dbb432a0b71ebb3f589bd5926146",
+    "release-candidates/gas-t4-control-no-flush/tests/service-fixture.cjs": "22ad6f58c5256975bf34de5dbac1eb63421d337f2352664f8e58abe531369f22"
+  }
+}

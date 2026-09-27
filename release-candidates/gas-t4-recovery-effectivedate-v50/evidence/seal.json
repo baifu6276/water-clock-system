@@ -1,0 +1,10 @@
+{
+  "bundleAlgorithm": "SHA256(sorted UTF8 filename + NUL + ASCII byte length + NUL + bytes)",
+  "evidenceSha256": "469531b65e4ed463b8359d7aca40f35605f22ab3fe57014140ba835d2ab5e1ad",
+  "files": {
+    "forensic-test-results.json": "b3b1c22e2e5fe2acc7aa0e7f918e220306e1befe029362251c674d3ea9c07e7b",
+    "provenance.json": "3eb2baef188a5c692199c7b8f387af35fd6b79de915eb03cd9a9bd0df19e8b14",
+    "v49-forensic.json": "6c8cf9bdc4bbca9ad5de72d2337304e996f28ce8f2d1d4638d804c660fafb850"
+  },
+  "result": "BLOCKED: 4 PASS / 2 FAIL / 0 SKIP; no V50 runtime candidate"
+}

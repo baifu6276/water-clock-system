@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {partial,v49,plain}=require('./fixture.cjs');const {trace}=require('./predicate-trace.cjs');
+const {e,p,state,intent,bundle}=partial(49),before=JSON.stringify(e.tables),writes=e.writes,props=JSON.stringify([...e.props]);
+const native=plain(e.status(p));assert.equal(native.requestStatus,'RECOVERY_REQUIRED');assert.equal(native.historicalCompletion,null);assert.equal(native.currentConsistency,'CONFLICT');
+const report=trace(e,v49,state,intent,bundle,p);assert.deepEqual(plain(report.status),native);
+assert.equal(report.normallyReachedInspect,false);
+assert.deepEqual(report.independentInspect.result,{employmentDone:true,bindingDone:true});
+const failed=report.normalTrace.filter(x=>x.kind==='predicate'&&x.expression==='p.baselineDate !== intent.effectiveDate');
+assert.equal(failed.length,1);assert.equal(failed[0].result,true);
+assert.equal(JSON.stringify(e.tables),before);assert.equal(e.writes,writes);assert.equal(JSON.stringify([...e.props]),props);e.safe();
+const artifact={offlineOnly:true,productionByteReplay:false,source:'V49',representation:{sheetSerial:46292,calendar:'2026-09-27',getValuesType:'realm Date',rowObjectISO:intent.effectiveDate,employmentImageCalendar:bundle.employment.baselineDate,channelCellType:'number',intentChannelType:'string',otherTimestampTypes:'string'},...report};
+if(process.argv.includes('--record'))fs.writeFileSync(path.resolve(__dirname,'../evidence/v49-forensic.json'),JSON.stringify(artifact,null,2)+'\n');
+console.log(JSON.stringify({forensic:'PROVEN_ON_FAITHFUL_SYNTHETIC_FIXTURE',status:native.requestStatus,consistency:native.currentConsistency,firstFailingPredicate:failed[0].expression,independentInspect:report.independentInspect.result,productionReplay:false}));

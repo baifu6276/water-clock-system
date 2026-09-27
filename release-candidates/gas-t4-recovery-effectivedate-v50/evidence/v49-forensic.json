@@ -1,0 +1,507 @@
+{
+  "offlineOnly": true,
+  "productionByteReplay": false,
+  "source": "V49",
+  "representation": {
+    "sheetSerial": 46292,
+    "calendar": "2026-09-27",
+    "getValuesType": "realm Date",
+    "rowObjectISO": "2026-09-26T16:00:00.000Z",
+    "employmentImageCalendar": "2026-09-27",
+    "channelCellType": "number",
+    "intentChannelType": "string",
+    "otherTimestampTypes": "string"
+  },
+  "status": {
+    "success": true,
+    "employeeId": "EMP001",
+    "requestId": "c9f21cdc-6da2-4a92-8fbb-06ffaa0d32ab",
+    "action": "employeeLifecycleBaselineMigrate",
+    "requestStatus": "RECOVERY_REQUIRED",
+    "historicalCompletion": null,
+    "currentConsistency": "CONFLICT",
+    "recoveryAllowed": false,
+    "newRequestAllowed": false
+  },
+  "normallyReachedInspect": false,
+  "normalTrace": [
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "starts.length !== 1",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "ends.length > 1",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "matches.length !== starts.length + ends.length",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "guard",
+      "expression": "starts.length !== 1 || ends.length > 1 || matches.length !== starts.length + ends.length",
+      "rejects": false,
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "intent.action !== 'LEGACY_BASELINE'",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "intent.employeeId !== id",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "intent.applicationId !== ''",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "intent.beforeVersion !== 0",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "intent.afterVersion !== 1",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "!intent.auditId",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "typeof intent.reason !== 'string'",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "!intent.reason.trim()",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "intent.reason.length > 1000",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "typeof v === 'string'",
+      "result": true
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "Boolean(v)",
+      "result": true
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "Number.isFinite(new Date(v).getTime())",
+      "result": true
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "!validTime(intent.operatedAt)",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "typeof v === 'string'",
+      "result": true
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "Boolean(v)",
+      "result": true
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "Number.isFinite(new Date(v).getTime())",
+      "result": true
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "!validTime(intent.effectiveAt)",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "bundle.format === 3",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "intent.beforeJson !== JSON.stringify({ format: 3, baselineState: 'LEGACY_NOT_BASELINED' })",
+      "result": true
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "!employeeReviewSame_(p, employeeReviewCanonical_('employments', p))",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "!employeeReviewSame_(b, employeeReviewCanonical_('bindings', b))",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "!p.employmentId",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "p.sequence !== 1",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "p.status !== '在職'",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "p.endDate !== ''",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "p.disabledAt !== ''",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "p.startDate !== ''",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "employeeLifecycleDate_(p.startDate) !== p.startDate",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "['日薪', '月薪'].indexOf(p.salaryType) < 0",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "typeof p.salaryAmount !== 'number'",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "!Number.isFinite(p.salaryAmount)",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "p.salaryAmount < 0",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "['OWNER', 'ADMIN', 'SITE_MANAGER', 'EMPLOYEE'].indexOf(p.permission) < 0",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "p.createdBy !== context.employee.employeeId",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "p.createdAt !== intent.effectiveAt",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "p.baselineDate !== intent.effectiveDate",
+      "result": true
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "p.baselineDate !== Utilities.formatDate(new Date(p.createdAt), 'Asia/Taipei', 'yyyy-MM-dd')",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "!b.lineSub",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "b.channelId !== context.channelId",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "b.status !== '有效'",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "b.validTo !== ''",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "b.validFrom !== p.createdAt",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "b.operatedAt !== p.createdAt",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "b.operatorId !== p.createdBy",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "predicate",
+      "expression": "intent.requestHash !== employeeHash_(['LEGACY_BASELINE', context.sub, context.channelId, id, bundle.snapshotVersion, intent.reason.trim(), true])",
+      "result": false
+    },
+    {
+      "function": "employeeBaselineStatusEvidence_",
+      "kind": "guard",
+      "expression": "intent.action !== 'LEGACY_BASELINE' || intent.employeeId !== id || intent.applicationId !== '' ||\n        intent.beforeVersion !== 0 || intent.afterVersion !== 1 || !intent.auditId ||\n        typeof intent.reason !== 'string' || !intent.reason.trim() || intent.reason.length > 1000 ||\n        !validTime(intent.operatedAt) || !validTime(intent.effectiveAt) ||\n        (bundle.format === 3 && intent.beforeJson !== JSON.stringify({ format: 3, baselineState: 'LEGACY_NOT_BASELINED' })) ||\n        !employeeReviewSame_(p, employeeReviewCanonical_('employments', p)) ||\n        !employeeReviewSame_(b, employeeReviewCanonical_('bindings', b)) ||\n        !p.employmentId || p.sequence !== 1 || p.status !== '在職' || p.endDate !== '' || p.disabledAt !== '' ||\n        (p.startDate !== '' && employeeLifecycleDate_(p.startDate) !== p.startDate) ||\n        ['日薪', '月薪'].indexOf(p.salaryType) < 0 || typeof p.salaryAmount !== 'number' || !Number.isFinite(p.salaryAmount) || p.salaryAmount < 0 ||\n        ['OWNER', 'ADMIN', 'SITE_MANAGER', 'EMPLOYEE'].indexOf(p.permission) < 0 ||\n        p.createdBy !== context.employee.employeeId || p.createdAt !== intent.effectiveAt ||\n        p.baselineDate !== intent.effectiveDate || p.baselineDate !== Utilities.formatDate(new Date(p.createdAt), 'Asia/Taipei', 'yyyy-MM-dd') ||\n        !b.lineSub || b.channelId !== context.channelId || b.status !== '有效' || b.validTo !== '' ||\n        b.validFrom !== p.createdAt || b.operatedAt !== p.createdAt || b.operatorId !== p.createdBy ||\n        intent.requestHash !== employeeHash_(['LEGACY_BASELINE', context.sub, context.channelId, id, bundle.snapshotVersion, intent.reason.trim(), true])",
+      "rejects": true,
+      "result": true
+    }
+  ],
+  "independentInspect": {
+    "reason": "Executed separately because status may reject earlier; not a bypass of production validation",
+    "result": {
+      "employmentDone": true,
+      "bindingDone": true
+    },
+    "trace": [
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "a.operatorSub === intent.operatorSub",
+        "result": true
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "a.requestId === intent.requestId",
+        "result": true
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "receipts.filter(function(a) { return a.phase === 'STARTED'; }).length !== 1",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "receipts.filter(function(a) { return a.phase === 'COMPLETED'; }).length > 1",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "a.action !== 'LEGACY_BASELINE'",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "a.requestHash !== intent.requestHash",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "a.afterJson !== intent.afterJson",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "['STARTED', 'COMPLETED'].indexOf(a.phase) < 0",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "receipts.some(function(a) {\n        return a.action !== 'LEGACY_BASELINE' || a.requestHash !== intent.requestHash || a.afterJson !== intent.afterJson ||\n          ['STARTED', 'COMPLETED'].indexOf(a.phase) < 0;\n      })",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "guard",
+        "expression": "receipts.filter(function(a) { return a.phase === 'STARTED'; }).length !== 1 ||\n      receipts.filter(function(a) { return a.phase === 'COMPLETED'; }).length > 1 || receipts.some(function(a) {\n        return a.action !== 'LEGACY_BASELINE' || a.requestHash !== intent.requestHash || a.afterJson !== intent.afterJson ||\n          ['STARTED', 'COMPLETED'].indexOf(a.phase) < 0;\n      })",
+        "rejects": false,
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "p.length > 1",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "b.length > 1",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "p.length",
+        "result": true
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "!employeeReviewSame_(employeeLifecyclePeriodImage_(p[0]), employeeLifecyclePeriodImage_(bundle.employment))",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "b.length",
+        "result": true
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "!(bundle.format === 4\n        ? employeeReviewSame_(employeeBaselineBindingImage_(b[0]), employeeBaselineBindingImage_(bundle.binding))\n        : employeeReviewSame_(b[0], bundle.binding))",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "b.length",
+        "result": true
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "!p.length",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "guard",
+        "expression": "p.length > 1 || b.length > 1 ||\n      (p.length && !employeeReviewSame_(employeeLifecyclePeriodImage_(p[0]), employeeLifecyclePeriodImage_(bundle.employment))) ||\n      (b.length && !(bundle.format === 4\n        ? employeeReviewSame_(employeeBaselineBindingImage_(b[0]), employeeBaselineBindingImage_(bundle.binding))\n        : employeeReviewSame_(b[0], bundle.binding))) || (b.length && !p.length)",
+        "rejects": false,
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "a.operatorSub === intent.operatorSub",
+        "result": true
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "a.requestId === intent.requestId",
+        "result": true
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "employeeBaselineVersion_(original) !== bundle.snapshotVersion",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "guard",
+        "expression": "employeeBaselineVersion_(original) !== bundle.snapshotVersion",
+        "rejects": false,
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "bundle.format === 4",
+        "result": true
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "predicate",
+        "expression": "!employeeReviewSame_(JSON.parse(intent.beforeJson).master, state.master)",
+        "result": false
+      },
+      {
+        "function": "employeeBaselineInspect_",
+        "kind": "guard",
+        "expression": "bundle.format === 4 && !employeeReviewSame_(JSON.parse(intent.beforeJson).master, state.master)",
+        "rejects": false,
+        "result": false
+      }
+    ]
+  },
+  "firstReject": {
+    "function": "employeeBaselineStatusEvidence_",
+    "kind": "guard",
+    "expression": "intent.action !== 'LEGACY_BASELINE' || intent.employeeId !== id || intent.applicationId !== '' ||\n        intent.beforeVersion !== 0 || intent.afterVersion !== 1 || !intent.auditId ||\n        typeof intent.reason !== 'string' || !intent.reason.trim() || intent.reason.length > 1000 ||\n        !validTime(intent.operatedAt) || !validTime(intent.effectiveAt) ||\n        (bundle.format === 3 && intent.beforeJson !== JSON.stringify({ format: 3, baselineState: 'LEGACY_NOT_BASELINED' })) ||\n        !employeeReviewSame_(p, employeeReviewCanonical_('employments', p)) ||\n        !employeeReviewSame_(b, employeeReviewCanonical_('bindings', b)) ||\n        !p.employmentId || p.sequence !== 1 || p.status !== '在職' || p.endDate !== '' || p.disabledAt !== '' ||\n        (p.startDate !== '' && employeeLifecycleDate_(p.startDate) !== p.startDate) ||\n        ['日薪', '月薪'].indexOf(p.salaryType) < 0 || typeof p.salaryAmount !== 'number' || !Number.isFinite(p.salaryAmount) || p.salaryAmount < 0 ||\n        ['OWNER', 'ADMIN', 'SITE_MANAGER', 'EMPLOYEE'].indexOf(p.permission) < 0 ||\n        p.createdBy !== context.employee.employeeId || p.createdAt !== intent.effectiveAt ||\n        p.baselineDate !== intent.effectiveDate || p.baselineDate !== Utilities.formatDate(new Date(p.createdAt), 'Asia/Taipei', 'yyyy-MM-dd') ||\n        !b.lineSub || b.channelId !== context.channelId || b.status !== '有效' || b.validTo !== '' ||\n        b.validFrom !== p.createdAt || b.operatedAt !== p.createdAt || b.operatorId !== p.createdBy ||\n        intent.requestHash !== employeeHash_(['LEGACY_BASELINE', context.sub, context.channelId, id, bundle.snapshotVersion, intent.reason.trim(), true])",
+    "rejects": true,
+    "result": true
+  }
+}
